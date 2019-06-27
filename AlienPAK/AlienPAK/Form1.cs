@@ -74,8 +74,9 @@ namespace AlienPAK
             int OffsetListBegin = reader.ReadInt32() + 16;
             int NumberOfEntries = reader.ReadInt32();
             int DataSize = reader.ReadInt32();
-            
+
             //Read all file names
+            FileList.Items.Clear();
             for (int i = 0; i < NumberOfEntries; i++)
             {
                 string ThisFileName = "";
@@ -126,7 +127,16 @@ namespace AlienPAK
             List<byte> FileExport = new List<byte>();
             for (int i = 0; i < FileLength; i++)
             {
-                FileExport.Add(reader.ReadByte());
+                byte this_byte = reader.ReadByte();
+
+                //TEMP WORKAROUND TO FIX THE PADDING ISSUE
+                if (FileExport.Count == 0 && this_byte == 0x00)
+                {
+                    continue;
+                }
+                //----
+
+                FileExport.Add(this_byte);
             }
 
             //Write the file's contents out
