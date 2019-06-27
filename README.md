@@ -15,8 +15,10 @@ Currently supported is:
 Eventually, the tool will support:
 - PAK2 (ui/animations)
   - Import files
+  - Preview files
   
 - PAK (models/textures)
   - Open/parse
   - Export files
+  - Preview files
   - Import files(?)
