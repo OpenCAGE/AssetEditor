@@ -33,8 +33,8 @@ namespace AlienPAK
                 case PAK.PAKType.PAK2:
                     ParsedFiles = AlienPAK.ParsePAK2();
                     break;
-                case PAK.PAKType.UNRECOGNISED:
-                    MessageBox.Show("The selected PAK is currently unsupported.", "Unsupported PAK.", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                default:
+                    MessageBox.Show("The selected PAK is currently unsupported.", "Unsupported", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     return;
             }
 
@@ -80,7 +80,61 @@ namespace AlienPAK
             filePicker.FileName = Path.GetFileName(FileList.SelectedItem.ToString());
             if (filePicker.ShowDialog() == DialogResult.OK)
             {
-                AlienPAK.ExportFilePAK2(FileList.SelectedIndex, filePicker.FileName);
+                bool ExportSuccess = false;
+                switch (AlienPAK.Format)
+                {
+                    case PAK.PAKType.PAK2:
+                        ExportSuccess = AlienPAK.ExportFilePAK2(FileList.SelectedIndex, filePicker.FileName);
+                        break;
+                    default:
+                        MessageBox.Show("This PAK does not support file exporting.", "Unsupported", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        return;
+                }
+
+                if (ExportSuccess)
+                {
+                    MessageBox.Show("The selected file was exported successfully.", "Exported file", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+                else
+                {
+                    MessageBox.Show("An error occurred while exporting the selected file.", "An error occurred", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+            }
+        }
+
+        /* User requests to import a file to the PAK */
+        private void ImportButton_Click(object sender, EventArgs e)
+        {
+            if (FileList.SelectedIndex == -1)
+            {
+                MessageBox.Show("Please select a file from the list.", "No file selected.", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
+            //Allow selection of a file (force extension), then drop it in
+            OpenFileDialog filePicker = new OpenFileDialog();
+            filePicker.Filter = "Import File|*" + Path.GetExtension(FileList.SelectedItem.ToString());
+            if (filePicker.ShowDialog() == DialogResult.OK)
+            {
+                bool ImportSuccess = false;
+                switch (AlienPAK.Format)
+                {
+                    case PAK.PAKType.PAK2:
+                        ImportSuccess = AlienPAK.ImportFilePAK2(FileList.SelectedIndex, filePicker.FileName);
+                        break;
+                    default:
+                        MessageBox.Show("This PAK does not support file importing.", "Unsupported", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        break;
+                }
+
+                if (ImportSuccess)
+                {
+                    MessageBox.Show("The selected file was imported successfully.", "Imported file", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+                else
+                {
+                    MessageBox.Show("An error occurred while importing the selected file.", "An error occurred", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
             }
         }
     }

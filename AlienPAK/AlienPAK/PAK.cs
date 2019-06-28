@@ -10,9 +10,13 @@ namespace AlienPAK
     class PAK
     {
         //Internal info
+        private string ArchivePath = "";
         private BinaryReader ArchiveFile = null;
         private List<int> FileOffsets = new List<int>();
         private List<int> FilePadding = new List<int>();
+        int OffsetListBegin = -1;
+        int NumberOfEntries = -1;
+        int DataSize = -1;
 
         //External info
         public enum PAKType { PAK2, UNRECOGNISED };
@@ -25,7 +29,8 @@ namespace AlienPAK
             if (ArchiveFile != null) { ArchiveFile.Close(); }
             ArchiveFile = new BinaryReader(File.Open(filepath, FileMode.Open));
 
-            //Update our format info
+            //Update our info
+            ArchivePath = filepath;
             Format = Type();
         }
         
@@ -58,9 +63,9 @@ namespace AlienPAK
 
             //Read the header info
             ArchiveFile.BaseStream.Position += 4; //Skip magic
-            int OffsetListBegin = ArchiveFile.ReadInt32() + 16;
-            int NumberOfEntries = ArchiveFile.ReadInt32();
-            int DataSize = ArchiveFile.ReadInt32();
+            OffsetListBegin = ArchiveFile.ReadInt32() + 16;
+            NumberOfEntries = ArchiveFile.ReadInt32();
+            DataSize = ArchiveFile.ReadInt32();
 
             //Read all file names
             for (int i = 0; i < NumberOfEntries; i++)
@@ -76,10 +81,14 @@ namespace AlienPAK
             //Read all file offsets
             ArchiveFile.BaseStream.Position = OffsetListBegin;
             FileOffsets.Add(OffsetListBegin + (NumberOfEntries * DataSize));
+            List<string> debug = new List<string>();
             for (int i = 0; i < NumberOfEntries; i++)
             {
                 FileOffsets.Add(ArchiveFile.ReadInt32());
+                debug.Add(FileOffsets.ElementAt(i).ToString());
             }
+
+            File.WriteAllLines("debug.txt", debug);
 
             //Check for padding at each offset (odd PAK2 bug(?))
             for (int i = 0; i < NumberOfEntries; i++)
@@ -120,6 +129,99 @@ namespace AlienPAK
 
                 //Write the file's contents out
                 File.WriteAllBytes(ExportPath, FileExport.ToArray());
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        /* Import a file to the PAK2 archive */
+        public bool ImportFilePAK2(int FileIndex, string ImportPath)
+        {
+            try
+            {
+                //Open PAK for writing, and read contents of import file
+                BinaryReader ImportFile = new BinaryReader(File.OpenRead(ImportPath));
+
+                //Old/new file lengths
+                int OldLength = FileOffsets.ElementAt(FileIndex + 1) - FileOffsets.ElementAt(FileIndex);
+                int NewLength = (int)ImportFile.BaseStream.Length + FilePadding.ElementAt(FileIndex);
+
+                //Grab the contents of the archive surrounding the file to replace
+                ArchiveFile.BaseStream.Position = 0;
+                byte[] ArchivePt1 = new byte[FileOffsets.ElementAt(FileIndex)];
+                for (int i = 0; i < ArchivePt1.Length; i++)
+                {
+                    ArchivePt1[i] = ArchiveFile.ReadByte();
+                }
+                ArchiveFile.BaseStream.Position = FileOffsets.ElementAt(FileIndex + 1);
+                byte[] ArchivePt2 = new byte[FileOffsets.ElementAt(FileOffsets.Count - 1) - FileOffsets.ElementAt(FileIndex + 1)];
+                for (int i = 0; i < ArchivePt2.Length; i++)
+                {
+                    ArchivePt2[i] = ArchiveFile.ReadByte();
+                }
+
+                //Update file offset information
+                for (int i = 0; i < (NumberOfEntries - FileIndex); i++)
+                {
+                    //Read original offset
+                    byte[] OffsetRaw = new byte[DataSize];
+                    for (int x = 0; x < OffsetRaw.Length; x++)
+                    {
+                        OffsetRaw[x] = ArchivePt1[OffsetListBegin + ((FileIndex + i) * DataSize) + x];
+                    }
+
+                    //Update original offset
+                    int Offset = BitConverter.ToInt32(OffsetRaw, 0);
+                    Offset = Offset - OldLength + NewLength;
+                    OffsetRaw = BitConverter.GetBytes(Offset);
+
+                    //Write back new offset
+                    for (int x = 0; x < OffsetRaw.Length; x++)
+                    {
+                        ArchivePt1[OffsetListBegin + ((FileIndex + i) * DataSize) + x] = OffsetRaw[x];
+                    }
+                }
+
+                //Compose new archive from the two old parts and the new file stuck in the middle
+                byte[] NewArchive = new byte[FileOffsets.ElementAt(FileOffsets.Count - 1) - OldLength + NewLength];
+                int ArchiveIndex = 0;
+                for (int i = 0; i < ArchivePt1.Length; i++)
+                {
+                    NewArchive[ArchiveIndex] = ArchivePt1[i];
+                    ArchiveIndex++;
+                }
+                for (int i = 0; i < FilePadding.ElementAt(FileIndex); i++)
+                {
+                    NewArchive[ArchiveIndex] = 0x00;
+                    ArchiveIndex++;
+                }
+                for (int i = 0; i < (int)ImportFile.BaseStream.Length; i++)
+                {
+                    NewArchive[ArchiveIndex] = ImportFile.ReadByte();
+                    ArchiveIndex++;
+                }
+                for (int i = 0; i < ArchivePt2.Length; i++)
+                {
+                    NewArchive[ArchiveIndex] = ArchivePt2[i];
+                    ArchiveIndex++;
+                }
+
+                //Dispose of the old archive
+                ArchiveFile.Close();
+                File.Delete(ArchivePath);
+                
+                //Write out the new archive
+                BinaryWriter ArchiveFileWrite = new BinaryWriter(File.OpenWrite(ArchivePath));
+                ArchiveFileWrite.Write(NewArchive);
+                ArchiveFileWrite.Close();
+
+                //Reload the archive for us
+                Open(ArchivePath);
+                ParsePAK2();
+
                 return true;
             }
             catch

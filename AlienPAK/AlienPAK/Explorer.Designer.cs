@@ -28,11 +28,14 @@
         /// </summary>
         private void InitializeComponent()
         {
+            this.components = new System.ComponentModel.Container();
             this.menuStrip1 = new System.Windows.Forms.MenuStrip();
             this.fileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.openToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.FileList = new System.Windows.Forms.ListBox();
             this.ExportButton = new System.Windows.Forms.Button();
+            this.ImportButton = new System.Windows.Forms.Button();
+            this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
             this.menuStrip1.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -57,7 +60,7 @@
             // openToolStripMenuItem
             // 
             this.openToolStripMenuItem.Name = "openToolStripMenuItem";
-            this.openToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.openToolStripMenuItem.Size = new System.Drawing.Size(103, 22);
             this.openToolStripMenuItem.Text = "Open";
             this.openToolStripMenuItem.Click += new System.EventHandler(this.openToolStripMenuItem_Click);
             // 
@@ -76,19 +79,32 @@
             this.ExportButton.Size = new System.Drawing.Size(75, 61);
             this.ExportButton.TabIndex = 3;
             this.ExportButton.Text = "Export";
+            this.toolTip1.SetToolTip(this.ExportButton, "Export the selected entry in the loaded PAK archive.");
             this.ExportButton.UseVisualStyleBackColor = true;
             this.ExportButton.Click += new System.EventHandler(this.ExportButton_Click);
             // 
-            // Form1
+            // ImportButton
+            // 
+            this.ImportButton.Location = new System.Drawing.Point(506, 575);
+            this.ImportButton.Name = "ImportButton";
+            this.ImportButton.Size = new System.Drawing.Size(75, 61);
+            this.ImportButton.TabIndex = 4;
+            this.ImportButton.Text = "Import";
+            this.toolTip1.SetToolTip(this.ImportButton, "Import a replacement file for the selected entry in the loaded PAK archive.");
+            this.ImportButton.UseVisualStyleBackColor = true;
+            this.ImportButton.Click += new System.EventHandler(this.ImportButton_Click);
+            // 
+            // Explorer
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(589, 711);
+            this.Controls.Add(this.ImportButton);
             this.Controls.Add(this.ExportButton);
             this.Controls.Add(this.FileList);
             this.Controls.Add(this.menuStrip1);
             this.MainMenuStrip = this.menuStrip1;
-            this.Name = "Form1";
+            this.Name = "Explorer";
             this.Text = "Form1";
             this.Load += new System.EventHandler(this.Form1_Load);
             this.menuStrip1.ResumeLayout(false);
@@ -105,6 +121,8 @@
         private System.Windows.Forms.ToolStripMenuItem openToolStripMenuItem;
         private System.Windows.Forms.ListBox FileList;
         private System.Windows.Forms.Button ExportButton;
+        private System.Windows.Forms.ToolTip toolTip1;
+        private System.Windows.Forms.Button ImportButton;
     }
 }
 
