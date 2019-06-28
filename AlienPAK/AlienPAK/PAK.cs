@@ -12,6 +12,7 @@ namespace AlienPAK
         //Internal info
         private BinaryReader ArchiveFile = null;
         private List<int> FileOffsets = new List<int>();
+        private List<int> FilePadding = new List<int>();
 
         //External info
         public enum PAKType { PAK2, UNRECOGNISED };
@@ -80,6 +81,24 @@ namespace AlienPAK
                 FileOffsets.Add(ArchiveFile.ReadInt32());
             }
 
+            //Check for padding at each offset (odd PAK2 bug(?))
+            for (int i = 0; i < NumberOfEntries; i++)
+            {
+                ArchiveFile.BaseStream.Position = FileOffsets[i];
+                FilePadding.Add(0);
+                for (int x = 0; x < 50; x++) //Should never pass 50 (probably nowhere near actually)
+                {
+                    if (ArchiveFile.ReadByte() == 0x00)
+                    {
+                        FilePadding[i] += 1;
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
+            }
+
             return FileList;
         }
 
@@ -89,8 +108,8 @@ namespace AlienPAK
             try
             {
                 //Update reader position and work out file size
-                ArchiveFile.BaseStream.Position = FileOffsets.ElementAt(FileIndex);
-                int FileLength = FileOffsets.ElementAt(FileIndex + 1) - FileOffsets.ElementAt(FileIndex);
+                ArchiveFile.BaseStream.Position = FileOffsets[FileIndex] + FilePadding[FileIndex];
+                int FileLength = FileOffsets.ElementAt(FileIndex + 1) - (int)ArchiveFile.BaseStream.Position;
 
                 //Grab the file's contents (this can probably be optimised!)
                 List<byte> FileExport = new List<byte>();
