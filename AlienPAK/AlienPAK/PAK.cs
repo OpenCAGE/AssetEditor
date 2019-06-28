@@ -80,6 +80,11 @@ namespace AlienPAK
             NumberOfEntries = ArchiveFile.ReadInt32();
             DataSize = ArchiveFile.ReadInt32();
 
+            //Reset global lists
+            FileList.Clear();
+            FileOffsets.Clear();
+            FilePadding.Clear();
+
             //Read all file names
             for (int i = 0; i < NumberOfEntries; i++)
             {

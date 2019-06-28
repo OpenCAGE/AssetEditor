@@ -37,12 +37,38 @@ namespace AlienPAK
                     MessageBox.Show("The selected PAK is currently unsupported.", "Unsupported", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     return;
             }
-            
+
             //Populate the GUI with the files found within the archive
             FileTree.Nodes.Clear();
             foreach (string FileName in ParsedFiles)
             {
-                FileTree.Nodes.Add(FileName);
+                string[] FileNameParts = FileName.Split('/');
+                if (FileNameParts.Length == 1) { FileNameParts = FileName.Split('\\'); }
+                AddFileToTree(FileNameParts, 0, FileTree.Nodes);
+            }
+        }
+
+        /* Add a file to the GUI tree structure */
+        private void AddFileToTree(string[] FileNameParts, int index, TreeNodeCollection LoopedNodeCollection)
+        {
+            if (FileNameParts.Length <= index)
+            {
+                return;
+            }
+
+            bool should = true;
+            foreach (TreeNode ThisFileNode in LoopedNodeCollection)
+            {
+                if (ThisFileNode.Text == FileNameParts[index])
+                {
+                    should = false;
+                    AddFileToTree(FileNameParts, index + 1, ThisFileNode.Nodes);
+                    break;
+                }
+            }
+            if (should)
+            {
+                LoopedNodeCollection.Add(FileNameParts[index]);
             }
         }
 
