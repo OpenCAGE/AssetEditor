@@ -1,6 +1,6 @@
 ﻿namespace AlienPAK
 {
-    partial class Form1
+    partial class Explorer
     {
         /// <summary>
         /// Required designer variable.
