@@ -32,10 +32,10 @@
             this.menuStrip1 = new System.Windows.Forms.MenuStrip();
             this.fileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.openToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.FileList = new System.Windows.Forms.ListBox();
             this.ExportButton = new System.Windows.Forms.Button();
             this.ImportButton = new System.Windows.Forms.Button();
             this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
+            this.FileTree = new System.Windows.Forms.TreeView();
             this.menuStrip1.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -45,7 +45,7 @@
             this.fileToolStripMenuItem});
             this.menuStrip1.Location = new System.Drawing.Point(0, 0);
             this.menuStrip1.Name = "menuStrip1";
-            this.menuStrip1.Size = new System.Drawing.Size(589, 24);
+            this.menuStrip1.Size = new System.Drawing.Size(590, 24);
             this.menuStrip1.TabIndex = 1;
             this.menuStrip1.Text = "menuStrip1";
             // 
@@ -63,14 +63,6 @@
             this.openToolStripMenuItem.Size = new System.Drawing.Size(103, 22);
             this.openToolStripMenuItem.Text = "Open";
             this.openToolStripMenuItem.Click += new System.EventHandler(this.openToolStripMenuItem_Click);
-            // 
-            // FileList
-            // 
-            this.FileList.FormattingEnabled = true;
-            this.FileList.Location = new System.Drawing.Point(12, 36);
-            this.FileList.Name = "FileList";
-            this.FileList.Size = new System.Drawing.Size(488, 667);
-            this.FileList.TabIndex = 2;
             // 
             // ExportButton
             // 
@@ -94,14 +86,21 @@
             this.ImportButton.UseVisualStyleBackColor = true;
             this.ImportButton.Click += new System.EventHandler(this.ImportButton_Click);
             // 
+            // FileTree
+            // 
+            this.FileTree.Location = new System.Drawing.Point(12, 27);
+            this.FileTree.Name = "FileTree";
+            this.FileTree.Size = new System.Drawing.Size(488, 672);
+            this.FileTree.TabIndex = 5;
+            // 
             // Explorer
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(589, 711);
+            this.ClientSize = new System.Drawing.Size(590, 711);
+            this.Controls.Add(this.FileTree);
             this.Controls.Add(this.ImportButton);
             this.Controls.Add(this.ExportButton);
-            this.Controls.Add(this.FileList);
             this.Controls.Add(this.menuStrip1);
             this.MainMenuStrip = this.menuStrip1;
             this.Name = "Explorer";
@@ -119,10 +118,10 @@
         private System.Windows.Forms.MenuStrip menuStrip1;
         private System.Windows.Forms.ToolStripMenuItem fileToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem openToolStripMenuItem;
-        private System.Windows.Forms.ListBox FileList;
         private System.Windows.Forms.Button ExportButton;
         private System.Windows.Forms.ToolTip toolTip1;
         private System.Windows.Forms.Button ImportButton;
+        private System.Windows.Forms.TreeView FileTree;
     }
 }
 

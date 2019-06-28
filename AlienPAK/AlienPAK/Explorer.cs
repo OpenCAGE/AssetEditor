@@ -37,12 +37,12 @@ namespace AlienPAK
                     MessageBox.Show("The selected PAK is currently unsupported.", "Unsupported", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     return;
             }
-
+            
             //Populate the GUI with the files found within the archive
-            FileList.Items.Clear();
+            FileTree.Nodes.Clear();
             foreach (string FileName in ParsedFiles)
             {
-                FileList.Items.Add(FileName);
+                FileTree.Nodes.Add(FileName);
             }
         }
 
@@ -50,7 +50,7 @@ namespace AlienPAK
         private void Form1_Load(object sender, EventArgs e)
         {
             //For testing purposes
-            //OpenFileAndPopulateGUI(@"E:\Program Files\Steam\steamapps\common\Alien Isolation\DATA\UI.PAK");
+            OpenFileAndPopulateGUI(@"E:\Program Files\Steam\steamapps\common\Alien Isolation\DATA\UI.PAK");
         }
 
         /* User requests to open a PAK */
@@ -68,7 +68,7 @@ namespace AlienPAK
         /* User requests to export a file from the PAK */
         private void ExportButton_Click(object sender, EventArgs e)
         {
-            if (FileList.SelectedIndex == -1)
+            if (FileTree.SelectedNode == null)
             {
                 MessageBox.Show("Please select a file from the list.", "No file selected.", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
@@ -76,15 +76,15 @@ namespace AlienPAK
 
             //Let the user decide where to save, then save
             SaveFileDialog filePicker = new SaveFileDialog();
-            filePicker.Filter = "Exported File|*" + Path.GetExtension(FileList.SelectedItem.ToString());
-            filePicker.FileName = Path.GetFileName(FileList.SelectedItem.ToString());
+            filePicker.Filter = "Exported File|*" + Path.GetExtension(FileTree.SelectedNode.Text);
+            filePicker.FileName = Path.GetFileName(FileTree.SelectedNode.Text);
             if (filePicker.ShowDialog() == DialogResult.OK)
             {
                 bool ExportSuccess = false;
                 switch (AlienPAK.Format)
                 {
                     case PAK.PAKType.PAK2:
-                        ExportSuccess = AlienPAK.ExportFilePAK2(FileList.SelectedIndex, filePicker.FileName);
+                        ExportSuccess = AlienPAK.ExportFilePAK2(FileTree.SelectedNode.Text, filePicker.FileName);
                         break;
                     default:
                         MessageBox.Show("This PAK does not support file exporting.", "Unsupported", MessageBoxButtons.OK, MessageBoxIcon.Error);
@@ -105,7 +105,7 @@ namespace AlienPAK
         /* User requests to import a file to the PAK */
         private void ImportButton_Click(object sender, EventArgs e)
         {
-            if (FileList.SelectedIndex == -1)
+            if (FileTree.SelectedNode == null)
             {
                 MessageBox.Show("Please select a file from the list.", "No file selected.", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
@@ -113,14 +113,14 @@ namespace AlienPAK
 
             //Allow selection of a file (force extension), then drop it in
             OpenFileDialog filePicker = new OpenFileDialog();
-            filePicker.Filter = "Import File|*" + Path.GetExtension(FileList.SelectedItem.ToString());
+            filePicker.Filter = "Import File|*" + Path.GetExtension(FileTree.SelectedNode.Text);
             if (filePicker.ShowDialog() == DialogResult.OK)
             {
                 bool ImportSuccess = false;
                 switch (AlienPAK.Format)
                 {
                     case PAK.PAKType.PAK2:
-                        ImportSuccess = AlienPAK.ImportFilePAK2(FileList.SelectedIndex, filePicker.FileName);
+                        ImportSuccess = AlienPAK.ImportFilePAK2(FileTree.SelectedNode.Text, filePicker.FileName);
                         break;
                     default:
                         MessageBox.Show("This PAK does not support file importing.", "Unsupported", MessageBoxButtons.OK, MessageBoxIcon.Error);

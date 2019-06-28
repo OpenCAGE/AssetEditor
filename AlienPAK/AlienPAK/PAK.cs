@@ -12,6 +12,7 @@ namespace AlienPAK
         //Internal info
         private string ArchivePath = "";
         private BinaryReader ArchiveFile = null;
+        private List<string> FileList = new List<string>();
         private List<int> FileOffsets = new List<int>();
         private List<int> FilePadding = new List<int>();
         int OffsetListBegin = -1;
@@ -23,14 +24,14 @@ namespace AlienPAK
         public PAKType Format { get; private set; }
 
         /* Open a PAK archive */
-        public void Open(string filepath)
+        public void Open(string FilePath)
         {
             //Open new PAK
             if (ArchiveFile != null) { ArchiveFile.Close(); }
-            ArchiveFile = new BinaryReader(File.Open(filepath, FileMode.Open));
+            ArchiveFile = new BinaryReader(File.Open(FilePath, FileMode.Open));
 
             //Update our info
-            ArchivePath = filepath;
+            ArchivePath = FilePath;
             Format = Type();
         }
         
@@ -53,13 +54,25 @@ namespace AlienPAK
             return (FileMagic == "PAK2") ? PAKType.PAK2 : PAKType.UNRECOGNISED;
         }
 
+        /* Get the PAK index of the file by name */
+        private int GetFileIndex(string FileName)
+        {
+            for (int i = 0; i < FileList.Count; i++)
+            {
+                if (FileList[i] == FileName)
+                {
+                    return i;
+                }
+            }
+            return -1;
+        }
+
         /* --- PAK2 --- */
 
         /* Parse a PAK2 archive */
         public List<string> ParsePAK2()
         {
             if (ArchiveFile == null) { return null; }
-            List<string> FileList = new List<string>();
 
             //Read the header info
             ArchiveFile.BaseStream.Position += 4; //Skip magic
@@ -88,8 +101,6 @@ namespace AlienPAK
                 debug.Add(FileOffsets.ElementAt(i).ToString());
             }
 
-            File.WriteAllLines("debug.txt", debug);
-
             //Check for padding at each offset (odd PAK2 bug(?))
             for (int i = 0; i < NumberOfEntries; i++)
             {
@@ -112,11 +123,12 @@ namespace AlienPAK
         }
 
         /* Export a file from the PAK2 archive */
-        public bool ExportFilePAK2(int FileIndex, string ExportPath)
+        public bool ExportFilePAK2(string FileName, string ExportPath)
         {
             try
             {
                 //Update reader position and work out file size
+                int FileIndex = GetFileIndex(FileName);
                 ArchiveFile.BaseStream.Position = FileOffsets[FileIndex] + FilePadding[FileIndex];
                 int FileLength = FileOffsets.ElementAt(FileIndex + 1) - (int)ArchiveFile.BaseStream.Position;
 
@@ -138,7 +150,7 @@ namespace AlienPAK
         }
 
         /* Import a file to the PAK2 archive */
-        public bool ImportFilePAK2(int FileIndex, string ImportPath)
+        public bool ImportFilePAK2(string FileName, string ImportPath)
         {
             try
             {
@@ -146,6 +158,7 @@ namespace AlienPAK
                 BinaryReader ImportFile = new BinaryReader(File.OpenRead(ImportPath));
 
                 //Old/new file lengths
+                int FileIndex = GetFileIndex(FileName);
                 int OldLength = FileOffsets.ElementAt(FileIndex + 1) - FileOffsets.ElementAt(FileIndex);
                 int NewLength = (int)ImportFile.BaseStream.Length + FilePadding.ElementAt(FileIndex);
 
