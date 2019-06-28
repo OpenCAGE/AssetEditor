@@ -57,6 +57,7 @@ namespace AlienPAK
         /* Get the PAK index of the file by name */
         private int GetFileIndex(string FileName)
         {
+            //Get index
             for (int i = 0; i < FileList.Count; i++)
             {
                 if (FileList[i] == FileName)
@@ -64,6 +65,18 @@ namespace AlienPAK
                     return i;
                 }
             }
+
+            //Couldn't find - sometimes CA use "\" instead of "/"... try that
+            FileName = FileName.Replace('/', '\\');
+            for (int i = 0; i < FileList.Count; i++)
+            {
+                if (FileList[i] == FileName)
+                {
+                    return i;
+                }
+            }
+
+            //Failed to find
             return -1;
         }
 
@@ -148,8 +161,9 @@ namespace AlienPAK
                 File.WriteAllBytes(ExportPath, FileExport.ToArray());
                 return true;
             }
-            catch
+            catch (Exception e)
             {
+                string error = e.ToString();
                 return false;
             }
         }
@@ -242,8 +256,9 @@ namespace AlienPAK
 
                 return true;
             }
-            catch
+            catch (Exception e)
             {
+                string error = e.ToString();
                 return false;
             }
         }
