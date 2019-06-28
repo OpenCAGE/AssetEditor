@@ -56,7 +56,7 @@ namespace AlienPAK
             {
                 return;
             }
-
+            
             bool should = true;
             foreach (TreeNode ThisFileNode in LoopedNodeCollection)
             {
@@ -72,11 +72,17 @@ namespace AlienPAK
                 TreeNode FileNode = new TreeNode(FileNameParts[index]);
                 if (FileNameParts.Length-1 == index)
                 {
+                    //Node is a file, tag it with the path
                     for (int i = 0; i < FileNameParts.Length; i++)
                     {
                         FileNode.Tag += FileNameParts[i] + "/";
                     }
                     FileNode.Tag = FileNode.Tag.ToString().Substring(0, FileNode.Tag.ToString().Length - 1);
+                }
+                else
+                {
+                    //Node is a directory
+                    AddFileToTree(FileNameParts, index + 1, FileNode.Nodes);
                 }
                 LoopedNodeCollection.Add(FileNode);
             }
