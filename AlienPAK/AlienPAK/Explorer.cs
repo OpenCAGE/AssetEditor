@@ -42,6 +42,7 @@ namespace AlienPAK
             FileTree.Nodes.Clear();
             foreach (string FileName in ParsedFiles)
             {
+                /* THIS IS CURRENTLY BUGGED TO NOT ADD SOME FILES DEPENDING ON THE NUMBER OF RECURSIONS... */
                 string[] FileNameParts = FileName.Split('/');
                 if (FileNameParts.Length == 1) { FileNameParts = FileName.Split('\\'); }
                 AddFileToTree(FileNameParts, 0, FileTree.Nodes);
@@ -68,7 +69,16 @@ namespace AlienPAK
             }
             if (should)
             {
-                LoopedNodeCollection.Add(FileNameParts[index]);
+                TreeNode FileNode = new TreeNode(FileNameParts[index]);
+                if (FileNameParts.Length-1 == index)
+                {
+                    for (int i = 0; i < FileNameParts.Length; i++)
+                    {
+                        FileNode.Tag += FileNameParts[i] + "/";
+                    }
+                    FileNode.Tag = FileNode.Tag.ToString().Substring(0, FileNode.Tag.ToString().Length - 1);
+                }
+                LoopedNodeCollection.Add(FileNode);
             }
         }
 
@@ -76,7 +86,7 @@ namespace AlienPAK
         private void Form1_Load(object sender, EventArgs e)
         {
             //For testing purposes
-            OpenFileAndPopulateGUI(@"E:\Program Files\Steam\steamapps\common\Alien Isolation\DATA\UI.PAK");
+            //OpenFileAndPopulateGUI(@"E:\Program Files\Steam\steamapps\common\Alien Isolation\DATA\UI.PAK");
         }
 
         /* User requests to open a PAK */
@@ -110,7 +120,7 @@ namespace AlienPAK
                 switch (AlienPAK.Format)
                 {
                     case PAK.PAKType.PAK2:
-                        ExportSuccess = AlienPAK.ExportFilePAK2(FileTree.SelectedNode.Text, filePicker.FileName);
+                        ExportSuccess = AlienPAK.ExportFilePAK2(FileTree.SelectedNode.Tag.ToString(), filePicker.FileName);
                         break;
                     default:
                         MessageBox.Show("This PAK does not support file exporting.", "Unsupported", MessageBoxButtons.OK, MessageBoxIcon.Error);
@@ -146,7 +156,7 @@ namespace AlienPAK
                 switch (AlienPAK.Format)
                 {
                     case PAK.PAKType.PAK2:
-                        ImportSuccess = AlienPAK.ImportFilePAK2(FileTree.SelectedNode.Text, filePicker.FileName);
+                        ImportSuccess = AlienPAK.ImportFilePAK2(FileTree.SelectedNode.Tag.ToString(), filePicker.FileName);
                         break;
                     default:
                         MessageBox.Show("This PAK does not support file importing.", "Unsupported", MessageBoxButtons.OK, MessageBoxIcon.Error);
@@ -162,6 +172,16 @@ namespace AlienPAK
                     MessageBox.Show("An error occurred while importing the selected file.", "An error occurred", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
             }
+        }
+
+        /* Expand/collapse all nodes in the tree */
+        private void ExpandTree_Click(object sender, EventArgs e)
+        {
+            FileTree.ExpandAll();
+        }
+        private void ShrinkTree_Click(object sender, EventArgs e)
+        {
+            FileTree.CollapseAll();
         }
     }
 }

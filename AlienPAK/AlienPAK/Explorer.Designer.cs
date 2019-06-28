@@ -36,6 +36,8 @@
             this.ImportButton = new System.Windows.Forms.Button();
             this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
             this.FileTree = new System.Windows.Forms.TreeView();
+            this.ExpandTree = new System.Windows.Forms.Button();
+            this.ShrinkTree = new System.Windows.Forms.Button();
             this.menuStrip1.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -93,11 +95,35 @@
             this.FileTree.Size = new System.Drawing.Size(488, 672);
             this.FileTree.TabIndex = 5;
             // 
+            // ExpandTree
+            // 
+            this.ExpandTree.Location = new System.Drawing.Point(506, 27);
+            this.ExpandTree.Name = "ExpandTree";
+            this.ExpandTree.Size = new System.Drawing.Size(75, 29);
+            this.ExpandTree.TabIndex = 6;
+            this.ExpandTree.Text = "Expand All";
+            this.toolTip1.SetToolTip(this.ExpandTree, "Import a replacement file for the selected entry in the loaded PAK archive.");
+            this.ExpandTree.UseVisualStyleBackColor = true;
+            this.ExpandTree.Click += new System.EventHandler(this.ExpandTree_Click);
+            // 
+            // ShrinkTree
+            // 
+            this.ShrinkTree.Location = new System.Drawing.Point(506, 62);
+            this.ShrinkTree.Name = "ShrinkTree";
+            this.ShrinkTree.Size = new System.Drawing.Size(75, 29);
+            this.ShrinkTree.TabIndex = 7;
+            this.ShrinkTree.Text = "Shrink All";
+            this.toolTip1.SetToolTip(this.ShrinkTree, "Import a replacement file for the selected entry in the loaded PAK archive.");
+            this.ShrinkTree.UseVisualStyleBackColor = true;
+            this.ShrinkTree.Click += new System.EventHandler(this.ShrinkTree_Click);
+            // 
             // Explorer
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(590, 711);
+            this.Controls.Add(this.ShrinkTree);
+            this.Controls.Add(this.ExpandTree);
             this.Controls.Add(this.FileTree);
             this.Controls.Add(this.ImportButton);
             this.Controls.Add(this.ExportButton);
@@ -122,6 +148,8 @@
         private System.Windows.Forms.ToolTip toolTip1;
         private System.Windows.Forms.Button ImportButton;
         private System.Windows.Forms.TreeView FileTree;
+        private System.Windows.Forms.Button ExpandTree;
+        private System.Windows.Forms.Button ShrinkTree;
     }
 }
 
