@@ -8,13 +8,13 @@ A tool to preview, export, and re-import files within Alien: Isolation's PAK arc
 Currently supported is:
 - PAK2 (ui/animations)
   - Open/parse
+  - Import files
   - Export files
   
 ---
 
 Eventually, the tool will support:
 - PAK2 (ui/animations)
-  - Import files
   - Preview files
   
 - PAK (models/textures)
