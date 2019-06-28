@@ -181,12 +181,6 @@ namespace AlienPAK
             }
         }
 
-        /* Search for a file in the tree */
-        private void searchToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            
-        }
-
         /* Expand/collapse all nodes in the tree */
         private void expandAllDirectoriesToolStripMenuItem_Click(object sender, EventArgs e)
         {
