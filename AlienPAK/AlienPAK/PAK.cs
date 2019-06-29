@@ -243,7 +243,7 @@ namespace AlienPAK
                 }
 
                 //Compose new archive from the two old parts and the new file stuck in the middle
-                byte[] NewArchive = new byte[FileOffsets.ElementAt(FileOffsets.Count - 1) - OldLength + NewLength];
+                byte[] NewArchive = new byte[FileOffsets.ElementAt(FileOffsets.Count - 1) - OldLength + NewLength + (NewNextPadding - OldNextPadding)];
                 int ArchiveIndex = 0;
                 for (int i = 0; i < ArchivePt1.Length; i++)
                 {
