@@ -209,12 +209,16 @@ namespace AlienPAK
                     if (i == 0)
                     {
                         //Correct the byte alignment for first trailing file
-                        while (Offset % 4 != 0)
+                        while ((Offset + NewNextPadding) % 4 != 0)
                         {
-                            Offset += 1;
                             NewNextPadding += 1;
                         }
                         FilePadding[FileIndex + 1] = NewNextPadding;
+                    }
+                    else
+                    {
+                        //Flow new padding over to each following file
+                        Offset += (NewNextPadding - OldNextPadding);
                     }
                     OffsetRaw = BitConverter.GetBytes(Offset);
 
@@ -227,7 +231,7 @@ namespace AlienPAK
 
                 //Grab the second half of the archive after the file, and correct the byte offset
                 ArchiveFile.BaseStream.Position = FileOffsets.ElementAt(FileIndex + 1);
-                byte[] ArchivePt2 = new byte[FileOffsets.ElementAt(FileOffsets.Count - 1) - FileOffsets.ElementAt(FileIndex + 1) + (OldNextPadding - NewNextPadding)];
+                byte[] ArchivePt2 = new byte[FileOffsets.ElementAt(FileOffsets.Count - 1) - FileOffsets.ElementAt(FileIndex + 1) + (NewNextPadding - OldNextPadding)];
                 ArchiveFile.BaseStream.Position += OldNextPadding;
                 for (int i = 0; i < NewNextPadding; i++)
                 {
