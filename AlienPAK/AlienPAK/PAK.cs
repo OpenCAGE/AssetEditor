@@ -32,11 +32,11 @@ namespace AlienPAK
 
             //Update our info
             ArchivePath = FilePath;
-            Format = Type();
+            Format = GetType();
         }
         
         /* Check the format of the opened PAK archive */
-        private PAKType Type()
+        new private PAKType GetType()
         {
             //Be nice and maintain the reader position :)
             long ReaderPos = ArchiveFile.BaseStream.Position;
@@ -119,12 +119,12 @@ namespace AlienPAK
                 debug.Add(FileOffsets.ElementAt(i).ToString());
             }
 
-            //Check for padding at each offset (odd PAK2 bug(?))
+            //Hacky way to store byte alignment values
             for (int i = 0; i < NumberOfEntries; i++)
             {
                 ArchiveFile.BaseStream.Position = FileOffsets[i];
                 FilePadding.Add(0);
-                for (int x = 0; x < 50; x++) //Should never pass 50 (probably nowhere near actually)
+                for (int x = 0; x < DataSize + 1; x++) 
                 {
                     if (ArchiveFile.ReadByte() == 0x00)
                     {
@@ -181,18 +181,16 @@ namespace AlienPAK
                 int OldLength = FileOffsets.ElementAt(FileIndex + 1) - FileOffsets.ElementAt(FileIndex);
                 int NewLength = (int)ImportFile.BaseStream.Length + FilePadding.ElementAt(FileIndex);
 
-                //Grab the contents of the archive surrounding the file to replace
+                //Old/new "padding" (next file in sequence's byte alignment)
+                int OldNextPadding = FilePadding.ElementAt(FileIndex + 1);
+                int NewNextPadding = 0; //This will be set later
+
+                //Grab the first section of the archive
                 ArchiveFile.BaseStream.Position = 0;
                 byte[] ArchivePt1 = new byte[FileOffsets.ElementAt(FileIndex)];
                 for (int i = 0; i < ArchivePt1.Length; i++)
                 {
                     ArchivePt1[i] = ArchiveFile.ReadByte();
-                }
-                ArchiveFile.BaseStream.Position = FileOffsets.ElementAt(FileIndex + 1);
-                byte[] ArchivePt2 = new byte[FileOffsets.ElementAt(FileOffsets.Count - 1) - FileOffsets.ElementAt(FileIndex + 1)];
-                for (int i = 0; i < ArchivePt2.Length; i++)
-                {
-                    ArchivePt2[i] = ArchiveFile.ReadByte();
                 }
 
                 //Update file offset information
@@ -202,19 +200,42 @@ namespace AlienPAK
                     byte[] OffsetRaw = new byte[DataSize];
                     for (int x = 0; x < OffsetRaw.Length; x++)
                     {
-                        OffsetRaw[x] = ArchivePt1[OffsetListBegin + ((FileIndex + i) * DataSize) + x];
+                        OffsetRaw[x] = ArchivePt1[OffsetListBegin + ((FileIndex + i) * DataSize) + x]; //+1?
                     }
 
                     //Update original offset
                     int Offset = BitConverter.ToInt32(OffsetRaw, 0);
                     Offset = Offset - OldLength + NewLength;
+                    if (i == 0)
+                    {
+                        //Correct the byte alignment for first trailing file
+                        while (Offset % 4 != 0)
+                        {
+                            Offset += 1;
+                            NewNextPadding += 1;
+                        }
+                        FilePadding[FileIndex + 1] = NewNextPadding;
+                    }
                     OffsetRaw = BitConverter.GetBytes(Offset);
 
                     //Write back new offset
                     for (int x = 0; x < OffsetRaw.Length; x++)
                     {
-                        ArchivePt1[OffsetListBegin + ((FileIndex + i) * DataSize) + x] = OffsetRaw[x];
+                        ArchivePt1[OffsetListBegin + ((FileIndex + i) * DataSize) + x] = OffsetRaw[x]; //+1?
                     }
+                }
+
+                //Grab the second half of the archive after the file, and correct the byte offset
+                ArchiveFile.BaseStream.Position = FileOffsets.ElementAt(FileIndex + 1);
+                byte[] ArchivePt2 = new byte[FileOffsets.ElementAt(FileOffsets.Count - 1) - FileOffsets.ElementAt(FileIndex + 1) + (OldNextPadding - NewNextPadding)];
+                ArchiveFile.BaseStream.Position += OldNextPadding;
+                for (int i = 0; i < NewNextPadding; i++)
+                {
+                    ArchivePt2[i] = 0x00;
+                }
+                for (int i = NewNextPadding; i < ArchivePt2.Length; i++)
+                {
+                    ArchivePt2[i] = ArchiveFile.ReadByte();
                 }
 
                 //Compose new archive from the two old parts and the new file stuck in the middle
