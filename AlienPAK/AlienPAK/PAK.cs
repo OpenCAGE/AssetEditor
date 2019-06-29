@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -182,7 +182,7 @@ namespace AlienPAK
                 int NewLength = (int)ImportFile.BaseStream.Length + FilePadding.ElementAt(FileIndex);
 
                 //Old/new "padding" (next file in sequence's byte alignment)
-                int OldNextPadding = FilePadding.ElementAt(FileIndex + 1);
+                int OldNextPadding = (FileIndex != FilePadding.Count-1) ? FilePadding.ElementAt(FileIndex + 1) : 0;
                 int NewNextPadding = 0; //This will be set later
 
                 //Grab the first section of the archive
@@ -206,9 +206,9 @@ namespace AlienPAK
                     //Update original offset
                     int Offset = BitConverter.ToInt32(OffsetRaw, 0);
                     Offset = Offset - OldLength + NewLength;
-                    if (i == 0)
+                    if (i == 0 && FileIndex != NumberOfEntries-1)
                     {
-                        //Correct the byte alignment for first trailing file
+                        //Correct the byte alignment for first trailing file (if we have one)
                         while ((Offset + NewNextPadding) % 4 != 0)
                         {
                             NewNextPadding += 1;
