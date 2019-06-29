@@ -15,9 +15,15 @@ namespace AlienPAK
     {
         PAK AlienPAK = new PAK();
 
-        public Explorer()
+        public Explorer(string[] args)
         {
             InitializeComponent();
+
+            //Support "open with" from Windows on PAK files
+            if (args.Length > 0 && File.Exists(args[0]))
+            {
+                OpenFileAndPopulateGUI(args[0]);
+            }
         }
 
         /* Open a PAK and populate the GUI */
