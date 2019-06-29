@@ -5,6 +5,8 @@ The latest stable version can be found [on the releases tab](https://github.com/
 
 An important note: make sure the tool is closed when you launch the game. If the tool has a PAK open the game will not be able to read it and this will lead to a crash.
 
+[JPEXS Flash Decompiler](https://github.com/jindrapetrik/jpexs-decompiler) is recommended for editing exported UI .GFX files!
+
 ***This project is currently a work in progress!***
 
 <img src="https://i.imgur.com/q76oME2.png" align="right" width="40%">
