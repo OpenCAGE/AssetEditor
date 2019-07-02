@@ -106,6 +106,21 @@ namespace AlienPAK
             }
         }
 
+        /* Get type description based on extension */
+        private string GetFileTypeDescription(string FileExtension)
+        {
+            switch (FileExtension.Substring(1))
+            {
+                case "DDS":
+                    return "DDS (Image)";
+                case "GFX":
+                    return "GFX (Adobe Flash)";
+                case "CS2":
+                    return "CS2 (Model)";
+            }
+            return "";
+        }
+
         /* Import a file to replace the selected PAK entry */
         private void ImportSelectedFile()
         {
@@ -226,6 +241,54 @@ namespace AlienPAK
         private void exportFileContext_Click(object sender, EventArgs e)
         {
             ExportSelectedFile();
+        }
+
+        /* Import/export selected file (gui buttons) */
+        private void importFile_Click(object sender, EventArgs e)
+        {
+            ImportSelectedFile();
+        }
+        private void exportFile_Click(object sender, EventArgs e)
+        {
+            ExportSelectedFile();
+        }
+
+        /* Item selected (show preview info) */
+        private void FileTree_AfterSelect(object sender, TreeViewEventArgs e)
+        {
+            //First, reset the GUI
+            filePreviewImage.Image = null;
+            fileNameInfo.Text = "";
+            fileSizeInfo.Text = "";
+            fileTypeInfo.Text = "";
+            exportFile.Enabled = false;
+            importFile.Enabled = false;
+
+            //Exit early if not a file
+            if (FileTree.SelectedNode == null || ((TreeItem)FileTree.SelectedNode.Tag).Item_Type != TreeItemType.EXPORTABLE_FILE)
+            {
+                return;
+            }
+            string FileName = ((TreeItem)FileTree.SelectedNode.Tag).String_Value;
+
+            //Populate filename/type info
+            fileNameInfo.Text = Path.GetFileName(FileName);
+            fileTypeInfo.Text = GetFileTypeDescription(Path.GetExtension(FileName));
+
+            //Populate file size info
+            switch (AlienPAK.Format)
+            {
+                case PAK.PAKType.PAK2:
+                    fileSizeInfo.Text = AlienPAK.FileSizePAK2(FileName).ToString();
+                    break;
+                default:
+                    return;
+            }
+            fileSizeInfo.Text += " bytes";
+
+            //Enable buttons
+            exportFile.Enabled = true;
+            importFile.Enabled = true;
         }
     }
 }

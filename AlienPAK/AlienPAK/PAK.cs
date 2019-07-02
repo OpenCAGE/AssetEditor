@@ -140,15 +140,21 @@ namespace AlienPAK
             return FileList;
         }
 
+        /* Get a file's size from PAK2 archive */
+        public int FileSizePAK2(string FileName)
+        {
+            int FileIndex = GetFileIndex(FileName);
+            ArchiveFile.BaseStream.Position = FileOffsets[FileIndex] + FilePadding[FileIndex];
+            return FileOffsets.ElementAt(FileIndex + 1) - (int)ArchiveFile.BaseStream.Position;
+        }
+
         /* Export a file from the PAK2 archive */
         public bool ExportFilePAK2(string FileName, string ExportPath)
         {
             try
             {
                 //Update reader position and work out file size
-                int FileIndex = GetFileIndex(FileName);
-                ArchiveFile.BaseStream.Position = FileOffsets[FileIndex] + FilePadding[FileIndex];
-                int FileLength = FileOffsets.ElementAt(FileIndex + 1) - (int)ArchiveFile.BaseStream.Position;
+                int FileLength = FileSizePAK2(FileName);
 
                 //Grab the file's contents (this can probably be optimised!)
                 List<byte> FileExport = new List<byte>();
