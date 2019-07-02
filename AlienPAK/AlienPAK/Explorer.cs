@@ -55,6 +55,7 @@ namespace AlienPAK
                 if (FileNameParts.Length == 1) { FileNameParts = FileName.Split('\\'); }
                 AddFileToTree(FileNameParts, 0, FileTree.Nodes);
             }
+            UpdateSelectedFilePreview();
         }
 
         /* Add a file to the GUI tree structure */
@@ -117,8 +118,50 @@ namespace AlienPAK
                     return "GFX (Adobe Flash)";
                 case "CS2":
                     return "CS2 (Model)";
+                case "BIN":
+                    return "BIN (Binary File)";
+                case "BML":
+                    return "BML (Binary XML)";
             }
             return "";
+        }
+
+        /* Update file preview */
+        private void UpdateSelectedFilePreview()
+        {
+            //First, reset the GUI
+            filePreviewImage.Image = null;
+            fileNameInfo.Text = "";
+            fileSizeInfo.Text = "";
+            fileTypeInfo.Text = "";
+            exportFile.Enabled = false;
+            importFile.Enabled = false;
+
+            //Exit early if not a file
+            if (FileTree.SelectedNode == null || ((TreeItem)FileTree.SelectedNode.Tag).Item_Type != TreeItemType.EXPORTABLE_FILE)
+            {
+                return;
+            }
+            string FileName = ((TreeItem)FileTree.SelectedNode.Tag).String_Value;
+
+            //Populate filename/type info
+            fileNameInfo.Text = Path.GetFileNameWithoutExtension(FileName);
+            fileTypeInfo.Text = GetFileTypeDescription(Path.GetExtension(FileName));
+
+            //Populate file size info
+            switch (AlienPAK.Format)
+            {
+                case PAK.PAKType.PAK2:
+                    fileSizeInfo.Text = AlienPAK.FileSizePAK2(FileName).ToString();
+                    break;
+                default:
+                    return;
+            }
+            fileSizeInfo.Text += " bytes";
+
+            //Enable buttons
+            exportFile.Enabled = true;
+            importFile.Enabled = true;
         }
 
         /* Import a file to replace the selected PAK entry */
@@ -155,6 +198,7 @@ namespace AlienPAK
                     MessageBox.Show("An error occurred while importing the selected file.\nIf Alien: Isolation is open, it must be closed.", "An error occurred", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
             }
+            UpdateSelectedFilePreview();
         }
 
         /* Export the selected PAK entry as a standalone file */
@@ -256,39 +300,7 @@ namespace AlienPAK
         /* Item selected (show preview info) */
         private void FileTree_AfterSelect(object sender, TreeViewEventArgs e)
         {
-            //First, reset the GUI
-            filePreviewImage.Image = null;
-            fileNameInfo.Text = "";
-            fileSizeInfo.Text = "";
-            fileTypeInfo.Text = "";
-            exportFile.Enabled = false;
-            importFile.Enabled = false;
-
-            //Exit early if not a file
-            if (FileTree.SelectedNode == null || ((TreeItem)FileTree.SelectedNode.Tag).Item_Type != TreeItemType.EXPORTABLE_FILE)
-            {
-                return;
-            }
-            string FileName = ((TreeItem)FileTree.SelectedNode.Tag).String_Value;
-
-            //Populate filename/type info
-            fileNameInfo.Text = Path.GetFileName(FileName);
-            fileTypeInfo.Text = GetFileTypeDescription(Path.GetExtension(FileName));
-
-            //Populate file size info
-            switch (AlienPAK.Format)
-            {
-                case PAK.PAKType.PAK2:
-                    fileSizeInfo.Text = AlienPAK.FileSizePAK2(FileName).ToString();
-                    break;
-                default:
-                    return;
-            }
-            fileSizeInfo.Text += " bytes";
-
-            //Enable buttons
-            exportFile.Enabled = true;
-            importFile.Enabled = true;
+            UpdateSelectedFilePreview();
         }
     }
 }

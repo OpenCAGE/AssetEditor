@@ -192,6 +192,7 @@
             this.groupBox1.TabIndex = 8;
             this.groupBox1.TabStop = false;
             this.groupBox1.Text = "File Preview";
+            this.groupBox1.Visible = false;
             // 
             // groupBox2
             // 
@@ -212,36 +213,36 @@
             // 
             this.label1.AutoSize = true;
             this.label1.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label1.Location = new System.Drawing.Point(15, 26);
+            this.label1.Location = new System.Drawing.Point(11, 26);
             this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(67, 13);
+            this.label1.Size = new System.Drawing.Size(43, 13);
             this.label1.TabIndex = 10;
-            this.label1.Text = "File Name:";
+            this.label1.Text = "Name:";
             // 
             // label2
             // 
             this.label2.AutoSize = true;
             this.label2.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label2.Location = new System.Drawing.Point(23, 43);
+            this.label2.Location = new System.Drawing.Point(19, 43);
             this.label2.Name = "label2";
-            this.label2.Size = new System.Drawing.Size(59, 13);
+            this.label2.Size = new System.Drawing.Size(35, 13);
             this.label2.TabIndex = 11;
-            this.label2.Text = "File Size:";
+            this.label2.Text = "Size:";
             // 
             // label3
             // 
             this.label3.AutoSize = true;
             this.label3.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label3.Location = new System.Drawing.Point(19, 61);
+            this.label3.Location = new System.Drawing.Point(15, 60);
             this.label3.Name = "label3";
-            this.label3.Size = new System.Drawing.Size(63, 13);
+            this.label3.Size = new System.Drawing.Size(39, 13);
             this.label3.TabIndex = 12;
-            this.label3.Text = "File Type:";
+            this.label3.Text = "Type:";
             // 
             // fileTypeInfo
             // 
             this.fileTypeInfo.AutoSize = true;
-            this.fileTypeInfo.Location = new System.Drawing.Point(81, 61);
+            this.fileTypeInfo.Location = new System.Drawing.Point(55, 61);
             this.fileTypeInfo.Name = "fileTypeInfo";
             this.fileTypeInfo.Size = new System.Drawing.Size(0, 13);
             this.fileTypeInfo.TabIndex = 15;
@@ -249,7 +250,7 @@
             // fileSizeInfo
             // 
             this.fileSizeInfo.AutoSize = true;
-            this.fileSizeInfo.Location = new System.Drawing.Point(81, 43);
+            this.fileSizeInfo.Location = new System.Drawing.Point(55, 43);
             this.fileSizeInfo.Name = "fileSizeInfo";
             this.fileSizeInfo.Size = new System.Drawing.Size(0, 13);
             this.fileSizeInfo.TabIndex = 14;
@@ -257,7 +258,7 @@
             // fileNameInfo
             // 
             this.fileNameInfo.AutoSize = true;
-            this.fileNameInfo.Location = new System.Drawing.Point(81, 26);
+            this.fileNameInfo.Location = new System.Drawing.Point(55, 26);
             this.fileNameInfo.Name = "fileNameInfo";
             this.fileNameInfo.Size = new System.Drawing.Size(0, 13);
             this.fileNameInfo.TabIndex = 13;
@@ -268,28 +269,30 @@
             this.groupBox3.Controls.Add(this.exportFile);
             this.groupBox3.Location = new System.Drawing.Point(505, 402);
             this.groupBox3.Name = "groupBox3";
-            this.groupBox3.Size = new System.Drawing.Size(277, 84);
+            this.groupBox3.Size = new System.Drawing.Size(277, 57);
             this.groupBox3.TabIndex = 10;
             this.groupBox3.TabStop = false;
             this.groupBox3.Text = "File Utilities";
             // 
             // exportFile
             // 
+            this.exportFile.Enabled = false;
             this.exportFile.Location = new System.Drawing.Point(6, 21);
             this.exportFile.Name = "exportFile";
-            this.exportFile.Size = new System.Drawing.Size(265, 23);
+            this.exportFile.Size = new System.Drawing.Size(132, 24);
             this.exportFile.TabIndex = 0;
-            this.exportFile.Text = "Export From Archive";
+            this.exportFile.Text = "Export";
             this.exportFile.UseVisualStyleBackColor = true;
             this.exportFile.Click += new System.EventHandler(this.exportFile_Click);
             // 
             // importFile
             // 
-            this.importFile.Location = new System.Drawing.Point(6, 50);
+            this.importFile.Enabled = false;
+            this.importFile.Location = new System.Drawing.Point(139, 21);
             this.importFile.Name = "importFile";
-            this.importFile.Size = new System.Drawing.Size(265, 23);
+            this.importFile.Size = new System.Drawing.Size(132, 24);
             this.importFile.TabIndex = 1;
-            this.importFile.Text = "Import Replacement";
+            this.importFile.Text = "Import";
             this.importFile.UseVisualStyleBackColor = true;
             this.importFile.Click += new System.EventHandler(this.importFile_Click);
             // 
