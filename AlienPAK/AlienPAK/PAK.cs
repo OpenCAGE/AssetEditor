@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -20,7 +20,7 @@ namespace AlienPAK
         int DataSize = -1;
 
         //External info
-        public enum PAKType { PAK2, UNRECOGNISED };
+        public enum PAKType { PAK2, PAK_TEXTURES, PAK_MODELS, UNRECOGNISED };
         public PAKType Format { get; private set; }
 
         /* Open a PAK archive */

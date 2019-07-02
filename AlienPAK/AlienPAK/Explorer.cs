@@ -24,6 +24,9 @@ namespace AlienPAK
             {
                 OpenFileAndPopulateGUI(args[0]);
             }
+
+            //Link image list to GUI elements for icons
+            FileTree.ImageList = imageList1;
         }
 
         /* Open a PAK and populate the GUI */
@@ -75,22 +78,30 @@ namespace AlienPAK
             if (should)
             {
                 TreeNode FileNode = new TreeNode(FileNameParts[index]);
+                TreeItem ThisTag = new TreeItem();
                 if (FileNameParts.Length-1 == index)
                 {
-                    //Node is a file, tag it with the path
+                    //Node is a file
                     for (int i = 0; i < FileNameParts.Length; i++)
                     {
-                        FileNode.Tag += FileNameParts[i] + "/";
+                        ThisTag.String_Value += FileNameParts[i] + "/";
                     }
-                    FileNode.Tag = FileNode.Tag.ToString().Substring(0, FileNode.Tag.ToString().Length - 1);
+                    ThisTag.String_Value = ThisTag.String_Value.ToString().Substring(0, ThisTag.String_Value.ToString().Length - 1);
+
+                    ThisTag.Item_Type = TreeItemType.EXPORTABLE_FILE;
+                    FileNode.ImageIndex = 1;
+                    FileNode.SelectedImageIndex = 1;
                     FileNode.ContextMenuStrip = fileContextMenu;
                 }
                 else
                 {
                     //Node is a directory
-                    FileNode.Tag = "DIRECTORY";
+                    ThisTag.Item_Type = TreeItemType.DIRECTORY;
+                    FileNode.ImageIndex = 0;
                     AddFileToTree(FileNameParts, index + 1, FileNode.Nodes);
                 }
+
+                FileNode.Tag = ThisTag;
                 LoopedNodeCollection.Add(FileNode);
             }
         }
@@ -98,7 +109,7 @@ namespace AlienPAK
         /* Import a file to replace the selected PAK entry */
         private void ImportSelectedFile()
         {
-            if (FileTree.SelectedNode == null || FileTree.SelectedNode.Tag.ToString() == "DIRECTORY")
+            if (FileTree.SelectedNode == null || ((TreeItem)FileTree.SelectedNode.Tag).Item_Type != TreeItemType.EXPORTABLE_FILE)
             {
                 MessageBox.Show("Please select a file from the list.", "No file selected.", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
@@ -113,7 +124,7 @@ namespace AlienPAK
                 switch (AlienPAK.Format)
                 {
                     case PAK.PAKType.PAK2:
-                        ImportSuccess = AlienPAK.ImportFilePAK2(FileTree.SelectedNode.Tag.ToString(), filePicker.FileName);
+                        ImportSuccess = AlienPAK.ImportFilePAK2(((TreeItem)FileTree.SelectedNode.Tag).String_Value, filePicker.FileName);
                         break;
                     default:
                         MessageBox.Show("This PAK does not support file importing.", "Unsupported", MessageBoxButtons.OK, MessageBoxIcon.Error);
@@ -134,7 +145,7 @@ namespace AlienPAK
         /* Export the selected PAK entry as a standalone file */
         private void ExportSelectedFile()
         {
-            if (FileTree.SelectedNode == null || FileTree.SelectedNode.Tag.ToString() == "DIRECTORY")
+            if (FileTree.SelectedNode == null || ((TreeItem)FileTree.SelectedNode.Tag).Item_Type != TreeItemType.EXPORTABLE_FILE)
             {
                 MessageBox.Show("Please select a file from the list.", "No file selected.", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
@@ -150,7 +161,7 @@ namespace AlienPAK
                 switch (AlienPAK.Format)
                 {
                     case PAK.PAKType.PAK2:
-                        ExportSuccess = AlienPAK.ExportFilePAK2(FileTree.SelectedNode.Tag.ToString(), filePicker.FileName);
+                        ExportSuccess = AlienPAK.ExportFilePAK2(((TreeItem)FileTree.SelectedNode.Tag).String_Value, filePicker.FileName);
                         break;
                     default:
                         MessageBox.Show("This PAK does not support file exporting.", "Unsupported", MessageBoxButtons.OK, MessageBoxIcon.Error);
