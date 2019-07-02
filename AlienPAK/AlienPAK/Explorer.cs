@@ -126,7 +126,7 @@ namespace AlienPAK
                 }
                 else
                 {
-                    MessageBox.Show("An error occurred while importing the selected file.", "An error occurred", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    MessageBox.Show("An error occurred while importing the selected file.\nIf Alien: Isolation is open, it must be closed.", "An error occurred", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
             }
         }

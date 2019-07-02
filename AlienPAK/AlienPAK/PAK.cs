@@ -28,7 +28,7 @@ namespace AlienPAK
         {
             //Open new PAK
             if (ArchiveFile != null) { ArchiveFile.Close(); }
-            ArchiveFile = new BinaryReader(File.Open(FilePath, FileMode.Open));
+            ArchiveFile = new BinaryReader(File.OpenRead(FilePath));
 
             //Update our info
             ArchivePath = FilePath;
@@ -270,10 +270,19 @@ namespace AlienPAK
                 ArchiveFile.Close();
                 File.Delete(ArchivePath);
                 
-                //Write out the new archive
-                BinaryWriter ArchiveFileWrite = new BinaryWriter(File.OpenWrite(ArchivePath));
-                ArchiveFileWrite.Write(NewArchive);
-                ArchiveFileWrite.Close();
+                try
+                {
+                    //Write out the new archive
+                    BinaryWriter ArchiveFileWrite = new BinaryWriter(File.OpenWrite(ArchivePath));
+                    ArchiveFileWrite.Write(NewArchive);
+                    ArchiveFileWrite.Close();
+                }
+                catch
+                {
+                    //File is probably in-use by the game, re-open for reading and exit as fail
+                    Open(ArchivePath);
+                    return false;
+                }
 
                 //Reload the archive for us
                 Open(ArchivePath);
