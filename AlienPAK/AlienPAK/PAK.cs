@@ -394,17 +394,21 @@ namespace AlienPAK
 
         /* --- TEXTURE PAK --- */
         int HeaderListBegin = -1;
+        int NumberOfEntriesPAK = -1;
+        int NumberOfEntriesBIN = -1;
+        List<EntryTextureBIN> BinTextureEntries = new List<EntryTextureBIN>();
+        List<EntryTexturePAK> PakTextureEntries = new List<EntryTexturePAK>();
 
         /* Parse the file listing for a texture PAK */
         private List<string> ParseTexturePAK()
         {
             //Read the header info from the BIN
             ArchiveFileBin.BaseStream.Position += 4; //Skip unused value (version?)
-            NumberOfEntries = ArchiveFileBin.ReadInt32();
+            NumberOfEntriesBIN = ArchiveFileBin.ReadInt32();
             HeaderListBegin = ArchiveFileBin.ReadInt32();
-            
+
             //Read all file names from BIN
-            for (int i = 0; i < NumberOfEntries; i++)
+            for (int i = 0; i < NumberOfEntriesBIN; i++)
             {
                 string ThisFileName = "";
                 for (byte b; (b = ArchiveFileBin.ReadByte()) != 0x00;)
@@ -412,6 +416,44 @@ namespace AlienPAK
                     ThisFileName += (char)b;
                 }
                 FileList.Add(ThisFileName);
+            }
+
+            //Read the texture headers from the BIN
+            for (int i = 0; i < NumberOfEntriesBIN; i++)
+            {
+                EntryTextureBIN BinEntry = new EntryTextureBIN();
+                ArchiveFileBin.BaseStream.Position += 4; //Skip magic
+                BinEntry.TextureFormat = (TextureFormats)ArchiveFileBin.ReadInt32();
+                ArchiveFileBin.BaseStream.Position += 14; //Skip unknowns
+                BinEntry.Width = ArchiveFileBin.ReadInt16();
+                BinEntry.Height = ArchiveFileBin.ReadInt16();
+                ArchiveFileBin.BaseStream.Position += 22; //Skip unknowns
+                BinTextureEntries.Add(BinEntry);
+            }
+
+            //Read the header info from the PAK
+            BigEndianUtils BigEndian = new BigEndianUtils();
+            ArchiveFile.BaseStream.Position += 12; //Skip unknowns
+            NumberOfEntriesPAK = BigEndian.ReadInt32(ArchiveFile);
+            ArchiveFile.BaseStream.Position += 16; //Skip unknowns
+
+            //Read the texture headers from the PAK
+            for (int i = 0; i < NumberOfEntriesPAK; i++)
+            {
+                EntryTexturePAK PakEntry = new EntryTexturePAK();
+                ArchiveFile.BaseStream.Position += 8; //Skip unknowns
+                PakEntry.Size = BigEndian.ReadInt32(ArchiveFile);
+                if (PakEntry.Size != BigEndian.ReadInt32(ArchiveFile)) { continue; }
+                ArchiveFile.BaseStream.Position += 18; //Skip unknowns
+                PakEntry.BinIndex = BigEndian.ReadInt16(ArchiveFile);
+                ArchiveFile.BaseStream.Position += 12; //Skip unknowns
+                PakTextureEntries.Add(PakEntry);
+            }
+
+            //Read the textures from the PAK
+            for (int i = 0; i < NumberOfEntriesPAK; i++)
+            {
+                PakTextureEntries[i].Content = ArchiveFile.ReadBytes(PakTextureEntries[i].Size);
             }
 
             return FileList;

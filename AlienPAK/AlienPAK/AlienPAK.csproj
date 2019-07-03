@@ -49,12 +49,17 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="BinaryUtilities.cs" />
+    <Compile Include="EntryModelBIN.cs" />
+    <Compile Include="EntryTextureBIN.cs" />
     <Compile Include="Explorer.cs">
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="Explorer.Designer.cs">
       <DependentUpon>Explorer.cs</DependentUpon>
     </Compile>
+    <Compile Include="EntryModelPAK.cs" />
+    <Compile Include="EntryTexturePAK.cs" />
     <Compile Include="PAK.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -96,5 +101,6 @@
   <ItemGroup>
     <Content Include="icon.ico" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
