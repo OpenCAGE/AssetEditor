@@ -21,14 +21,15 @@ namespace AlienPAK
         /* Open a PAK archive */
         public void Open(string FilePath)
         {
+            //Open new PAK
+            if (ArchiveFile != null) { ArchiveFile.Close(); }
+            if (ArchiveFileBin != null) { ArchiveFileBin.Close(); }
+            ArchiveFile = new BinaryReader(File.OpenRead(FilePath));
+
             //Update our info
             ArchivePath = FilePath;
             switch (Path.GetFileName(FilePath))
             {
-                case "UI.PAK":
-                case "ANIMATION.PAK":
-                    Format = PAKType.PAK2;
-                    break;
                 case "LEVEL_TEXTURES.ALL.PAK":
                     Format = PAKType.PAK_TEXTURES;
                     break;
@@ -36,14 +37,24 @@ namespace AlienPAK
                     Format = PAKType.PAK_MODELS;
                     break;
                 default:
+                    try
+                    {
+                        string PAKMagic = "";
+                        for (int i = 0; i < 4; i++)
+                        {
+                            PAKMagic += ArchiveFile.ReadChar();
+                        }
+                        ArchiveFile.BaseStream.Position = 0;
+                        if (PAKMagic == "PAK2")
+                        {
+                            Format = PAKType.PAK2;
+                            break;
+                        }
+                    }
+                    catch { }
                     Format = PAKType.UNRECOGNISED;
                     break;
             }
-
-            //Open new PAK
-            if (ArchiveFile != null) { ArchiveFile.Close(); }
-            if (ArchiveFileBin != null) { ArchiveFileBin.Close(); }
-            ArchiveFile = new BinaryReader(File.OpenRead(FilePath));
 
             //Certain formats have associated BIN files
             switch (Format)
