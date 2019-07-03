@@ -1,9 +1,8 @@
 # Alien: Isolation PAK Tool
 A tool to preview, export, and re-import files within Alien: Isolation's PAK archives.
 
-The latest stable version can be found [on the releases tab](https://github.com/MattFiler/AlienPAK/releases).
-
-An important note: make sure the tool is closed when you launch the game. If the tool has a PAK open the game will not be able to read it and this will lead to a crash.
+The latest stable version can be downloaded [by clicking here](https://raw.githubusercontent.com/MattFiler/AlienPAK/master/AlienPAK.exe).
+On launch, the toolkit will automatically alert you when a new version is available.
 
 [JPEXS Flash Decompiler](https://github.com/jindrapetrik/jpexs-decompiler) is recommended for editing exported UI .GFX files!
 
@@ -13,20 +12,28 @@ An important note: make sure the tool is closed when you launch the game. If the
 
 ---
 
-Currently supported is:
+**Currently supported:**
 - PAK2 (ui/animations)
   - Open archive
   - Import files
   - Export files
   
+- PAK (textures)
+  - Open archive
+  
 ---
 
-Eventually, the tool will support:
+**Currently a work in progress:**
 - PAK2 (ui/animations)
   - Preview files
   
-- PAK (models/textures)
+- PAK (models)
   - Open archive
+  - Export files
+  - Preview files
+  - Import files(?)
+
+- PAK (textures)
   - Export files
   - Preview files
   - Import files(?)
