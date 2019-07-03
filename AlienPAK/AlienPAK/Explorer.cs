@@ -27,6 +27,10 @@ namespace AlienPAK
 
             //Link image list to GUI elements for icons
             FileTree.ImageList = imageList1;
+
+            //Run an update check
+            UpdateCheck VersionControl = new UpdateCheck();
+            VersionControl.Show();
         }
 
         /* Open a PAK and populate the GUI */
