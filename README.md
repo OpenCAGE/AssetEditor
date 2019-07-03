@@ -2,6 +2,7 @@
 A tool to preview, export, and re-import files within Alien: Isolation's PAK archives.
 
 The latest stable version can be downloaded [by clicking here](https://raw.githubusercontent.com/MattFiler/AlienPAK/master/AlienPAK.exe).
+
 On launch, the toolkit will automatically alert you when a new version is available.
 
 [JPEXS Flash Decompiler](https://github.com/jindrapetrik/jpexs-decompiler) is recommended for editing exported UI .GFX files!
