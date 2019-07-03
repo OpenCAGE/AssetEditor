@@ -38,7 +38,7 @@ namespace AlienPAK
                     DialogResult TakeToUpdate = MessageBox.Show("An update is available!\nWould you like to download?", "Alien: Isolation PAK Tool Updater", MessageBoxButtons.YesNo, MessageBoxIcon.Information);
                     if (TakeToUpdate == DialogResult.Yes)
                     {
-                        Process.Start("https://raw.githubusercontent.com/MattFiler/AlienPAK/master/AlienPAK.exe");
+                        Process.Start("https://github.com/MattFiler/AlienPAK/raw/master/AlienPAK.exe");
                         Application.Exit();
                     }
                 }
