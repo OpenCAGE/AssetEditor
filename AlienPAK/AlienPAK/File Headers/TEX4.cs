@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace AlienPAK
 {
-    public enum TextureFormats : int
+    public enum TextureFormat : int
     {
         DXGI_FORMAT_B8G8R8A8_UNORM = 0x2,
         DXGI_FORMAT_B8G8R8_UNORM = 0x5,
@@ -21,7 +21,7 @@ namespace AlienPAK
     {
         public string FileName = "";
 
-        public TextureFormats TextureFormat;
+        public TextureFormat Format;
 
         public TEX4_Part Texture_V1 = new TEX4_Part();
         public TEX4_Part Texture_V2 = new TEX4_Part(); //V2 is the largest, unless we don't have a V2 in which case V1 is.

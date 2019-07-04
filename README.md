@@ -6,7 +6,7 @@ A tool to preview, export, and re-import files within Alien: Isolation's PAK arc
 
 The latest stable version can be downloaded [by clicking here](https://github.com/MattFiler/AlienPAK/raw/master/AlienPAK.exe).
 
-On launch, the toolkit will automatically alert you when a new version is available.
+On launch, the toolkit will automatically alert you if a new version is available.
 
 ### This project is a work in progress.
 

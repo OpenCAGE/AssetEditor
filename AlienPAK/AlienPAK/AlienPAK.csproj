@@ -50,10 +50,11 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="BinaryUtilities.cs" />
+    <Compile Include="File Headers\DDS.cs" />
     <Compile Include="DDSReader.cs" />
     <Compile Include="DDSWriter.cs" />
     <Compile Include="EntryModelBIN.cs" />
-    <Compile Include="TEX4.cs" />
+    <Compile Include="File Headers\TEX4.cs" />
     <Compile Include="Explorer.cs">
       <SubType>Form</SubType>
     </Compile>

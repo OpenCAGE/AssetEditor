@@ -449,7 +449,7 @@ namespace AlienPAK
             {
                 TEX4 TextureEntry = new TEX4();
                 ArchiveFileBin.BaseStream.Position += 4; //Skip magic
-                TextureEntry.TextureFormat = (TextureFormats)ArchiveFileBin.ReadInt32();
+                TextureEntry.Format = (TextureFormat)ArchiveFileBin.ReadInt32();
                 ArchiveFileBin.BaseStream.Position += 8; //Skip unknowns
                 TextureEntry.Texture_V1.Width = ArchiveFileBin.ReadInt16();
                 TextureEntry.Texture_V1.Height = ArchiveFileBin.ReadInt16();
@@ -549,21 +549,21 @@ namespace AlienPAK
                 //Generate a DDS header based on the tex4's information
                 DDSWriter TextureOutput;
                 bool FailsafeSave = false;
-                switch (TextureEntries[FileIndex].TextureFormat)
+                switch (TextureEntries[FileIndex].Format)
                 {
-                    case TextureFormats.DXGI_FORMAT_BC5_UNORM:
-                        TextureOutput = new DDSWriter(TexturePartContent, TexturePart.Width, TexturePart.Height, 32, 0, DDSWriter.DDS_Format.ATI2N);
+                    case TextureFormat.DXGI_FORMAT_BC5_UNORM:
+                        TextureOutput = new DDSWriter(TexturePartContent, TexturePart.Width, TexturePart.Height, 32, 0, DDSWriter.TextureType.ATI2N);
                         break;
-                    case TextureFormats.DXGI_FORMAT_BC1_UNORM:
-                        TextureOutput = new DDSWriter(TexturePartContent, TexturePart.Width, TexturePart.Height, 32, 0, DDSWriter.DDS_Format.Dxt1);
+                    case TextureFormat.DXGI_FORMAT_BC1_UNORM:
+                        TextureOutput = new DDSWriter(TexturePartContent, TexturePart.Width, TexturePart.Height, 32, 0, DDSWriter.TextureType.Dxt1);
                         break;
-                    case TextureFormats.DXGI_FORMAT_BC3_UNORM:
-                        TextureOutput = new DDSWriter(TexturePartContent, TexturePart.Width, TexturePart.Height, 32, 0, DDSWriter.DDS_Format.Dxt5);
+                    case TextureFormat.DXGI_FORMAT_BC3_UNORM:
+                        TextureOutput = new DDSWriter(TexturePartContent, TexturePart.Width, TexturePart.Height, 32, 0, DDSWriter.TextureType.Dxt5);
                         break;
-                    case TextureFormats.DXGI_FORMAT_B8G8R8A8_UNORM:
-                        TextureOutput = new DDSWriter(TexturePartContent, TexturePart.Width, TexturePart.Height, 32, 0, DDSWriter.DDS_Format.UNCOMPRESSED_GENERAL);
+                    case TextureFormat.DXGI_FORMAT_B8G8R8A8_UNORM:
+                        TextureOutput = new DDSWriter(TexturePartContent, TexturePart.Width, TexturePart.Height, 32, 0, DDSWriter.TextureType.UNCOMPRESSED_GENERAL);
                         break;
-                    case TextureFormats.DXGI_FORMAT_BC7_UNORM:
+                    case TextureFormat.DXGI_FORMAT_BC7_UNORM:
                     default:
                         TextureOutput = new DDSWriter(TexturePartContent, TexturePart.Width, TexturePart.Height);
                         FailsafeSave = true;

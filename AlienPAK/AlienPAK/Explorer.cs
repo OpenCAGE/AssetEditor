@@ -36,9 +36,6 @@ namespace AlienPAK
         /* Open a PAK and populate the GUI */
         private void OpenFileAndPopulateGUI(string filename)
         {
-            //Update title
-            this.Text = "Alien: Isolation PAK Tool - " + Path.GetFileName(filename);
-
             //Open PAK
             AlienPAK.Open(filename);
 
@@ -60,6 +57,9 @@ namespace AlienPAK
                 AddFileToTree(FileNameParts, 0, FileTree.Nodes);
             }
             UpdateSelectedFilePreview();
+            
+            //Update title
+            this.Text = "Alien: Isolation PAK Tool - " + Path.GetFileName(filename);
         }
 
         /* Add a file to the GUI tree structure */
@@ -152,7 +152,7 @@ namespace AlienPAK
             string FileName = ((TreeItem)FileTree.SelectedNode.Tag).String_Value;
 
             //Populate filename/type info
-            fileNameInfo.Text = Path.GetFileNameWithoutExtension(FileName);
+            fileNameInfo.Text = FileName;
             fileTypeInfo.Text = GetFileTypeDescription(Path.GetExtension(FileName));
 
             //Populate file size info
