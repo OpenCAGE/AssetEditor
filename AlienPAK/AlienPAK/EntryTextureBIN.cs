@@ -19,7 +19,17 @@ namespace AlienPAK
     class EntryTextureBIN
     {
         public TextureFormats TextureFormat;
-        public int Width = -1;
-        public int Height = -1;
+        public Int16 Min_Width = -1;
+        public Int16 Min_Height = -1;
+        public Int16 Max_Width = -1;
+        public Int16 Max_Height = -1;
+
+        public Int16 Bool1 = -1;
+        public Int16 Bool2 = -1;
+
+        public string FileName = "";
+
+        public bool Saved_Min = false;
+        public bool Saved_Max = false;
     }
 }

@@ -50,6 +50,8 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="BinaryUtilities.cs" />
+    <Compile Include="DDSReader.cs" />
+    <Compile Include="DDSWriter.cs" />
     <Compile Include="EntryModelBIN.cs" />
     <Compile Include="EntryTextureBIN.cs" />
     <Compile Include="Explorer.cs">

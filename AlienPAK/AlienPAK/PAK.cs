@@ -7,6 +7,16 @@ using System.Threading.Tasks;
 
 namespace AlienPAK
 {
+    /*
+     *
+     * Our PAK handler.
+     * Created by Matt Filer: http://www.mattfiler.co.uk
+     * 
+     * Intended to support PAK2/TexturePAK/ModelPAK.
+     * Potentially will also add the ability to make your own PAK2 archives.
+     * Currently a WORK IN PROGRESS.
+     * 
+    */
     class PAK
     {
         /* --- COMMON PAK --- */
@@ -417,17 +427,25 @@ namespace AlienPAK
                 }
                 FileList.Add(ThisFileName);
             }
-
+            
             //Read the texture headers from the BIN
+            ArchiveFileBin.BaseStream.Position = HeaderListBegin + 12;
             for (int i = 0; i < NumberOfEntriesBIN; i++)
             {
                 EntryTextureBIN BinEntry = new EntryTextureBIN();
                 ArchiveFileBin.BaseStream.Position += 4; //Skip magic
                 BinEntry.TextureFormat = (TextureFormats)ArchiveFileBin.ReadInt32();
-                ArchiveFileBin.BaseStream.Position += 14; //Skip unknowns
-                BinEntry.Width = ArchiveFileBin.ReadInt16();
-                BinEntry.Height = ArchiveFileBin.ReadInt16();
-                ArchiveFileBin.BaseStream.Position += 22; //Skip unknowns
+                ArchiveFileBin.BaseStream.Position += 8; //Skip unknowns
+                BinEntry.Min_Width = ArchiveFileBin.ReadInt16();
+                BinEntry.Min_Height = ArchiveFileBin.ReadInt16();
+                //ArchiveFileBin.BaseStream.Position += 2; //Skip unknown (Min Enabled = 1/0 ?)
+                BinEntry.Bool1 = ArchiveFileBin.ReadInt16();
+                BinEntry.Max_Width = ArchiveFileBin.ReadInt16();
+                BinEntry.Max_Height = ArchiveFileBin.ReadInt16();
+                //ArchiveFileBin.BaseStream.Position += 2; //Skip unknown (Max Enabled = 1/0 ?)
+                BinEntry.Bool2 = ArchiveFileBin.ReadInt16();
+                ArchiveFileBin.BaseStream.Position += 20; //Skip unknowns
+                BinEntry.FileName = FileList[i];
                 BinTextureEntries.Add(BinEntry);
             }
 
@@ -437,6 +455,7 @@ namespace AlienPAK
             NumberOfEntriesPAK = BigEndian.ReadInt32(ArchiveFile);
             ArchiveFile.BaseStream.Position += 16; //Skip unknowns
 
+            List<string> dump = new List<string>();
             //Read the texture headers from the PAK
             for (int i = 0; i < NumberOfEntriesPAK; i++)
             {
@@ -447,13 +466,30 @@ namespace AlienPAK
                 ArchiveFile.BaseStream.Position += 18; //Skip unknowns
                 PakEntry.BinIndex = BigEndian.ReadInt16(ArchiveFile);
                 ArchiveFile.BaseStream.Position += 12; //Skip unknowns
+                dump.Add("INDEX: " + PakEntry.BinIndex.ToString() + ", SIZE: " + PakEntry.Size.ToString());
                 PakTextureEntries.Add(PakEntry);
             }
+            File.WriteAllLines("dump.txt", dump);
 
             //Read the textures from the PAK
             for (int i = 0; i < NumberOfEntriesPAK; i++)
             {
-                PakTextureEntries[i].Content = ArchiveFile.ReadBytes(PakTextureEntries[i].Size);
+                if (!BinTextureEntries[PakTextureEntries[i].BinIndex].Saved_Min)
+                {
+                    PakTextureEntries[i].Content = ArchiveFile.ReadBytes(PakTextureEntries[i].Size);
+                    PakTextureEntries[i].Type = EntryTexturePAK.ThisEntryType.ENTRY_MIN;
+                    PakTextureEntries[i].Dimensions[0] = BinTextureEntries[PakTextureEntries[i].BinIndex].Min_Width;
+                    PakTextureEntries[i].Dimensions[1] = BinTextureEntries[PakTextureEntries[i].BinIndex].Min_Height;
+                    BinTextureEntries[PakTextureEntries[i].BinIndex].Saved_Min = true;
+                }
+                else
+                {
+                    PakTextureEntries[i].Content = ArchiveFile.ReadBytes(PakTextureEntries[i].Size);
+                    PakTextureEntries[i].Type = EntryTexturePAK.ThisEntryType.ENTRY_MAX;
+                    PakTextureEntries[i].Dimensions[0] = BinTextureEntries[PakTextureEntries[i].BinIndex].Max_Width;
+                    PakTextureEntries[i].Dimensions[1] = BinTextureEntries[PakTextureEntries[i].BinIndex].Max_Height;
+                    BinTextureEntries[PakTextureEntries[i].BinIndex].Saved_Max = true;
+                }
             }
 
             return FileList;
@@ -462,6 +498,8 @@ namespace AlienPAK
         /* Get a file's size from the texture PAK */
         private int FileSizeTexturePAK(string FileName)
         {
+
+
             //WIP
             return -1;
         }

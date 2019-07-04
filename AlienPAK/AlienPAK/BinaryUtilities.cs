@@ -7,9 +7,16 @@ using System.Threading.Tasks;
 
 namespace AlienPAK
 {
+    /*
+     *
+     * Tools for reading/flipping big endians.
+     * Created by Matt Filer: http://www.mattfiler.co.uk
+     * 
+     * This will probably be expanded over time as required.
+     *
+    */
     class BigEndianUtils
     {
-        /* Tools for reading big endians */
         public int ReadInt32(BinaryReader Reader)
         {
             byte[] data = Reader.ReadBytes(4);
@@ -33,6 +40,12 @@ namespace AlienPAK
             var data = Reader.ReadBytes(4);
             Array.Reverse(data);
             return BitConverter.ToUInt32(data, 0);
+        }
+        
+        public byte[] FlipEndian(byte[] ThisEndian)
+        {
+            Array.Reverse(ThisEndian);
+            return ThisEndian;
         }
     }
 }
