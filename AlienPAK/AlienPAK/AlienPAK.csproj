@@ -53,7 +53,7 @@
     <Compile Include="DDSReader.cs" />
     <Compile Include="DDSWriter.cs" />
     <Compile Include="EntryModelBIN.cs" />
-    <Compile Include="EntryTextureBIN.cs" />
+    <Compile Include="TEX4.cs" />
     <Compile Include="Explorer.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -61,7 +61,6 @@
       <DependentUpon>Explorer.cs</DependentUpon>
     </Compile>
     <Compile Include="EntryModelPAK.cs" />
-    <Compile Include="EntryTexturePAK.cs" />
     <Compile Include="PAK.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
