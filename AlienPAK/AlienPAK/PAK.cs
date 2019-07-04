@@ -38,11 +38,14 @@ namespace AlienPAK
 
             //Update our info
             ArchivePath = FilePath;
-            switch (Path.GetFileName(FilePath))
+            string FileName = Path.GetFileName(FilePath);
+            switch (FileName)
             {
+                case "GLOBAL_TEXTURES.ALL.PAK":
                 case "LEVEL_TEXTURES.ALL.PAK":
                     Format = PAKType.PAK_TEXTURES;
                     break;
+                case "GLOBAL_MODELS.PAK":
                 case "LEVEL_MODELS.PAK":
                     Format = PAKType.PAK_MODELS;
                     break;
@@ -70,10 +73,19 @@ namespace AlienPAK
             switch (Format)
             {
                 case PAKType.PAK_TEXTURES:
-                    ArchiveFileBin = new BinaryReader(File.OpenRead(FilePath.Substring(0, FilePath.Length - ("LEVEL_TEXTURES.ALL.PAK").Length) + "LEVEL_TEXTURE_HEADERS.ALL.BIN"));
+                    if (FileName.Substring(0, 5).ToUpper() == "LEVEL")
+                    {
+                        ArchiveFileBin = new BinaryReader(File.OpenRead(FilePath.Substring(0, FilePath.Length - FileName.Length) + "LEVEL_TEXTURE_HEADERS.ALL.BIN"));
+                    }
+                    else
+                    {
+                        ArchiveFileBin = new BinaryReader(File.OpenRead(FilePath.Substring(0, FilePath.Length - FileName.Length) + "GLOBAL_TEXTURES_HEADERS.ALL.BIN")); //What horrible formatting.
+                    }
                     break;
                 case PAKType.PAK_MODELS:
-                    ArchiveFileBin = new BinaryReader(File.OpenRead(FilePath.Substring(0, FilePath.Length - ("LEVEL_MODELS.PAK").Length) + "MODELS_LEVEL.BIN"));
+                    ArchiveFileBin = new BinaryReader(File.OpenRead(
+                        FilePath.Substring(0, FilePath.Length - FileName.Length) + "MODELS_" + FileName.Substring(0, FileName.Length - 11) + ".BIN"
+                    ));
                     break;
             }
         }
