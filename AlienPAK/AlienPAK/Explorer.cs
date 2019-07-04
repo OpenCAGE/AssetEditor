@@ -36,6 +36,9 @@ namespace AlienPAK
         /* Open a PAK and populate the GUI */
         private void OpenFileAndPopulateGUI(string filename)
         {
+            //Update title
+            this.Text = "Alien: Isolation PAK Tool - " + Path.GetFileName(filename);
+
             //Open PAK
             AlienPAK.Open(filename);
 
@@ -112,10 +115,12 @@ namespace AlienPAK
         /* Get type description based on extension */
         private string GetFileTypeDescription(string FileExtension)
         {
-            switch (FileExtension.Substring(1))
+            switch (FileExtension.Substring(1).ToUpper())
             {
                 case "DDS":
                     return "DDS (Image)";
+                case "TGA":
+                    return "TGA (Image)";
                 case "GFX":
                     return "GFX (Adobe Flash)";
                 case "CS2":
@@ -180,7 +185,7 @@ namespace AlienPAK
                 }
                 else
                 {
-                    MessageBox.Show("An error occurred while importing the selected file.\nIf Alien: Isolation is open, it must be closed.", "An error occurred", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    MessageBox.Show("An error occurred while importing the selected file.\nIf Alien: Isolation is open, it must be closed.\n\nIf you are trying to import a texture or model, this feature is currently unavailable!", "An error occurred", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
             }
             UpdateSelectedFilePreview();

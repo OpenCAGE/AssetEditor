@@ -7,6 +7,16 @@ using System.Threading.Tasks;
 
 namespace AlienPAK
 {
+    /*
+     *
+     * Our PAK handler.
+     * Created by Matt Filer: http://www.mattfiler.co.uk
+     * 
+     * Intended to support PAK2/TexturePAK/ModelPAK.
+     * Potentially will also add the ability to make your own PAK2 archives.
+     * Currently a WORK IN PROGRESS.
+     * 
+    */
     class PAK
     {
         /* --- COMMON PAK --- */
@@ -21,14 +31,15 @@ namespace AlienPAK
         /* Open a PAK archive */
         public void Open(string FilePath)
         {
+            //Open new PAK
+            if (ArchiveFile != null) { ArchiveFile.Close(); }
+            if (ArchiveFileBin != null) { ArchiveFileBin.Close(); }
+            ArchiveFile = new BinaryReader(File.OpenRead(FilePath));
+
             //Update our info
             ArchivePath = FilePath;
             switch (Path.GetFileName(FilePath))
             {
-                case "UI.PAK":
-                case "ANIMATION.PAK":
-                    Format = PAKType.PAK2;
-                    break;
                 case "LEVEL_TEXTURES.ALL.PAK":
                     Format = PAKType.PAK_TEXTURES;
                     break;
@@ -36,14 +47,24 @@ namespace AlienPAK
                     Format = PAKType.PAK_MODELS;
                     break;
                 default:
+                    try
+                    {
+                        string PAKMagic = "";
+                        for (int i = 0; i < 4; i++)
+                        {
+                            PAKMagic += ArchiveFile.ReadChar();
+                        }
+                        ArchiveFile.BaseStream.Position = 0;
+                        if (PAKMagic == "PAK2")
+                        {
+                            Format = PAKType.PAK2;
+                            break;
+                        }
+                    }
+                    catch { }
                     Format = PAKType.UNRECOGNISED;
                     break;
             }
-
-            //Open new PAK
-            if (ArchiveFile != null) { ArchiveFile.Close(); }
-            if (ArchiveFileBin != null) { ArchiveFileBin.Close(); }
-            ArchiveFile = new BinaryReader(File.OpenRead(FilePath));
 
             //Certain formats have associated BIN files
             switch (Format)
@@ -383,24 +404,88 @@ namespace AlienPAK
 
         /* --- TEXTURE PAK --- */
         int HeaderListBegin = -1;
+        int NumberOfEntriesPAK = -1;
+        int NumberOfEntriesBIN = -1;
+        List<TEX4> TextureEntries = new List<TEX4>();
 
         /* Parse the file listing for a texture PAK */
         private List<string> ParseTexturePAK()
         {
             //Read the header info from the BIN
             ArchiveFileBin.BaseStream.Position += 4; //Skip unused value (version?)
-            NumberOfEntries = ArchiveFileBin.ReadInt32();
+            NumberOfEntriesBIN = ArchiveFileBin.ReadInt32();
             HeaderListBegin = ArchiveFileBin.ReadInt32();
-            
+
             //Read all file names from BIN
-            for (int i = 0; i < NumberOfEntries; i++)
+            for (int i = 0; i < NumberOfEntriesBIN; i++)
             {
                 string ThisFileName = "";
                 for (byte b; (b = ArchiveFileBin.ReadByte()) != 0x00;)
                 {
                     ThisFileName += (char)b;
                 }
+                if (Path.GetExtension(ThisFileName).ToUpper() != ".DDS")
+                {
+                    ThisFileName += ".dds";
+                }
                 FileList.Add(ThisFileName);
+            }
+            
+            //Read the texture headers from the BIN
+            ArchiveFileBin.BaseStream.Position = HeaderListBegin + 12;
+            for (int i = 0; i < NumberOfEntriesBIN; i++)
+            {
+                TEX4 TextureEntry = new TEX4();
+                ArchiveFileBin.BaseStream.Position += 4; //Skip magic
+                TextureEntry.TextureFormat = (TextureFormats)ArchiveFileBin.ReadInt32();
+                ArchiveFileBin.BaseStream.Position += 8; //Skip unknowns
+                TextureEntry.Texture_V1.Width = ArchiveFileBin.ReadInt16();
+                TextureEntry.Texture_V1.Height = ArchiveFileBin.ReadInt16();
+                ArchiveFileBin.BaseStream.Position += 2; //Skip unknown
+                TextureEntry.Texture_V2.Width = ArchiveFileBin.ReadInt16();
+                TextureEntry.Texture_V2.Height = ArchiveFileBin.ReadInt16();
+                ArchiveFileBin.BaseStream.Position += 22; //Skip unknowns
+                TextureEntry.FileName = FileList[i];
+                TextureEntries.Add(TextureEntry);
+            }
+
+            //Read the header info from the PAK
+            BigEndianUtils BigEndian = new BigEndianUtils();
+            ArchiveFile.BaseStream.Position += 12; //Skip unknowns
+            NumberOfEntriesPAK = BigEndian.ReadInt32(ArchiveFile);
+            ArchiveFile.BaseStream.Position += 16; //Skip unknowns
+
+            //Read the texture headers from the PAK
+            int OffsetTracker = (NumberOfEntriesPAK * 48) + 32;
+            for (int i = 0; i < NumberOfEntriesPAK; i++)
+            {
+                //Pull the size info
+                int EntrySize = 0;
+                ArchiveFile.BaseStream.Position += 8; //Skip unknowns
+                EntrySize = BigEndian.ReadInt32(ArchiveFile);
+                if (EntrySize != BigEndian.ReadInt32(ArchiveFile)) { continue; }
+                ArchiveFile.BaseStream.Position += 18; //Skip unknowns
+
+                //Pull the index info and use that to find the texture entry
+                TEX4 TextureEntry = TextureEntries[BigEndian.ReadInt16(ArchiveFile)];
+
+                //Assign size info to the entry with the calculated offset
+                if (!TextureEntry.Texture_V1.Saved)
+                {
+                    TextureEntry.Texture_V1.StartPos = OffsetTracker;
+                    TextureEntry.Texture_V1.Length = EntrySize;
+                    TextureEntry.Texture_V1.Saved = true;
+                }
+                else
+                {
+                    TextureEntry.Texture_V2.StartPos = OffsetTracker;
+                    TextureEntry.Texture_V2.Length = EntrySize;
+                    TextureEntry.Texture_V2.Saved = true;
+                }
+                OffsetTracker += EntrySize;
+
+                //Skip the rest of the header
+                ArchiveFile.BaseStream.Position += 12; //Skip unknowns
             }
 
             return FileList;
@@ -409,15 +494,85 @@ namespace AlienPAK
         /* Get a file's size from the texture PAK */
         private int FileSizeTexturePAK(string FileName)
         {
-            //WIP
-            return -1;
+            int FileIndex = GetFileIndex(FileName);
+            if (TextureEntries[FileIndex].Texture_V2.Saved)
+            {
+                return TextureEntries[FileIndex].Texture_V2.Length + 148;
+            }
+            //Fallback to V1 if this texture has no V2
+            else if (TextureEntries[FileIndex].Texture_V1.Saved)
+            {
+                return TextureEntries[FileIndex].Texture_V1.Length + 148;
+            }
+            return -1; //Should never get here
         }
 
         /* Export a file from the texture PAK */
         private bool ExportFileTexturePAK(string FileName, string ExportPath)
         {
-            //WIP
-            return false;
+            try
+            {
+                //Get the texture index
+                int FileIndex = GetFileIndex(FileName);
+
+                //Get the biggest texture part stored
+                TEX4_Part TexturePart;
+                if (TextureEntries[FileIndex].Texture_V2.Saved)
+                {
+                    TexturePart = TextureEntries[FileIndex].Texture_V2;
+                }
+                else if (TextureEntries[FileIndex].Texture_V1.Saved)
+                {
+                    TexturePart = TextureEntries[FileIndex].Texture_V1;
+                }
+                else
+                {
+                    return false;
+                }
+
+                //Pull the texture part content from the archive
+                ArchiveFile.BaseStream.Position = TexturePart.StartPos;
+                byte[] TexturePartContent = ArchiveFile.ReadBytes(TexturePart.Length);
+
+                //Generate a DDS header based on the tex4's information
+                DDSWriter TextureOutput;
+                bool FailsafeSave = false;
+                switch (TextureEntries[FileIndex].TextureFormat)
+                {
+                    case TextureFormats.DXGI_FORMAT_BC5_UNORM:
+                        TextureOutput = new DDSWriter(TexturePartContent, TexturePart.Width, TexturePart.Height, 32, 0, DDSWriter.DDS_Format.ATI2N);
+                        break;
+                    case TextureFormats.DXGI_FORMAT_BC1_UNORM:
+                        TextureOutput = new DDSWriter(TexturePartContent, TexturePart.Width, TexturePart.Height, 32, 0, DDSWriter.DDS_Format.Dxt1);
+                        break;
+                    case TextureFormats.DXGI_FORMAT_BC3_UNORM:
+                        TextureOutput = new DDSWriter(TexturePartContent, TexturePart.Width, TexturePart.Height, 32, 0, DDSWriter.DDS_Format.Dxt5);
+                        break;
+                    case TextureFormats.DXGI_FORMAT_B8G8R8A8_UNORM:
+                        TextureOutput = new DDSWriter(TexturePartContent, TexturePart.Width, TexturePart.Height, 32, 0, DDSWriter.DDS_Format.UNCOMPRESSED_GENERAL);
+                        break;
+                    case TextureFormats.DXGI_FORMAT_BC7_UNORM:
+                    default:
+                        TextureOutput = new DDSWriter(TexturePartContent, TexturePart.Width, TexturePart.Height);
+                        FailsafeSave = true;
+                        break;
+                }
+                ExportPath += ".dds";
+
+                //Save out the part
+                if (FailsafeSave)
+                {
+                    TextureOutput.SaveCrude(ExportPath);
+                    return true;
+                }
+                TextureOutput.Save(ExportPath);
+                return true;
+            }
+            catch (Exception e)
+            {
+                string error = e.ToString();
+                return false;
+            }
         }
 
         /* Import a file to the texture PAK */
