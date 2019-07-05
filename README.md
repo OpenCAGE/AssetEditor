@@ -19,6 +19,7 @@ On launch, the toolkit will automatically alert you if a new version is availabl
   
 - PAK (textures)
   - Open archive
+  - Import files
   - Export files
 
 ## Coming soon
@@ -28,7 +29,6 @@ On launch, the toolkit will automatically alert you if a new version is availabl
 
 - PAK (textures)
   - Preview files
-  - Import files(?)
   
 - PAK (models)
   - Open archive
