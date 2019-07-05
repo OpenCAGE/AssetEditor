@@ -608,6 +608,12 @@ namespace AlienPAK
                 TEX4 TextureEntry = TextureEntries[GetFileIndex(FileName)];
                 DDSReader NewTexture = new DDSReader(ImportPath);
 
+                //Currently we only support textures that have V1 and V2
+                if (TextureEntry.Texture_V2.HeaderPos == -1)
+                {
+                    return false;
+                }
+
                 //Load the BIN to byte array
                 ArchiveFileBin.BaseStream.Position = 0;
                 byte[] BinFile = new byte[ArchiveFileBin.BaseStream.Length];
@@ -625,41 +631,33 @@ namespace AlienPAK
                     BinOffset++;
                 }
 
-                //Update sizes (imported textures are forced to V1 only)
-                BinOffset += 8;
+                //Update sizes (imported textures apply to V2 only)
+                BinOffset += 14;
                 byte[] NewWidth = BitConverter.GetBytes((Int16)NewTexture.Width);
                 byte[] NewHeight = BitConverter.GetBytes((Int16)NewTexture.Height);
-                byte[] NewV1Force = BitConverter.GetBytes((Int16)1);
-                for (int x = 0; x < 2; x++)
+                for (int i = 0; i < 2; i++)
                 {
-                    for (int i = 0; i < 2; i++)
-                    {
-                        BinFile[BinOffset] = NewWidth[i];
-                        BinOffset++;
-                    }
-                    for (int i = 0; i < 2; i++)
-                    {
-                        BinFile[BinOffset] = NewHeight[i];
-                        BinOffset++;
-                    }
-                    for (int i = 0; i < 2; i++)
-                    {
-                        BinFile[BinOffset] = NewV1Force[i];
-                        BinOffset++;
-                    }
+                    BinFile[BinOffset] = NewWidth[i];
+                    BinOffset++;
                 }
+                for (int i = 0; i < 2; i++)
+                {
+                    BinFile[BinOffset] = NewHeight[i];
+                    BinOffset++;
+                }
+                BinOffset += 2;
 
                 // --- Swap to PAK editing ---
 
                 //Take all headers up to the V1 header
                 ArchiveFile.BaseStream.Position = 0;
-                byte[] ArchivePt1 = new byte[TextureEntry.Texture_V1.HeaderPos];
+                byte[] ArchivePt1 = new byte[TextureEntry.Texture_V2.HeaderPos];
                 for (int i = 0; i < ArchivePt1.Length; i++)
                 {
                     ArchivePt1[i] = ArchiveFile.ReadByte();
                 }
                 
-                //Update V1 header for new image size
+                //Update V2 header for new image size
                 byte[] ArchivePt2 = new byte[48];
                 for (int i = 0; i < ArchivePt2.Length; i++)
                 {
@@ -676,64 +674,26 @@ namespace AlienPAK
                     ArchivePt2[12 + i] = NewEntrySize[i];
                 }
 
-                //Read to end of headers, and cut out V2 header if it exists
-                byte[] ArchivePt3;
-                if (TextureEntry.Texture_V2.HeaderPos == -1)
+                //Read to end of headers
+                byte[] ArchivePt3 = new byte[HeaderListEndPAK - ArchivePt1.Length - 48];
+                for (int i = 0; i < ArchivePt3.Length; i++)
                 {
-                    //There's no V2 header
-                    ArchivePt3 = new byte[HeaderListEndPAK - ArchivePt1.Length - 48];
-                    for (int i = 0; i < ArchivePt3.Length; i++)
-                    {
-                        ArchivePt3[i] = ArchiveFile.ReadByte();
-                    }
-                }
-                else
-                {
-                    //There is a V2 header
-                    ArchivePt3 = new byte[HeaderListEndPAK - ArchivePt1.Length - (48 * 2)];
-                    for (int i = 0; i < ArchivePt3.Length; i++)
-                    {
-                        if ((int)ArchiveFile.BaseStream.Position == TextureEntry.Texture_V2.HeaderPos)
-                        {
-                            //Skip V2 header (contents will be removed)
-                            ArchiveFile.BaseStream.Position += 48;
-                        }
-                        ArchivePt3[i] = ArchiveFile.ReadByte();
-                    }
+                    ArchivePt3[i] = ArchiveFile.ReadByte();
                 }
 
-                //Take all files up to V1
-                byte[] ArchivePt4 = new byte[TextureEntry.Texture_V1.StartPos - HeaderListEndPAK];
+                //Take all files up to V2
+                byte[] ArchivePt4 = new byte[TextureEntry.Texture_V2.StartPos - HeaderListEndPAK];
                 for (int i = 0; i < ArchivePt4.Length; i++)
                 {
                     ArchivePt4[i] = ArchiveFile.ReadByte();
                 }
-                ArchiveFile.BaseStream.Position += TextureEntry.Texture_V1.Length;
+                ArchiveFile.BaseStream.Position += TextureEntry.Texture_V2.Length;
 
-                //Take all files past V1, and cut out V2 content if it exists
-                byte[] ArchivePt5;
-                if (TextureEntry.Texture_V2.HeaderPos == -1)
+                //Take all files past V2
+                byte[] ArchivePt5 = new byte[ArchiveFile.BaseStream.Length - ArchiveFile.BaseStream.Position];
+                for (int i = 0; i < ArchivePt5.Length; i++)
                 {
-                    //There's no V2
-                    ArchivePt5 = new byte[ArchiveFile.BaseStream.Length - ArchiveFile.BaseStream.Position];
-                    for (int i = 0; i < ArchivePt5.Length; i++)
-                    {
-                        ArchivePt5[i] = ArchiveFile.ReadByte();
-                    }
-                }
-                else
-                {
-                    //There is a V2
-                    ArchivePt5 = new byte[ArchiveFile.BaseStream.Length - ArchiveFile.BaseStream.Position - TextureEntry.Texture_V2.Length];
-                    for (int i = 0; i < ArchivePt5.Length; i++)
-                    {
-                        if ((int)ArchiveFile.BaseStream.Position == TextureEntry.Texture_V2.StartPos)
-                        {
-                            //Skip V2 contents
-                            ArchiveFile.BaseStream.Position += TextureEntry.Texture_V2.Length;
-                        }
-                        ArchivePt5[i] = ArchiveFile.ReadByte();
-                    }
+                    ArchivePt5[i] = ArchiveFile.ReadByte();
                 }
 
                 //It's time to try and save!
