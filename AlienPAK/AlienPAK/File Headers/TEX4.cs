@@ -19,10 +19,14 @@ namespace AlienPAK
     //The Tex4 Entry
     class TEX4
     {
+        //The filename and path
         public string FileName = "";
 
+        //Misc metadata
         public TextureFormat Format;
+        public int HeaderPos = -1;
 
+        //Actual texture content
         public TEX4_Part Texture_V1 = new TEX4_Part();
         public TEX4_Part Texture_V2 = new TEX4_Part(); //V2 is the largest, unless we don't have a V2 in which case V1 is.
     }
@@ -34,6 +38,7 @@ namespace AlienPAK
         public Int16 Height = -1;
         
         public bool Saved = false;
+        public int HeaderPos = -1;
 
         public int StartPos = -1;
         public int Length = -1;

@@ -152,7 +152,7 @@ namespace AlienPAK
             string FileName = ((TreeItem)FileTree.SelectedNode.Tag).String_Value;
 
             //Populate filename/type info
-            fileNameInfo.Text = FileName;
+            fileNameInfo.Text = Path.GetFileName(FileName);
             fileTypeInfo.Text = GetFileTypeDescription(Path.GetExtension(FileName));
 
             //Populate file size info

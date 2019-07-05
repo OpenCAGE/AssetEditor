@@ -21,6 +21,7 @@ namespace AlienPAK
     {
         /* --- COMMON PAK --- */
         private string ArchivePath = "";
+        private string ArchivePathBin = "";
         private BinaryReader ArchiveFile = null;
         private BinaryReader ArchiveFileBin = null;
         private List<string> FileList = new List<string>();
@@ -38,6 +39,7 @@ namespace AlienPAK
 
             //Update our info
             ArchivePath = FilePath;
+            ArchivePathBin = "";
             string FileName = Path.GetFileName(FilePath);
             switch (FileName)
             {
@@ -75,17 +77,18 @@ namespace AlienPAK
                 case PAKType.PAK_TEXTURES:
                     if (FileName.Substring(0, 5).ToUpper() == "LEVEL")
                     {
-                        ArchiveFileBin = new BinaryReader(File.OpenRead(FilePath.Substring(0, FilePath.Length - FileName.Length) + "LEVEL_TEXTURE_HEADERS.ALL.BIN"));
+                        ArchivePathBin = FilePath.Substring(0, FilePath.Length - FileName.Length) + "LEVEL_TEXTURE_HEADERS.ALL.BIN";
+                        ArchiveFileBin = new BinaryReader(File.OpenRead(ArchivePathBin));
                     }
                     else
                     {
-                        ArchiveFileBin = new BinaryReader(File.OpenRead(FilePath.Substring(0, FilePath.Length - FileName.Length) + "GLOBAL_TEXTURES_HEADERS.ALL.BIN")); //What horrible formatting.
+                        ArchivePathBin = FilePath.Substring(0, FilePath.Length - FileName.Length) + "GLOBAL_TEXTURES_HEADERS.ALL.BIN";
+                        ArchiveFileBin = new BinaryReader(File.OpenRead(ArchivePathBin));
                     }
                     break;
                 case PAKType.PAK_MODELS:
-                    ArchiveFileBin = new BinaryReader(File.OpenRead(
-                        FilePath.Substring(0, FilePath.Length - FileName.Length) + "MODELS_" + FileName.Substring(0, FileName.Length - 11) + ".BIN"
-                    ));
+                    ArchivePathBin = FilePath.Substring(0, FilePath.Length - FileName.Length) + "MODELS_" + FileName.Substring(0, FileName.Length - 11) + ".BIN";
+                    ArchiveFileBin = new BinaryReader(File.OpenRead(ArchivePathBin));
                     break;
             }
         }
@@ -382,14 +385,12 @@ namespace AlienPAK
                     ArchiveIndex++;
                 }
 
-                //Dispose of the old archive
                 ArchiveFile.Close();
-                File.Delete(ArchivePath);
-                
                 try
                 {
                     //Write out the new archive
                     BinaryWriter ArchiveFileWrite = new BinaryWriter(File.OpenWrite(ArchivePath));
+                    ArchiveFileWrite.BaseStream.SetLength(0);
                     ArchiveFileWrite.Write(NewArchive);
                     ArchiveFileWrite.Close();
                 }
@@ -447,7 +448,9 @@ namespace AlienPAK
             ArchiveFileBin.BaseStream.Position = HeaderListBegin + 12;
             for (int i = 0; i < NumberOfEntriesBIN; i++)
             {
+                int HeaderPosition = (int)ArchiveFileBin.BaseStream.Position;
                 TEX4 TextureEntry = new TEX4();
+
                 ArchiveFileBin.BaseStream.Position += 4; //Skip magic
                 TextureEntry.Format = (TextureFormat)ArchiveFileBin.ReadInt32();
                 ArchiveFileBin.BaseStream.Position += 8; //Skip unknowns
@@ -458,6 +461,8 @@ namespace AlienPAK
                 TextureEntry.Texture_V2.Height = ArchiveFileBin.ReadInt16();
                 ArchiveFileBin.BaseStream.Position += 22; //Skip unknowns
                 TextureEntry.FileName = FileList[i];
+                TextureEntry.HeaderPos = HeaderPosition;
+
                 TextureEntries.Add(TextureEntry);
             }
 
@@ -471,6 +476,9 @@ namespace AlienPAK
             int OffsetTracker = (NumberOfEntriesPAK * 48) + 32;
             for (int i = 0; i < NumberOfEntriesPAK; i++)
             {
+                //Header indexes are out of order, so optimise replacements by saving position
+                int HeaderPosition = (int)ArchiveFile.BaseStream.Position;
+
                 //Pull the size info
                 int EntrySize = 0;
                 ArchiveFile.BaseStream.Position += 8; //Skip unknowns
@@ -487,12 +495,14 @@ namespace AlienPAK
                     TextureEntry.Texture_V1.StartPos = OffsetTracker;
                     TextureEntry.Texture_V1.Length = EntrySize;
                     TextureEntry.Texture_V1.Saved = true;
+                    TextureEntry.Texture_V1.HeaderPos = HeaderPosition;
                 }
                 else
                 {
                     TextureEntry.Texture_V2.StartPos = OffsetTracker;
                     TextureEntry.Texture_V2.Length = EntrySize;
                     TextureEntry.Texture_V2.Saved = true;
+                    TextureEntry.Texture_V2.HeaderPos = HeaderPosition;
                 }
                 OffsetTracker += EntrySize;
 
@@ -552,16 +562,16 @@ namespace AlienPAK
                 switch (TextureEntries[FileIndex].Format)
                 {
                     case TextureFormat.DXGI_FORMAT_BC5_UNORM:
-                        TextureOutput = new DDSWriter(TexturePartContent, TexturePart.Width, TexturePart.Height, 32, 0, DDSWriter.TextureType.ATI2N);
+                        TextureOutput = new DDSWriter(TexturePartContent, TexturePart.Width, TexturePart.Height, 32, 0, TextureType.ATI2N);
                         break;
                     case TextureFormat.DXGI_FORMAT_BC1_UNORM:
-                        TextureOutput = new DDSWriter(TexturePartContent, TexturePart.Width, TexturePart.Height, 32, 0, DDSWriter.TextureType.Dxt1);
+                        TextureOutput = new DDSWriter(TexturePartContent, TexturePart.Width, TexturePart.Height, 32, 0, TextureType.Dxt1);
                         break;
                     case TextureFormat.DXGI_FORMAT_BC3_UNORM:
-                        TextureOutput = new DDSWriter(TexturePartContent, TexturePart.Width, TexturePart.Height, 32, 0, DDSWriter.TextureType.Dxt5);
+                        TextureOutput = new DDSWriter(TexturePartContent, TexturePart.Width, TexturePart.Height, 32, 0, TextureType.Dxt5);
                         break;
                     case TextureFormat.DXGI_FORMAT_B8G8R8A8_UNORM:
-                        TextureOutput = new DDSWriter(TexturePartContent, TexturePart.Width, TexturePart.Height, 32, 0, DDSWriter.TextureType.UNCOMPRESSED_GENERAL);
+                        TextureOutput = new DDSWriter(TexturePartContent, TexturePart.Width, TexturePart.Height, 32, 0, TextureType.UNCOMPRESSED_GENERAL);
                         break;
                     case TextureFormat.DXGI_FORMAT_BC7_UNORM:
                     default:
@@ -588,8 +598,96 @@ namespace AlienPAK
         }
 
         /* Import a file to the texture PAK */
-        private bool ImportFileTexturePAK(string FileName, string ExportPath)
+        private bool ImportFileTexturePAK(string FileName, string ImportPath)
         {
+            //Get the texture entry & parse new DDS
+            TEX4 TextureEntry = TextureEntries[GetFileIndex(FileName)];
+            DDSReader NewTexture = new DDSReader(ImportPath);
+
+            //Load the BIN to byte array
+            ArchiveFileBin.BaseStream.Position = 0;
+            byte[] BinFile = new byte[ArchiveFileBin.BaseStream.Length];
+            for (int i = 0; i < BinFile.Length; i++)
+            {
+                BinFile[i] = ArchiveFileBin.ReadByte();
+            }
+
+            //Update format
+            int BinOffset = TextureEntry.HeaderPos;
+            byte[] NewFormat = BitConverter.GetBytes((int)NewTexture.Format);
+            for (int i = 0; i < 4; i++)
+            {
+                BinFile[BinOffset] = NewFormat[i];
+                BinOffset++;
+            }
+
+            //Update sizes (imported textures are forced to V1 only)
+            BinOffset += 8;
+            byte[] NewWidth = BitConverter.GetBytes((Int16)NewTexture.Width);
+            byte[] NewHeight = BitConverter.GetBytes((Int16)NewTexture.Height);
+            byte[] NewV1Force = BitConverter.GetBytes((Int16)1);
+            for (int x = 0; x < 2; x++)
+            {
+                for (int i = 0; i < 2; i++)
+                {
+                    BinFile[BinOffset] = NewWidth[i];
+                    BinOffset++;
+                }
+                for (int i = 0; i < 2; i++)
+                {
+                    BinFile[BinOffset] = NewHeight[i];
+                    BinOffset++;
+                }
+                for (int i = 0; i < 2; i++)
+                {
+                    BinFile[BinOffset] = NewV1Force[i];
+                    BinOffset++;
+                }
+            }
+
+            //Write out new BIN
+            ArchiveFileBin.Close();
+            BinaryWriter ArchiveFileWriteBin = new BinaryWriter(File.OpenWrite(ArchivePathBin));
+            ArchiveFileWriteBin.BaseStream.SetLength(0);
+            ArchiveFileWriteBin.Write(BinFile);
+            ArchiveFileWriteBin.Close();
+
+            //Load the PAK to byte array
+            ArchiveFile.BaseStream.Position = 0;
+            byte[] PakFile = new byte[ArchiveFile.BaseStream.Length];
+            for (int i = 0; i < PakFile.Length; i++)
+            {
+                PakFile[i] = ArchiveFile.ReadByte();
+            }
+
+            //New byte array of length (what length ?)
+
+            //Take all headers up to the V1 header
+
+            //Make new V1 header (updated file length)
+            //Store file position
+
+            //If v2 header exists
+                //Take all headers up to v2 header
+                //Store file position
+                //Take all headers past v2 header to end of headers
+            //else
+                //Take all headers up to end of headers
+            
+            //Take all files up to V1
+
+            //Insert new file where V1 was
+
+            //if v2 exists
+                //Take all files up to v2
+                //Take all files past v2 to end of file
+            //else
+                //Take all files to end of files
+
+            //Clear pak and rewrite from byte array (make sure to clear extra if length is wrong)
+
+            //Done
+
             //WIP
             return false;
         }
@@ -655,7 +753,7 @@ namespace AlienPAK
         }
 
         /* Import a file to the model PAK */
-        private bool ImportFileModelPAK(string FileName, string ExportPath)
+        private bool ImportFileModelPAK(string FileName, string ImportPath)
         {
             //WIP
             return false;

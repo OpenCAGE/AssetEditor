@@ -13,6 +13,89 @@ namespace AlienPAK
         TEXTURE = 0x1000, // should always be set
         MIPMAP = 0x400000 // only for files with MipMaps
     }
+    
+    public enum TextureType : uint
+    {
+        UNCOMPRESSED_GENERAL,
+        Unknown,
+        Dxt1,
+        Dxt3,
+        Dxt5,
+        R8G8B8,
+        B8G8R8,
+        Bgra5551,
+        Bgra4444,
+        Bgr565,
+        Alpha8,
+        X8R8G8B8,
+        A8R8G8B8,
+        A8B8G8R8,
+        X8B8G8R8,
+        RGB555,
+        R32F,
+        R16F,
+        A32B32G32R32F,
+        A16B16G16R16F,
+        Q8W8V8U8,
+        CxV8U8,
+        G16R16F,
+        G32R32F,
+        G16R16,
+        A2B10G10R10,
+        A16B16G16R16,
+        ATI2N,
+        BC7_UNORM
+    }
+
+    public enum FourCC : uint
+    {
+        D3DFMT_DXT1 = 0x31545844,
+        D3DFMT_DXT2 = 0x32545844,
+        D3DFMT_DXT3 = 0x33545844,
+        D3DFMT_DXT4 = 0x34545844,
+        D3DFMT_DXT5 = 0x35545844,
+        D3DFMT_ATI2N = 0x32495441,
+        DX10 = 0x30315844,
+        DXGI_FORMAT_BC4_UNORM = 0x55344342,
+        DXGI_FORMAT_BC4_SNORM = 0x53344342,
+        DXGI_FORMAT_BC5_UNORM = 0x32495441,
+        DXGI_FORMAT_BC5_SNORM = 0x53354342,
+
+        //DXGI_FORMAT_R8G8_B8G8_UNORM
+        D3DFMT_R8G8_B8G8 = 0x47424752,
+
+        //DXGI_FORMAT_G8R8_G8B8_UNORM
+        D3DFMT_G8R8_G8B8 = 0x42475247,
+
+        //DXGI_FORMAT_R16G16B16A16_UNORM
+        D3DFMT_A16B16G16R16 = 36,
+
+        //DXGI_FORMAT_R16G16B16A16_SNORM
+        D3DFMT_Q16W16V16U16 = 110,
+
+        //DXGI_FORMAT_R16_FLOAT
+        D3DFMT_R16F = 111,
+
+        //DXGI_FORMAT_R16G16_FLOAT
+        D3DFMT_G16R16F = 112,
+
+        //DXGI_FORMAT_R16G16B16A16_FLOAT
+        D3DFMT_A16B16G16R16F = 113,
+
+        //DXGI_FORMAT_R32_FLOAT
+        D3DFMT_R32F = 114,
+
+        //DXGI_FORMAT_R32G32_FLOAT
+        D3DFMT_G32R32F = 115,
+
+        //DXGI_FORMAT_R32G32B32A32_FLOAT
+        D3DFMT_A32B32G32R32F = 116,
+
+        D3DFMT_UYVY = 0x59565955,
+        D3DFMT_YUY2 = 0x32595559,
+        D3DFMT_CxV8U8 = 117,
+        D3DFMT_Q8W8V8U8 = 63
+    }
 
     class DDS
     {
