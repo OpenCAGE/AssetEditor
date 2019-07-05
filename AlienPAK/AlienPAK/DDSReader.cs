@@ -20,7 +20,7 @@ namespace AlienPAK
         public TextureFormat Format;
         public int Width = -1;
         public int Height = -1;
-        private byte[] DataBlock;
+        public byte[] DataBlock;
 
         //Allow import of other formats? PNG/JPG? https://github.com/Microsoft/DirectXTex/wiki/DirectXTex
 
