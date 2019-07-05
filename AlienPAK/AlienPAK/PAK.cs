@@ -21,12 +21,17 @@ namespace AlienPAK
     {
         /* --- COMMON PAK --- */
         private string ArchivePath = "";
+        private string ArchivePathBin = "";
         private BinaryReader ArchiveFile = null;
         private BinaryReader ArchiveFileBin = null;
         private List<string> FileList = new List<string>();
         private int NumberOfEntries = -1;
         private enum PAKType { PAK2, PAK_TEXTURES, PAK_MODELS, UNRECOGNISED };
         private PAKType Format = PAKType.UNRECOGNISED;
+        public enum PAKReturnType {
+            IMPORT_FAILED_UNKNOWN, IMPORT_FAILED_UNSUPPORTED, IMPORT_SUCCESS, IMPORT_FAILED_LOGIC_ERROR,
+            EXPORT_FAILED_UNKNOWN, EXPORT_FAILED_UNSUPPORTED, EXPORT_SUCCESS, EXPORT_FAILED_LOGIC_ERROR
+        }
 
         /* Open a PAK archive */
         public void Open(string FilePath)
@@ -38,11 +43,15 @@ namespace AlienPAK
 
             //Update our info
             ArchivePath = FilePath;
-            switch (Path.GetFileName(FilePath))
+            ArchivePathBin = "";
+            string FileName = Path.GetFileName(FilePath);
+            switch (FileName)
             {
+                case "GLOBAL_TEXTURES.ALL.PAK":
                 case "LEVEL_TEXTURES.ALL.PAK":
                     Format = PAKType.PAK_TEXTURES;
                     break;
+                case "GLOBAL_MODELS.PAK":
                 case "LEVEL_MODELS.PAK":
                     Format = PAKType.PAK_MODELS;
                     break;
@@ -70,10 +79,20 @@ namespace AlienPAK
             switch (Format)
             {
                 case PAKType.PAK_TEXTURES:
-                    ArchiveFileBin = new BinaryReader(File.OpenRead(FilePath.Substring(0, FilePath.Length - ("LEVEL_TEXTURES.ALL.PAK").Length) + "LEVEL_TEXTURE_HEADERS.ALL.BIN"));
+                    if (FileName.Substring(0, 5).ToUpper() == "LEVEL")
+                    {
+                        ArchivePathBin = FilePath.Substring(0, FilePath.Length - FileName.Length) + "LEVEL_TEXTURE_HEADERS.ALL.BIN";
+                        ArchiveFileBin = new BinaryReader(File.OpenRead(ArchivePathBin));
+                    }
+                    else
+                    {
+                        ArchivePathBin = FilePath.Substring(0, FilePath.Length - FileName.Length) + "GLOBAL_TEXTURES_HEADERS.ALL.BIN";
+                        ArchiveFileBin = new BinaryReader(File.OpenRead(ArchivePathBin));
+                    }
                     break;
                 case PAKType.PAK_MODELS:
-                    ArchiveFileBin = new BinaryReader(File.OpenRead(FilePath.Substring(0, FilePath.Length - ("LEVEL_MODELS.PAK").Length) + "MODELS_LEVEL.BIN"));
+                    ArchivePathBin = FilePath.Substring(0, FilePath.Length - FileName.Length) + "MODELS_" + FileName.Substring(0, FileName.Length - 11) + ".BIN";
+                    ArchiveFileBin = new BinaryReader(File.OpenRead(ArchivePathBin));
                     break;
             }
         }
@@ -82,7 +101,7 @@ namespace AlienPAK
         public List<string> Parse()
         {
             if (ArchiveFile == null) { return null; }
-            
+
             FileList.Clear();
             FileOffsets.Clear();
             FilePadding.Clear();
@@ -94,7 +113,7 @@ namespace AlienPAK
                 case PAKType.PAK_TEXTURES:
                     return ParseTexturePAK();
                 case PAKType.PAK_MODELS:
-                    //return ParseModelPAK(); <= Even bigger WIP than textures!
+                //return ParseModelPAK(); <= Even bigger WIP than textures!
                 default:
                     return null;
             }
@@ -119,9 +138,9 @@ namespace AlienPAK
         }
 
         /* Export from a PAK archive */
-        public bool ExportFile(string FileName, string ExportPath)
+        public PAKReturnType ExportFile(string FileName, string ExportPath)
         {
-            if (ArchiveFile == null) { return false; }
+            if (ArchiveFile == null) { return PAKReturnType.EXPORT_FAILED_LOGIC_ERROR; }
 
             switch (Format)
             {
@@ -132,14 +151,14 @@ namespace AlienPAK
                 case PAKType.PAK_MODELS:
                     return ExportFileModelPAK(FileName, ExportPath);
                 default:
-                    return false;
+                    return PAKReturnType.IMPORT_FAILED_UNSUPPORTED;
             }
         }
 
         /* Import to a PAK archive */
-        public bool ImportFile(string FileName, string ImportPath)
+        public PAKReturnType ImportFile(string FileName, string ImportPath)
         {
-            if (ArchiveFile == null) { return false; }
+            if (ArchiveFile == null) { return PAKReturnType.IMPORT_FAILED_LOGIC_ERROR; }
 
             switch (Format)
             {
@@ -150,10 +169,10 @@ namespace AlienPAK
                 case PAKType.PAK_MODELS:
                     return ImportFileModelPAK(FileName, ImportPath);
                 default:
-                    return false;
+                    return PAKReturnType.IMPORT_FAILED_UNSUPPORTED;
             }
         }
-        
+
         /* Get the PAK index of the file by name */
         private int GetFileIndex(string FileName)
         {
@@ -222,7 +241,7 @@ namespace AlienPAK
             {
                 ArchiveFile.BaseStream.Position = FileOffsets[i];
                 FilePadding.Add(0);
-                for (int x = 0; x < DataSize + 1; x++) 
+                for (int x = 0; x < DataSize + 1; x++)
                 {
                     if (ArchiveFile.ReadByte() == 0x00)
                     {
@@ -247,7 +266,7 @@ namespace AlienPAK
         }
 
         /* Export a file from the PAK2 archive */
-        private bool ExportFilePAK2(string FileName, string ExportPath)
+        private PAKReturnType ExportFilePAK2(string FileName, string ExportPath)
         {
             try
             {
@@ -263,17 +282,17 @@ namespace AlienPAK
 
                 //Write the file's contents out
                 File.WriteAllBytes(ExportPath, FileExport.ToArray());
-                return true;
+                return PAKReturnType.EXPORT_SUCCESS;
             }
             catch (Exception e)
             {
                 string error = e.ToString();
-                return false;
+                return PAKReturnType.EXPORT_FAILED_UNKNOWN;
             }
         }
 
         /* Import a file to the PAK2 archive */
-        private bool ImportFilePAK2(string FileName, string ImportPath)
+        private PAKReturnType ImportFilePAK2(string FileName, string ImportPath)
         {
             try
             {
@@ -286,7 +305,7 @@ namespace AlienPAK
                 int NewLength = (int)ImportFile.BaseStream.Length + FilePadding.ElementAt(FileIndex);
 
                 //Old/new "padding" (next file in sequence's byte alignment)
-                int OldNextPadding = (FileIndex != FilePadding.Count-1) ? FilePadding.ElementAt(FileIndex + 1) : 0;
+                int OldNextPadding = (FileIndex != FilePadding.Count - 1) ? FilePadding.ElementAt(FileIndex + 1) : 0;
                 int NewNextPadding = 0; //This will be set later
 
                 //Grab the first section of the archive
@@ -310,7 +329,7 @@ namespace AlienPAK
                     //Update original offset
                     int Offset = BitConverter.ToInt32(OffsetRaw, 0);
                     Offset = Offset - OldLength + NewLength;
-                    if (i == 0 && FileIndex != NumberOfEntries-1)
+                    if (i == 0 && FileIndex != NumberOfEntries - 1)
                     {
                         //Correct the byte alignment for first trailing file (if we have one)
                         while ((Offset + NewNextPadding) % 4 != 0)
@@ -370,14 +389,12 @@ namespace AlienPAK
                     ArchiveIndex++;
                 }
 
-                //Dispose of the old archive
                 ArchiveFile.Close();
-                File.Delete(ArchivePath);
-                
                 try
                 {
                     //Write out the new archive
                     BinaryWriter ArchiveFileWrite = new BinaryWriter(File.OpenWrite(ArchivePath));
+                    ArchiveFileWrite.BaseStream.SetLength(0);
                     ArchiveFileWrite.Write(NewArchive);
                     ArchiveFileWrite.Close();
                 }
@@ -385,25 +402,26 @@ namespace AlienPAK
                 {
                     //File is probably in-use by the game, re-open for reading and exit as fail
                     Open(ArchivePath);
-                    return false;
+                    return PAKReturnType.IMPORT_FAILED_UNKNOWN;
                 }
 
                 //Reload the archive for us
                 Open(ArchivePath);
                 ParsePAK2();
 
-                return true;
+                return PAKReturnType.IMPORT_SUCCESS;
             }
             catch (Exception e)
             {
                 string error = e.ToString();
-                return false;
+                return PAKReturnType.IMPORT_FAILED_UNKNOWN;
             }
         }
 
 
         /* --- TEXTURE PAK --- */
-        int HeaderListBegin = -1;
+        int HeaderListBeginBIN = -1;
+        int HeaderListEndPAK = -1;
         int NumberOfEntriesPAK = -1;
         int NumberOfEntriesBIN = -1;
         List<TEX4> TextureEntries = new List<TEX4>();
@@ -414,7 +432,7 @@ namespace AlienPAK
             //Read the header info from the BIN
             ArchiveFileBin.BaseStream.Position += 4; //Skip unused value (version?)
             NumberOfEntriesBIN = ArchiveFileBin.ReadInt32();
-            HeaderListBegin = ArchiveFileBin.ReadInt32();
+            HeaderListBeginBIN = ArchiveFileBin.ReadInt32();
 
             //Read all file names from BIN
             for (int i = 0; i < NumberOfEntriesBIN; i++)
@@ -430,14 +448,16 @@ namespace AlienPAK
                 }
                 FileList.Add(ThisFileName);
             }
-            
+
             //Read the texture headers from the BIN
-            ArchiveFileBin.BaseStream.Position = HeaderListBegin + 12;
+            ArchiveFileBin.BaseStream.Position = HeaderListBeginBIN + 12;
             for (int i = 0; i < NumberOfEntriesBIN; i++)
             {
+                int HeaderPosition = (int)ArchiveFileBin.BaseStream.Position;
                 TEX4 TextureEntry = new TEX4();
+
                 ArchiveFileBin.BaseStream.Position += 4; //Skip magic
-                TextureEntry.TextureFormat = (TextureFormats)ArchiveFileBin.ReadInt32();
+                TextureEntry.Format = (TextureFormat)ArchiveFileBin.ReadInt32();
                 ArchiveFileBin.BaseStream.Position += 8; //Skip unknowns
                 TextureEntry.Texture_V1.Width = ArchiveFileBin.ReadInt16();
                 TextureEntry.Texture_V1.Height = ArchiveFileBin.ReadInt16();
@@ -446,6 +466,8 @@ namespace AlienPAK
                 TextureEntry.Texture_V2.Height = ArchiveFileBin.ReadInt16();
                 ArchiveFileBin.BaseStream.Position += 22; //Skip unknowns
                 TextureEntry.FileName = FileList[i];
+                TextureEntry.HeaderPos = HeaderPosition;
+
                 TextureEntries.Add(TextureEntry);
             }
 
@@ -459,6 +481,9 @@ namespace AlienPAK
             int OffsetTracker = (NumberOfEntriesPAK * 48) + 32;
             for (int i = 0; i < NumberOfEntriesPAK; i++)
             {
+                //Header indexes are out of order, so optimise replacements by saving position
+                int HeaderPosition = (int)ArchiveFile.BaseStream.Position;
+
                 //Pull the size info
                 int EntrySize = 0;
                 ArchiveFile.BaseStream.Position += 8; //Skip unknowns
@@ -475,18 +500,21 @@ namespace AlienPAK
                     TextureEntry.Texture_V1.StartPos = OffsetTracker;
                     TextureEntry.Texture_V1.Length = EntrySize;
                     TextureEntry.Texture_V1.Saved = true;
+                    TextureEntry.Texture_V1.HeaderPos = HeaderPosition;
                 }
                 else
                 {
                     TextureEntry.Texture_V2.StartPos = OffsetTracker;
                     TextureEntry.Texture_V2.Length = EntrySize;
                     TextureEntry.Texture_V2.Saved = true;
+                    TextureEntry.Texture_V2.HeaderPos = HeaderPosition;
                 }
                 OffsetTracker += EntrySize;
 
                 //Skip the rest of the header
                 ArchiveFile.BaseStream.Position += 12; //Skip unknowns
             }
+            HeaderListEndPAK = (int)ArchiveFile.BaseStream.Position;
 
             return FileList;
         }
@@ -508,7 +536,7 @@ namespace AlienPAK
         }
 
         /* Export a file from the texture PAK */
-        private bool ExportFileTexturePAK(string FileName, string ExportPath)
+        private PAKReturnType ExportFileTexturePAK(string FileName, string ExportPath)
         {
             try
             {
@@ -527,7 +555,7 @@ namespace AlienPAK
                 }
                 else
                 {
-                    return false;
+                    return PAKReturnType.EXPORT_FAILED_UNSUPPORTED;
                 }
 
                 //Pull the texture part content from the archive
@@ -537,49 +565,180 @@ namespace AlienPAK
                 //Generate a DDS header based on the tex4's information
                 DDSWriter TextureOutput;
                 bool FailsafeSave = false;
-                switch (TextureEntries[FileIndex].TextureFormat)
+                switch (TextureEntries[FileIndex].Format)
                 {
-                    case TextureFormats.DXGI_FORMAT_BC5_UNORM:
-                        TextureOutput = new DDSWriter(TexturePartContent, TexturePart.Width, TexturePart.Height, 32, 0, DDSWriter.DDS_Format.ATI2N);
+                    case TextureFormat.DXGI_FORMAT_BC5_UNORM:
+                        TextureOutput = new DDSWriter(TexturePartContent, TexturePart.Width, TexturePart.Height, 32, 0, TextureType.ATI2N);
                         break;
-                    case TextureFormats.DXGI_FORMAT_BC1_UNORM:
-                        TextureOutput = new DDSWriter(TexturePartContent, TexturePart.Width, TexturePart.Height, 32, 0, DDSWriter.DDS_Format.Dxt1);
+                    case TextureFormat.DXGI_FORMAT_BC1_UNORM:
+                        TextureOutput = new DDSWriter(TexturePartContent, TexturePart.Width, TexturePart.Height, 32, 0, TextureType.Dxt1);
                         break;
-                    case TextureFormats.DXGI_FORMAT_BC3_UNORM:
-                        TextureOutput = new DDSWriter(TexturePartContent, TexturePart.Width, TexturePart.Height, 32, 0, DDSWriter.DDS_Format.Dxt5);
+                    case TextureFormat.DXGI_FORMAT_BC3_UNORM:
+                        TextureOutput = new DDSWriter(TexturePartContent, TexturePart.Width, TexturePart.Height, 32, 0, TextureType.Dxt5);
                         break;
-                    case TextureFormats.DXGI_FORMAT_B8G8R8A8_UNORM:
-                        TextureOutput = new DDSWriter(TexturePartContent, TexturePart.Width, TexturePart.Height, 32, 0, DDSWriter.DDS_Format.UNCOMPRESSED_GENERAL);
+                    case TextureFormat.DXGI_FORMAT_B8G8R8A8_UNORM:
+                        TextureOutput = new DDSWriter(TexturePartContent, TexturePart.Width, TexturePart.Height, 32, 0, TextureType.UNCOMPRESSED_GENERAL);
                         break;
-                    case TextureFormats.DXGI_FORMAT_BC7_UNORM:
+                    case TextureFormat.DXGI_FORMAT_BC7_UNORM:
                     default:
                         TextureOutput = new DDSWriter(TexturePartContent, TexturePart.Width, TexturePart.Height);
                         FailsafeSave = true;
                         break;
                 }
-                ExportPath += ".dds";
 
                 //Save out the part
                 if (FailsafeSave)
                 {
                     TextureOutput.SaveCrude(ExportPath);
-                    return true;
+                    return PAKReturnType.EXPORT_SUCCESS;
                 }
                 TextureOutput.Save(ExportPath);
-                return true;
+                return PAKReturnType.EXPORT_SUCCESS;
             }
             catch (Exception e)
             {
                 string error = e.ToString();
-                return false;
+                return PAKReturnType.EXPORT_FAILED_UNKNOWN;
             }
         }
 
         /* Import a file to the texture PAK */
-        private bool ImportFileTexturePAK(string FileName, string ExportPath)
+        private PAKReturnType ImportFileTexturePAK(string FileName, string ImportPath)
         {
-            //WIP
-            return false;
+            try
+            {
+                //Get the texture entry & parse new DDS
+                TEX4 TextureEntry = TextureEntries[GetFileIndex(FileName)];
+                DDSReader NewTexture = new DDSReader(ImportPath);
+
+                //Currently we only support textures that have V1 and V2
+                if (TextureEntry.Texture_V2.HeaderPos == -1)
+                {
+                    return PAKReturnType.IMPORT_FAILED_UNSUPPORTED;
+                }
+
+                //Load the BIN to byte array
+                ArchiveFileBin.BaseStream.Position = 0;
+                byte[] BinFile = new byte[ArchiveFileBin.BaseStream.Length];
+                for (int i = 0; i < BinFile.Length; i++)
+                {
+                    BinFile[i] = ArchiveFileBin.ReadByte();
+                }
+
+                //Update format
+                int BinOffset = TextureEntry.HeaderPos;
+                byte[] NewFormat = BitConverter.GetBytes((int)NewTexture.Format);
+                for (int i = 0; i < 4; i++)
+                {
+                    BinFile[BinOffset] = NewFormat[i];
+                    BinOffset++;
+                }
+
+                //Update sizes (imported textures apply to V2 only)
+                BinOffset += 14;
+                byte[] NewWidth = BitConverter.GetBytes((Int16)NewTexture.Width);
+                byte[] NewHeight = BitConverter.GetBytes((Int16)NewTexture.Height);
+                for (int i = 0; i < 2; i++)
+                {
+                    BinFile[BinOffset] = NewWidth[i];
+                    BinOffset++;
+                }
+                for (int i = 0; i < 2; i++)
+                {
+                    BinFile[BinOffset] = NewHeight[i];
+                    BinOffset++;
+                }
+                BinOffset += 2;
+
+                // --- Swap to PAK editing ---
+
+                //Take all headers up to the V1 header
+                ArchiveFile.BaseStream.Position = 0;
+                byte[] ArchivePt1 = new byte[TextureEntry.Texture_V2.HeaderPos];
+                for (int i = 0; i < ArchivePt1.Length; i++)
+                {
+                    ArchivePt1[i] = ArchiveFile.ReadByte();
+                }
+                
+                //Update V2 header for new image size
+                byte[] ArchivePt2 = new byte[48];
+                for (int i = 0; i < ArchivePt2.Length; i++)
+                {
+                    ArchivePt2[i] = ArchiveFile.ReadByte();
+                }
+                byte[] NewEntrySize = BitConverter.GetBytes((int)NewTexture.DataBlock.Length);
+                Array.Reverse(NewEntrySize); //This file is big endian
+                for (int i = 0; i < 4; i++)
+                {
+                    ArchivePt2[8 + i] = NewEntrySize[i];
+                }
+                for (int i = 0; i < 4; i++)
+                {
+                    ArchivePt2[12 + i] = NewEntrySize[i];
+                }
+
+                //Read to end of headers
+                byte[] ArchivePt3 = new byte[HeaderListEndPAK - ArchivePt1.Length - 48];
+                for (int i = 0; i < ArchivePt3.Length; i++)
+                {
+                    ArchivePt3[i] = ArchiveFile.ReadByte();
+                }
+
+                //Take all files up to V2
+                byte[] ArchivePt4 = new byte[TextureEntry.Texture_V2.StartPos - HeaderListEndPAK];
+                for (int i = 0; i < ArchivePt4.Length; i++)
+                {
+                    ArchivePt4[i] = ArchiveFile.ReadByte();
+                }
+                ArchiveFile.BaseStream.Position += TextureEntry.Texture_V2.Length;
+
+                //Take all files past V2
+                byte[] ArchivePt5 = new byte[ArchiveFile.BaseStream.Length - ArchiveFile.BaseStream.Position];
+                for (int i = 0; i < ArchivePt5.Length; i++)
+                {
+                    ArchivePt5[i] = ArchiveFile.ReadByte();
+                }
+
+                //It's time to try and save!
+                try
+                {
+                    //Write out new BIN
+                    ArchiveFileBin.Close();
+                    BinaryWriter ArchiveFileWriteBin = new BinaryWriter(File.OpenWrite(ArchivePathBin));
+                    ArchiveFileWriteBin.BaseStream.SetLength(0);
+                    ArchiveFileWriteBin.Write(BinFile);
+                    ArchiveFileWriteBin.Close();
+
+                    //Write out new PAK
+                    ArchiveFile.Close();
+                    BinaryWriter ArchiveFileWrite = new BinaryWriter(File.OpenWrite(ArchivePath));
+                    ArchiveFileWrite.BaseStream.SetLength(0);
+                    ArchiveFileWrite.Write(ArchivePt1);
+                    ArchiveFileWrite.Write(ArchivePt2);
+                    ArchiveFileWrite.Write(ArchivePt3);
+                    ArchiveFileWrite.Write(ArchivePt4);
+                    ArchiveFileWrite.Write(NewTexture.DataBlock);
+                    ArchiveFileWrite.Write(ArchivePt5);
+                    ArchiveFileWrite.Close();
+                }
+                catch
+                {
+                    //File is probably in-use by the game, re-open for reading and exit as fail
+                    Open(ArchivePath);
+                    return PAKReturnType.IMPORT_FAILED_UNKNOWN;
+                }
+
+                //Reload the archive for us
+                Open(ArchivePath);
+                ParseTexturePAK();
+
+                return PAKReturnType.IMPORT_SUCCESS;
+            }
+            catch (Exception e)
+            {
+                string error = e.ToString();
+                return PAKReturnType.IMPORT_FAILED_UNKNOWN;
+            }
         }
 
 
@@ -636,17 +795,17 @@ namespace AlienPAK
         }
 
         /* Export a file from the model PAK */
-        private bool ExportFileModelPAK(string FileName, string ExportPath)
+        private PAKReturnType ExportFileModelPAK(string FileName, string ExportPath)
         {
             //WIP
-            return false;
+            return PAKReturnType.EXPORT_FAILED_UNSUPPORTED;
         }
 
         /* Import a file to the model PAK */
-        private bool ImportFileModelPAK(string FileName, string ExportPath)
+        private PAKReturnType ImportFileModelPAK(string FileName, string ImportPath)
         {
             //WIP
-            return false;
+            return PAKReturnType.IMPORT_FAILED_UNSUPPORTED;
         }
     }
 }

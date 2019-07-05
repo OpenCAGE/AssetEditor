@@ -36,9 +36,6 @@ namespace AlienPAK
         /* Open a PAK and populate the GUI */
         private void OpenFileAndPopulateGUI(string filename)
         {
-            //Update title
-            this.Text = "Alien: Isolation PAK Tool - " + Path.GetFileName(filename);
-
             //Open PAK
             AlienPAK.Open(filename);
 
@@ -60,6 +57,9 @@ namespace AlienPAK
                 AddFileToTree(FileNameParts, 0, FileTree.Nodes);
             }
             UpdateSelectedFilePreview();
+            
+            //Update title
+            this.Text = "Alien: Isolation PAK Tool - " + Path.GetFileName(filename);
         }
 
         /* Add a file to the GUI tree structure */
@@ -152,7 +152,7 @@ namespace AlienPAK
             string FileName = ((TreeItem)FileTree.SelectedNode.Tag).String_Value;
 
             //Populate filename/type info
-            fileNameInfo.Text = Path.GetFileNameWithoutExtension(FileName);
+            fileNameInfo.Text = Path.GetFileName(FileName);
             fileTypeInfo.Text = GetFileTypeDescription(Path.GetExtension(FileName));
 
             //Populate file size info
@@ -179,13 +179,20 @@ namespace AlienPAK
             filePicker.Filter = "Import File|*" + Path.GetExtension(FileTree.SelectedNode.Text);
             if (filePicker.ShowDialog() == DialogResult.OK)
             {
-                if (AlienPAK.ImportFile(((TreeItem)FileTree.SelectedNode.Tag).String_Value, filePicker.FileName))
+                switch (AlienPAK.ImportFile(((TreeItem)FileTree.SelectedNode.Tag).String_Value, filePicker.FileName))
                 {
-                    MessageBox.Show("The selected file was imported successfully.", "Imported file", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                }
-                else
-                {
-                    MessageBox.Show("An error occurred while importing the selected file.\nIf Alien: Isolation is open, it must be closed.\n\nIf you are trying to import a texture or model, this feature is currently unavailable!", "An error occurred", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    case PAK.PAKReturnType.IMPORT_SUCCESS:
+                        MessageBox.Show("The selected file was imported successfully.", "Imported file", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        break;
+                    case PAK.PAKReturnType.IMPORT_FAILED_UNSUPPORTED:
+                        MessageBox.Show("An error occurred while importing the selected file.\nThe texture you are trying to replace is currently unsupported.", "An error occurred", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        break;
+                    case PAK.PAKReturnType.IMPORT_FAILED_UNKNOWN:
+                        MessageBox.Show("An error occurred while importing the selected file.\nIf Alien: Isolation is open, it must be closed.", "An error occurred", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        break;
+                    case PAK.PAKReturnType.IMPORT_FAILED_LOGIC_ERROR:
+                        MessageBox.Show("An error occurred while importing the selected file.\nPlease reload the PAK file.", "An error occurred", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        break;
                 }
             }
             UpdateSelectedFilePreview();
@@ -206,13 +213,20 @@ namespace AlienPAK
             filePicker.FileName = Path.GetFileName(FileTree.SelectedNode.Text);
             if (filePicker.ShowDialog() == DialogResult.OK)
             {
-                if (AlienPAK.ExportFile(((TreeItem)FileTree.SelectedNode.Tag).String_Value, filePicker.FileName))
+                switch (AlienPAK.ExportFile(((TreeItem)FileTree.SelectedNode.Tag).String_Value, filePicker.FileName))
                 {
-                    MessageBox.Show("The selected file was exported successfully.", "Exported file", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                }
-                else
-                {
-                    MessageBox.Show("An error occurred while exporting the selected file.", "An error occurred", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    case PAK.PAKReturnType.EXPORT_SUCCESS:
+                        MessageBox.Show("The selected file was exported successfully.", "Exported file", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        break;
+                    case PAK.PAKReturnType.EXPORT_FAILED_UNSUPPORTED:
+                        MessageBox.Show("An error occurred while exporting the selected file.\nThis file is currently unsupported.", "An error occurred", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        break;
+                    case PAK.PAKReturnType.EXPORT_FAILED_UNKNOWN:
+                        MessageBox.Show("An error occurred while exporting the selected file.\nMake sure you have write access to the export folder.", "An error occurred", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        break;
+                    case PAK.PAKReturnType.EXPORT_FAILED_LOGIC_ERROR:
+                        MessageBox.Show("An error occurred while exporting the selected file.\nPlease reload the PAK file.", "An error occurred", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        break;
                 }
             }
         }
