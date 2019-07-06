@@ -8,6 +8,8 @@ The latest stable version can be downloaded [by clicking here](https://github.co
 
 On launch, the toolkit will automatically alert you if a new version is available.
 
+Texture importing is currently classed as **experimental** and will likely produce errors for the time being. Always take a backup of "LEVEL_TEXTURE_HEADERS.ALL.BIN" and "LEVEL_TEXTURES.ALL.PAK" before importing any new files.
+
 ### This project is a work in progress.
 
 ## Currently supported
@@ -19,7 +21,7 @@ On launch, the toolkit will automatically alert you if a new version is availabl
   
 - PAK (textures)
   - Open archive
-  - Import files
+  - Import files [experimental!]
   - Export files
 
 ## Coming soon
