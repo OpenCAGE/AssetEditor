@@ -14,6 +14,7 @@ namespace AlienPAK
     public partial class Explorer : Form
     {
         PAK AlienPAK = new PAK();
+        ToolOptionsHandler ToolSettings = new ToolOptionsHandler();
 
         public Explorer(string[] args)
         {
@@ -294,6 +295,13 @@ namespace AlienPAK
         private void FileTree_AfterSelect(object sender, TreeViewEventArgs e)
         {
             UpdateSelectedFilePreview();
+        }
+
+        /* Open options pane */
+        private void optionsToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            ToolOptions OptionsForm = new ToolOptions();
+            OptionsForm.Show();
         }
     }
 }

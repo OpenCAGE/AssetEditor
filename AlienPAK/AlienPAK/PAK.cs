@@ -19,6 +19,8 @@ namespace AlienPAK
     */
     class PAK
     {
+        ToolOptionsHandler ToolSettings = new ToolOptionsHandler();
+
         /* --- COMMON PAK --- */
         private string ArchivePath = "";
         private string ArchivePathBin = "";
@@ -635,8 +637,15 @@ namespace AlienPAK
                     BinOffset++;
                 }
 
+                //Change the new filesize dependant on options (SEE LINE 171)
+                int FileSize = TextureEntry.Texture_V2.Length;
+                if (ToolSettings.GetSetting(ToolOptionsHandler.Settings.EXPERIMENTAL_TEXTURE_IMPORT))
+                {
+                    FileSize = (int)NewTexture.DataBlock.Length;
+                }
+
                 //Update filesize in BIN
-                byte[] NewEntrySize = BitConverter.GetBytes((int)NewTexture.DataBlock.Length);
+                byte[] NewEntrySize = BitConverter.GetBytes(FileSize);
                 for (int i = 0; i < 4; i++)
                 {
                     BinFile[BinOffset] = NewEntrySize[i];
@@ -696,13 +705,21 @@ namespace AlienPAK
                 {
                     ArchivePt4[i] = ArchiveFile.ReadByte();
                 }
-                ArchiveFile.BaseStream.Position += TextureEntry.Texture_V2.Length;
+                ArchiveFile.BaseStream.Position += FileSize;
 
                 //Take all files past V2 in PAK
                 byte[] ArchivePt5 = new byte[ArchiveFile.BaseStream.Length - ArchiveFile.BaseStream.Position];
                 for (int i = 0; i < ArchivePt5.Length; i++)
                 {
                     ArchivePt5[i] = ArchiveFile.ReadByte();
+                }
+
+                //CATHODE seems to ignore texture header information regarding size, so as default, resize any imported textures to the original size.
+                //An option is provided in the toolkit to write size information to the header (done above) however, so don't resize if that's the case.
+                //More work needs to be done to figure out why CATHODE doesn't honour the header's size value.
+                if (!ToolSettings.GetSetting(ToolOptionsHandler.Settings.EXPERIMENTAL_TEXTURE_IMPORT))
+                {
+                    Array.Resize(ref NewTexture.DataBlock, TextureEntry.Texture_V2.Length);
                 }
 
                 //It's time to try and save!
