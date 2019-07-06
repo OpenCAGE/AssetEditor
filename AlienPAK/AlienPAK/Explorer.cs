@@ -180,6 +180,7 @@ namespace AlienPAK
             filePicker.Filter = "Import File|*" + Path.GetExtension(FileTree.SelectedNode.Text);
             if (filePicker.ShowDialog() == DialogResult.OK)
             {
+                Cursor.Current = Cursors.WaitCursor;
                 switch (AlienPAK.ImportFile(((TreeItem)FileTree.SelectedNode.Tag).String_Value, filePicker.FileName))
                 {
                     case PAK.PAKReturnType.IMPORT_SUCCESS:
@@ -195,6 +196,7 @@ namespace AlienPAK
                         MessageBox.Show("An error occurred while importing the selected file.\nPlease reload the PAK file.", "An error occurred", MessageBoxButtons.OK, MessageBoxIcon.Error);
                         break;
                 }
+                Cursor.Current = Cursors.Default;
             }
             UpdateSelectedFilePreview();
         }
@@ -214,6 +216,7 @@ namespace AlienPAK
             filePicker.FileName = Path.GetFileName(FileTree.SelectedNode.Text);
             if (filePicker.ShowDialog() == DialogResult.OK)
             {
+                Cursor.Current = Cursors.WaitCursor;
                 switch (AlienPAK.ExportFile(((TreeItem)FileTree.SelectedNode.Tag).String_Value, filePicker.FileName))
                 {
                     case PAK.PAKReturnType.EXPORT_SUCCESS:
@@ -229,6 +232,7 @@ namespace AlienPAK
                         MessageBox.Show("An error occurred while exporting the selected file.\nPlease reload the PAK file.", "An error occurred", MessageBoxButtons.OK, MessageBoxIcon.Error);
                         break;
                 }
+                Cursor.Current = Cursors.Default;
             }
         }
         
