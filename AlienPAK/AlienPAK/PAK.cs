@@ -458,7 +458,8 @@ namespace AlienPAK
 
                 ArchiveFileBin.BaseStream.Position += 4; //Skip magic
                 TextureEntry.Format = (TextureFormat)ArchiveFileBin.ReadInt32();
-                ArchiveFileBin.BaseStream.Position += 8; //Skip unknowns
+                ArchiveFileBin.BaseStream.Position += 4; //Skip V2 length
+                ArchiveFileBin.BaseStream.Position += 4; //Skip V1 length
                 TextureEntry.Texture_V1.Width = ArchiveFileBin.ReadInt16();
                 TextureEntry.Texture_V1.Height = ArchiveFileBin.ReadInt16();
                 ArchiveFileBin.BaseStream.Position += 2; //Skip unknown
@@ -625,7 +626,7 @@ namespace AlienPAK
                     BinFile[i] = ArchiveFileBin.ReadByte();
                 }
 
-                //Update format
+                //Update format in BIN
                 int BinOffset = TextureEntry.HeaderPos + 4;
                 byte[] NewFormat = BitConverter.GetBytes((int)NewTexture.Format);
                 for (int i = 0; i < 4; i++)
@@ -634,8 +635,17 @@ namespace AlienPAK
                     BinOffset++;
                 }
 
-                //Update sizes (imported textures apply to V2 only)
-                BinOffset += 14;
+                //Update filesize in BIN
+                byte[] NewEntrySize = BitConverter.GetBytes((int)NewTexture.DataBlock.Length);
+                for (int i = 0; i < 4; i++)
+                {
+                    BinFile[BinOffset] = NewEntrySize[i];
+                    BinOffset++;
+                }
+                BinOffset += 4; //Skip V1
+
+                //Update dimensions in BIN (imported textures apply to V2 only)
+                BinOffset += 6;
                 byte[] NewWidth = BitConverter.GetBytes((Int16)NewTexture.Width);
                 byte[] NewHeight = BitConverter.GetBytes((Int16)NewTexture.Height);
                 for (int i = 0; i < 2; i++)
@@ -649,9 +659,7 @@ namespace AlienPAK
                     BinOffset++;
                 }
 
-                // --- Swap to PAK editing ---
-
-                //Take all headers up to the V1 header
+                //Take all headers up to the V2 header in PAK
                 ArchiveFile.BaseStream.Position = 0;
                 byte[] ArchivePt1 = new byte[TextureEntry.Texture_V2.HeaderPos];
                 for (int i = 0; i < ArchivePt1.Length; i++)
@@ -659,13 +667,12 @@ namespace AlienPAK
                     ArchivePt1[i] = ArchiveFile.ReadByte();
                 }
                 
-                //Update V2 header for new image size
+                //Update V2 header for new image filesize in PAK
                 byte[] ArchivePt2 = new byte[48];
                 for (int i = 0; i < ArchivePt2.Length; i++)
                 {
                     ArchivePt2[i] = ArchiveFile.ReadByte();
                 }
-                byte[] NewEntrySize = BitConverter.GetBytes((int)NewTexture.DataBlock.Length);
                 Array.Reverse(NewEntrySize); //This file is big endian
                 for (int i = 0; i < 4; i++)
                 {
@@ -676,14 +683,14 @@ namespace AlienPAK
                     ArchivePt2[12 + i] = NewEntrySize[i];
                 }
 
-                //Read to end of headers
+                //Read to end of headers in PAK
                 byte[] ArchivePt3 = new byte[HeaderListEndPAK - ArchivePt1.Length - 48];
                 for (int i = 0; i < ArchivePt3.Length; i++)
                 {
                     ArchivePt3[i] = ArchiveFile.ReadByte();
                 }
 
-                //Take all files up to V2
+                //Take all files up to V2 in PAK
                 byte[] ArchivePt4 = new byte[TextureEntry.Texture_V2.StartPos - HeaderListEndPAK];
                 for (int i = 0; i < ArchivePt4.Length; i++)
                 {
@@ -691,7 +698,7 @@ namespace AlienPAK
                 }
                 ArchiveFile.BaseStream.Position += TextureEntry.Texture_V2.Length;
 
-                //Take all files past V2
+                //Take all files past V2 in PAK
                 byte[] ArchivePt5 = new byte[ArchiveFile.BaseStream.Length - ArchiveFile.BaseStream.Position];
                 for (int i = 0; i < ArchivePt5.Length; i++)
                 {
