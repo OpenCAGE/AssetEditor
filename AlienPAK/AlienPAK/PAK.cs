@@ -626,7 +626,7 @@ namespace AlienPAK
                 }
 
                 //Update format
-                int BinOffset = TextureEntry.HeaderPos;
+                int BinOffset = TextureEntry.HeaderPos + 4;
                 byte[] NewFormat = BitConverter.GetBytes((int)NewTexture.Format);
                 for (int i = 0; i < 4; i++)
                 {
@@ -648,7 +648,6 @@ namespace AlienPAK
                     BinFile[BinOffset] = NewHeight[i];
                     BinOffset++;
                 }
-                BinOffset += 2;
 
                 // --- Swap to PAK editing ---
 
