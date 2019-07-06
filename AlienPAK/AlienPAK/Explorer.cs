@@ -183,17 +183,21 @@ namespace AlienPAK
                 Cursor.Current = Cursors.WaitCursor;
                 switch (AlienPAK.ImportFile(((TreeItem)FileTree.SelectedNode.Tag).String_Value, filePicker.FileName))
                 {
-                    case PAK.PAKReturnType.IMPORT_SUCCESS:
+                    case PAK.PAKReturnType.SUCCESS:
                         MessageBox.Show("The selected file was imported successfully.", "Imported file", MessageBoxButtons.OK, MessageBoxIcon.Information);
                         break;
-                    case PAK.PAKReturnType.IMPORT_FAILED_UNSUPPORTED:
+                    case PAK.PAKReturnType.FAILED_UNSUPPORTED:
                         MessageBox.Show("An error occurred while importing the selected file.\nThe texture you are trying to replace is currently unsupported.", "An error occurred", MessageBoxButtons.OK, MessageBoxIcon.Error);
                         break;
-                    case PAK.PAKReturnType.IMPORT_FAILED_UNKNOWN:
-                        MessageBox.Show("An error occurred while importing the selected file.\nIf Alien: Isolation is open, it must be closed.", "An error occurred", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    case PAK.PAKReturnType.FAILED_UNKNOWN:
+                        MessageBox.Show("An unknown error occurred while importing the selected file.\nA further popup will appear with detailed information.\nPlease log this information via the GitHub issue tracker.", "An error occurred", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        MessageBox.Show(AlienPAK.LatestError, "Unknown Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                         break;
-                    case PAK.PAKReturnType.IMPORT_FAILED_LOGIC_ERROR:
+                    case PAK.PAKReturnType.FAILED_LOGIC_ERROR:
                         MessageBox.Show("An error occurred while importing the selected file.\nPlease reload the PAK file.", "An error occurred", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        break;
+                    case PAK.PAKReturnType.FAILED_FILE_IN_USE:
+                        MessageBox.Show("An error occurred while importing the selected file.\nIf Alien: Isolation is open, it must be closed.", "An error occurred", MessageBoxButtons.OK, MessageBoxIcon.Error);
                         break;
                 }
                 Cursor.Current = Cursors.Default;
@@ -219,17 +223,21 @@ namespace AlienPAK
                 Cursor.Current = Cursors.WaitCursor;
                 switch (AlienPAK.ExportFile(((TreeItem)FileTree.SelectedNode.Tag).String_Value, filePicker.FileName))
                 {
-                    case PAK.PAKReturnType.EXPORT_SUCCESS:
+                    case PAK.PAKReturnType.SUCCESS:
                         MessageBox.Show("The selected file was exported successfully.", "Exported file", MessageBoxButtons.OK, MessageBoxIcon.Information);
                         break;
-                    case PAK.PAKReturnType.EXPORT_FAILED_UNSUPPORTED:
+                    case PAK.PAKReturnType.FAILED_UNSUPPORTED:
                         MessageBox.Show("An error occurred while exporting the selected file.\nThis file is currently unsupported.", "An error occurred", MessageBoxButtons.OK, MessageBoxIcon.Error);
                         break;
-                    case PAK.PAKReturnType.EXPORT_FAILED_UNKNOWN:
-                        MessageBox.Show("An error occurred while exporting the selected file.\nMake sure you have write access to the export folder.", "An error occurred", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    case PAK.PAKReturnType.FAILED_UNKNOWN:
+                        MessageBox.Show("An unknown error occurred while exporting the selected file.\nA further popup will appear with detailed information.\nPlease log this information via the GitHub issue tracker.", "An error occurred", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        MessageBox.Show(AlienPAK.LatestError, "Unknown Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                         break;
-                    case PAK.PAKReturnType.EXPORT_FAILED_LOGIC_ERROR:
+                    case PAK.PAKReturnType.FAILED_LOGIC_ERROR:
                         MessageBox.Show("An error occurred while exporting the selected file.\nPlease reload the PAK file.", "An error occurred", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        break;
+                    case PAK.PAKReturnType.FAILED_FILE_IN_USE:
+                        MessageBox.Show("An error occurred while exporting the selected file.\nMake sure you have write access to the export folder.", "An error occurred", MessageBoxButtons.OK, MessageBoxIcon.Error);
                         break;
                 }
                 Cursor.Current = Cursors.Default;
