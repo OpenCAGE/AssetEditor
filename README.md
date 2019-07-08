@@ -43,6 +43,7 @@ Texture importing is currently classed as **experimental** and will likely produ
 
  * [JPEXS Flash Decompiler](https://github.com/jindrapetrik/jpexs-decompiler) is recommended for editing exported UI .GFX files.
  * [Pico Pixel](https://pixelandpolygon.com/) is recommended for viewing exported texture .DDS files.
+ * [DirectXTex](https://github.com/microsoft/DirectXTex/releases) compiled binary is recommended for converting to/from .DDS formats.
  * [io_scene_aliens](https://forum.xentax.com/viewtopic.php?t=12079&start=90#p103131) Blender plugin is recommended for viewing exported models.
 
 
