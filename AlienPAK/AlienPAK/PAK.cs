@@ -30,10 +30,8 @@ namespace AlienPAK
         private int NumberOfEntries = -1;
         private enum PAKType { PAK2, PAK_TEXTURES, PAK_MODELS, UNRECOGNISED };
         private PAKType Format = PAKType.UNRECOGNISED;
-        public enum PAKReturnType {
-            IMPORT_FAILED_UNKNOWN, IMPORT_FAILED_UNSUPPORTED, IMPORT_SUCCESS, IMPORT_FAILED_LOGIC_ERROR,
-            EXPORT_FAILED_UNKNOWN, EXPORT_FAILED_UNSUPPORTED, EXPORT_SUCCESS, EXPORT_FAILED_LOGIC_ERROR
-        }
+        public enum PAKReturnType { FAILED_UNKNOWN, FAILED_UNSUPPORTED, SUCCESS, FAILED_LOGIC_ERROR, FAILED_FILE_IN_USE }
+        public string LatestError = "";
 
         /* Open a PAK archive */
         public void Open(string FilePath)
@@ -142,7 +140,7 @@ namespace AlienPAK
         /* Export from a PAK archive */
         public PAKReturnType ExportFile(string FileName, string ExportPath)
         {
-            if (ArchiveFile == null) { return PAKReturnType.EXPORT_FAILED_LOGIC_ERROR; }
+            if (ArchiveFile == null) { return PAKReturnType.FAILED_LOGIC_ERROR; }
 
             switch (Format)
             {
@@ -153,14 +151,14 @@ namespace AlienPAK
                 case PAKType.PAK_MODELS:
                     return ExportFileModelPAK(FileName, ExportPath);
                 default:
-                    return PAKReturnType.IMPORT_FAILED_UNSUPPORTED;
+                    return PAKReturnType.FAILED_UNSUPPORTED;
             }
         }
 
         /* Import to a PAK archive */
         public PAKReturnType ImportFile(string FileName, string ImportPath)
         {
-            if (ArchiveFile == null) { return PAKReturnType.IMPORT_FAILED_LOGIC_ERROR; }
+            if (ArchiveFile == null) { return PAKReturnType.FAILED_LOGIC_ERROR; }
 
             switch (Format)
             {
@@ -171,7 +169,7 @@ namespace AlienPAK
                 case PAKType.PAK_MODELS:
                     return ImportFileModelPAK(FileName, ImportPath);
                 default:
-                    return PAKReturnType.IMPORT_FAILED_UNSUPPORTED;
+                    return PAKReturnType.FAILED_UNSUPPORTED;
             }
         }
 
@@ -284,12 +282,12 @@ namespace AlienPAK
 
                 //Write the file's contents out
                 File.WriteAllBytes(ExportPath, FileExport.ToArray());
-                return PAKReturnType.EXPORT_SUCCESS;
+                return PAKReturnType.SUCCESS;
             }
             catch (Exception e)
             {
-                string error = e.ToString();
-                return PAKReturnType.EXPORT_FAILED_UNKNOWN;
+                LatestError = e.ToString();
+                return PAKReturnType.FAILED_UNKNOWN;
             }
         }
 
@@ -404,19 +402,19 @@ namespace AlienPAK
                 {
                     //File is probably in-use by the game, re-open for reading and exit as fail
                     Open(ArchivePath);
-                    return PAKReturnType.IMPORT_FAILED_UNKNOWN;
+                    return PAKReturnType.FAILED_FILE_IN_USE;
                 }
 
                 //Reload the archive for us
                 Open(ArchivePath);
                 ParsePAK2();
 
-                return PAKReturnType.IMPORT_SUCCESS;
+                return PAKReturnType.SUCCESS;
             }
             catch (Exception e)
             {
-                string error = e.ToString();
-                return PAKReturnType.IMPORT_FAILED_UNKNOWN;
+                LatestError = e.ToString();
+                return PAKReturnType.FAILED_UNKNOWN;
             }
         }
 
@@ -558,7 +556,7 @@ namespace AlienPAK
                 }
                 else
                 {
-                    return PAKReturnType.EXPORT_FAILED_UNSUPPORTED;
+                    return PAKReturnType.FAILED_UNSUPPORTED;
                 }
 
                 //Pull the texture part content from the archive
@@ -589,19 +587,26 @@ namespace AlienPAK
                         break;
                 }
 
-                //Save out the part
-                if (FailsafeSave)
+                //Try and save out the part
+                try
                 {
-                    TextureOutput.SaveCrude(ExportPath);
-                    return PAKReturnType.EXPORT_SUCCESS;
+                    if (FailsafeSave)
+                    {
+                        TextureOutput.SaveCrude(ExportPath);
+                        return PAKReturnType.SUCCESS;
+                    }
+                    TextureOutput.Save(ExportPath);
+                    return PAKReturnType.SUCCESS;
                 }
-                TextureOutput.Save(ExportPath);
-                return PAKReturnType.EXPORT_SUCCESS;
+                catch
+                {
+                    return PAKReturnType.FAILED_FILE_IN_USE;
+                }
             }
             catch (Exception e)
             {
-                string error = e.ToString();
-                return PAKReturnType.EXPORT_FAILED_UNKNOWN;
+                LatestError = e.ToString();
+                return PAKReturnType.FAILED_UNKNOWN;
             }
         }
 
@@ -617,7 +622,7 @@ namespace AlienPAK
                 //Currently we only support textures that have V1 and V2
                 if (TextureEntry.Texture_V2.HeaderPos == -1)
                 {
-                    return PAKReturnType.IMPORT_FAILED_UNSUPPORTED;
+                    return PAKReturnType.FAILED_UNSUPPORTED;
                 }
 
                 //Load the BIN to byte array
@@ -748,19 +753,19 @@ namespace AlienPAK
                 {
                     //File is probably in-use by the game, re-open for reading and exit as fail
                     Open(ArchivePath);
-                    return PAKReturnType.IMPORT_FAILED_UNKNOWN;
+                    return PAKReturnType.FAILED_FILE_IN_USE;
                 }
 
                 //Reload the archive for us
                 Open(ArchivePath);
                 ParseTexturePAK();
 
-                return PAKReturnType.IMPORT_SUCCESS;
+                return PAKReturnType.SUCCESS;
             }
             catch (Exception e)
             {
-                string error = e.ToString();
-                return PAKReturnType.IMPORT_FAILED_UNKNOWN;
+                LatestError = e.ToString();
+                return PAKReturnType.FAILED_UNKNOWN;
             }
         }
 
@@ -821,14 +826,14 @@ namespace AlienPAK
         private PAKReturnType ExportFileModelPAK(string FileName, string ExportPath)
         {
             //WIP
-            return PAKReturnType.EXPORT_FAILED_UNSUPPORTED;
+            return PAKReturnType.FAILED_UNSUPPORTED;
         }
 
         /* Import a file to the model PAK */
         private PAKReturnType ImportFileModelPAK(string FileName, string ImportPath)
         {
             //WIP
-            return PAKReturnType.IMPORT_FAILED_UNSUPPORTED;
+            return PAKReturnType.FAILED_UNSUPPORTED;
         }
     }
 }
