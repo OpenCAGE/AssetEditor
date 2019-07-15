@@ -105,6 +105,7 @@ namespace AlienPAK
             FileList.Clear();
             FileOffsets.Clear();
             FilePadding.Clear();
+            TextureEntries.Clear();
 
             switch (Format)
             {
