@@ -12,7 +12,7 @@ namespace AlienPAK
      * Our PAK handler.
      * Created by Matt Filer: http://www.mattfiler.co.uk
      * 
-     * Intended to support PAK2/TexturePAK/ModelPAK.
+     * Intended to support various PAK formats for Alien: Isolation (CATHODE).
      * Potentially will also add the ability to make your own PAK2 archives.
      * Currently a WORK IN PROGRESS.
      * 
@@ -28,7 +28,7 @@ namespace AlienPAK
         private BinaryReader ArchiveFileBin = null;
         private List<string> FileList = new List<string>();
         private int NumberOfEntries = -1;
-        private enum PAKType { PAK2, PAK_TEXTURES, PAK_MODELS, UNRECOGNISED };
+        private enum PAKType { PAK2, PAK_TEXTURES, PAK_MODELS, PAK_SCRIPTS, PAK_MATERIALMAPS, UNRECOGNISED };
         private PAKType Format = PAKType.UNRECOGNISED;
         public enum PAKReturnType { FAILED_UNKNOWN, FAILED_UNSUPPORTED, SUCCESS, FAILED_LOGIC_ERROR, FAILED_FILE_IN_USE }
         public string LatestError = "";
@@ -54,6 +54,12 @@ namespace AlienPAK
                 case "GLOBAL_MODELS.PAK":
                 case "LEVEL_MODELS.PAK":
                     Format = PAKType.PAK_MODELS;
+                    break;
+                case "MATERIAL_MAPPINGS.PAK":
+                    Format = PAKType.PAK_MATERIALMAPS;
+                    break;
+                case "COMMANDS.PAK":
+                    Format = PAKType.PAK_SCRIPTS;
                     break;
                 default:
                     try
@@ -114,7 +120,12 @@ namespace AlienPAK
                 case PAKType.PAK_TEXTURES:
                     return ParseTexturePAK();
                 case PAKType.PAK_MODELS:
-                //return ParseModelPAK(); <= Even bigger WIP than textures!
+                    //return ParseModelPAK(); <= Even bigger WIP than textures!
+                    return null;
+                case PAKType.PAK_SCRIPTS:
+                    return ParseCommandsPAK();
+                case PAKType.PAK_MATERIALMAPS:
+                    return ParseMaterialMappingsPAK();
                 default:
                     return null;
             }
@@ -133,6 +144,10 @@ namespace AlienPAK
                     return FileSizeTexturePAK(FileName);
                 case PAKType.PAK_MODELS:
                     return FileSizeModelPAK(FileName);
+                case PAKType.PAK_SCRIPTS:
+                    return FileSizeCommandsPAK(FileName);
+                case PAKType.PAK_MATERIALMAPS:
+                    return FileSizeMaterialMappingsPAK(FileName);
                 default:
                     return -1;
             }
@@ -151,6 +166,10 @@ namespace AlienPAK
                     return ExportFileTexturePAK(FileName, ExportPath);
                 case PAKType.PAK_MODELS:
                     return ExportFileModelPAK(FileName, ExportPath);
+                case PAKType.PAK_SCRIPTS:
+                    return ExportFileCommandsPAK(FileName, ExportPath);
+                case PAKType.PAK_MATERIALMAPS:
+                    return ExportFileMaterialMappingsPAK(FileName, ExportPath);
                 default:
                     return PAKReturnType.FAILED_UNSUPPORTED;
             }
@@ -169,6 +188,10 @@ namespace AlienPAK
                     return ImportFileTexturePAK(FileName, ImportPath);
                 case PAKType.PAK_MODELS:
                     return ImportFileModelPAK(FileName, ImportPath);
+                case PAKType.PAK_SCRIPTS:
+                    return ImportFileCommandsPAK(FileName, ImportPath);
+                case PAKType.PAK_MATERIALMAPS:
+                    return ImportFileMaterialMappingsPAK(FileName, ImportPath);
                 default:
                     return PAKReturnType.FAILED_UNSUPPORTED;
             }
@@ -834,6 +857,60 @@ namespace AlienPAK
         private PAKReturnType ImportFileModelPAK(string FileName, string ImportPath)
         {
             //WIP
+            return PAKReturnType.FAILED_UNSUPPORTED;
+        }
+
+
+        /* --- COMMANDS PAK --- */
+
+        /* Parse the file listing for a scripts PAK */
+        private List<string> ParseCommandsPAK()
+        {
+            return null;
+        }
+
+        /* Get a file's size from the scripts PAK */
+        private int FileSizeCommandsPAK(string FileName)
+        {
+            return -1;
+        }
+
+        /* Export a file from the scripts PAK */
+        private PAKReturnType ExportFileCommandsPAK(string FileName, string ExportPath)
+        {
+            return PAKReturnType.FAILED_UNSUPPORTED;
+        }
+
+        /* Import a file to the scripts PAK */
+        private PAKReturnType ImportFileCommandsPAK(string FileName, string ImportPath)
+        {
+            return PAKReturnType.FAILED_UNSUPPORTED;
+        }
+
+
+        /* --- MATERIAL MAPPING PAK --- */
+
+        /* Parse the file listing for a material map PAK */
+        private List<string> ParseMaterialMappingsPAK()
+        {
+            return null;
+        }
+
+        /* Get a file's size from the material map PAK */
+        private int FileSizeMaterialMappingsPAK(string FileName)
+        {
+            return -1;
+        }
+
+        /* Export a file from the material map PAK */
+        private PAKReturnType ExportFileMaterialMappingsPAK(string FileName, string ExportPath)
+        {
+            return PAKReturnType.FAILED_UNSUPPORTED;
+        }
+
+        /* Import a file to the material map PAK */
+        private PAKReturnType ImportFileMaterialMappingsPAK(string FileName, string ImportPath)
+        {
             return PAKReturnType.FAILED_UNSUPPORTED;
         }
     }
