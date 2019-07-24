@@ -8,9 +8,9 @@ namespace AlienPAK
 {
     class EntryMaterialMappingsPAK
     {
-        public byte[] header = new byte[4];
-        public string filename = "";
-        public int entry_number = 0; //materials will be 2* this number
-        public List<string> materials = new List<string>();
+        public byte[] MapHeader = new byte[4];
+        public string MapFilename = "";
+        public int MapEntryCoupleCount = 0; //materials will be 2* this number
+        public List<string> MapMatEntries = new List<string>();
     }
 }

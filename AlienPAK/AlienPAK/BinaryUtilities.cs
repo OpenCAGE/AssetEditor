@@ -9,7 +9,7 @@ namespace AlienPAK
 {
     /*
      *
-     * Tools for reading/flipping big endians.
+     * Misc binary tools: e.g. handling big endians, etc.
      * Created by Matt Filer: http://www.mattfiler.co.uk
      * 
      * This will probably be expanded over time as required.
@@ -46,6 +46,22 @@ namespace AlienPAK
         {
             Array.Reverse(ThisEndian);
             return ThisEndian;
+        }
+    }
+    class ExtraBinaryUtils
+    {
+        private bool UpcomingBytesMatchMagic(BinaryReader reader, byte[] magic)
+        {
+            return (reader.ReadByte() == magic[0] && reader.ReadByte() == magic[1] && reader.ReadByte() == magic[2] && reader.ReadByte() == magic[3]);
+        }
+        private bool DoBytesMatch(byte[] bytes_1, byte[] bytes_2)
+        {
+            if (bytes_1.Length != bytes_2.Length) { return false; }
+            for (int i = 0; i < bytes_1.Length; i++)
+            {
+                if (bytes_1[i] != bytes_2[i]) { return false; }
+            }
+            return true;
         }
     }
 }

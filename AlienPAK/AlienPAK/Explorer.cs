@@ -116,6 +116,10 @@ namespace AlienPAK
         /* Get type description based on extension */
         private string GetFileTypeDescription(string FileExtension)
         {
+            if (FileExtension == "")
+            {
+                return "Cathode Script";
+            }
             switch (FileExtension.Substring(1).ToUpper())
             {
                 case "DDS":

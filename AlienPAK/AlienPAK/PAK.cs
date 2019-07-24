@@ -864,13 +864,16 @@ namespace AlienPAK
 
         /* --- COMMANDS PAK --- */
 
-        /* Parse the file listing for a scripts PAK */
+        /* Parse the entries in a scripts PAK */
         private List<string> ParseCommandsPAK()
         {
+            
+
+
             return null;
         }
 
-        /* Get a file's size from the scripts PAK */
+        /* Get a file's size from the scripts PAK (compiled size, not actual) */
         private int FileSizeCommandsPAK(string FileName)
         {
             return -1;
@@ -879,6 +882,7 @@ namespace AlienPAK
         /* Export a file from the scripts PAK */
         private PAKReturnType ExportFileCommandsPAK(string FileName, string ExportPath)
         {
+            //There's no point exporting/importing until the format is understood better.
             return PAKReturnType.FAILED_UNSUPPORTED;
         }
 
@@ -892,7 +896,7 @@ namespace AlienPAK
         /* --- MATERIAL MAPPING PAK --- */
         List<EntryMaterialMappingsPAK> MaterialMappingEntries = new List<EntryMaterialMappingsPAK>();
 
-        /* Parse the file listing for a material map PAK */
+        /* Parse the entries in the material map PAK */
         private List<string> ParseMaterialMappingsPAK()
         {
             //Parse header
@@ -903,38 +907,38 @@ namespace AlienPAK
             for (int x = 0; x < NumberOfFiles; x++)
             {
                 //This entry
-                EntryMaterialMappingsPAK new_entry = new EntryMaterialMappingsPAK();
-                new_entry.header = ArchiveFile.ReadBytes(4);
-                new_entry.entry_number = ArchiveFile.ReadInt32();
+                EntryMaterialMappingsPAK NewMatEntry = new EntryMaterialMappingsPAK();
+                NewMatEntry.MapHeader = ArchiveFile.ReadBytes(4);
+                NewMatEntry.MapEntryCoupleCount = ArchiveFile.ReadInt32();
                 ArchiveFile.BaseStream.Position += 4; //skip nulls (always nulls?)
-                for (int p = 0; p < (new_entry.entry_number * 2) + 1; p++)
+                for (int p = 0; p < (NewMatEntry.MapEntryCoupleCount * 2) + 1; p++)
                 {
                     //String
-                    int this_string_length = ArchiveFile.ReadInt32();
-                    string this_string = "";
-                    for (int i = 0; i < this_string_length; i++)
+                    int NewMatStringLength = ArchiveFile.ReadInt32();
+                    string NewMatString = "";
+                    for (int i = 0; i < NewMatStringLength; i++)
                     {
-                        this_string += ArchiveFile.ReadChar();
+                        NewMatString += ArchiveFile.ReadChar();
                     }
 
                     //First string is filename, others are materials
                     if (p == 0)
                     {
-                        new_entry.filename = this_string.Replace("n:/", ""); //Remove the system root from the name
+                        NewMatEntry.MapFilename = NewMatString.Replace("n:/", ""); //Remove the system root from the name
                     }
                     else
                     {
-                        new_entry.materials.Add(this_string);
+                        NewMatEntry.MapMatEntries.Add(NewMatString);
                     }
                 }
-                MaterialMappingEntries.Add(new_entry);
+                MaterialMappingEntries.Add(NewMatEntry);
             }
 
             //Compile all filenames for return
             List<string> MaterialMapFilenames = new List<string>();
             foreach (EntryMaterialMappingsPAK MatEntry in MaterialMappingEntries)
             {
-                MaterialMapFilenames.Add(MatEntry.filename);
+                MaterialMapFilenames.Add(MatEntry.MapFilename);
             }
             return MaterialMapFilenames;
         }
@@ -945,10 +949,10 @@ namespace AlienPAK
             int size = -1;
             foreach (EntryMaterialMappingsPAK MatEntry in MaterialMappingEntries)
             {
-                if (MatEntry.filename == FileName)
+                if (MatEntry.MapFilename == FileName)
                 {
                     size = 0;
-                    foreach (string MatMap in MatEntry.materials)
+                    foreach (string MatMap in MatEntry.MapMatEntries)
                     {
                         size += MatMap.Length;
                     }
@@ -961,6 +965,7 @@ namespace AlienPAK
         /* Export a file from the material map PAK */
         private PAKReturnType ExportFileMaterialMappingsPAK(string FileName, string ExportPath)
         {
+            //Files don't get shipped - how should we export the data?
             return PAKReturnType.FAILED_UNSUPPORTED;
         }
 
