@@ -112,6 +112,7 @@ namespace AlienPAK
             FileOffsets.Clear();
             FilePadding.Clear();
             TextureEntries.Clear();
+            MaterialMappingEntries.Clear();
 
             switch (Format)
             {
@@ -889,17 +890,72 @@ namespace AlienPAK
 
 
         /* --- MATERIAL MAPPING PAK --- */
+        List<EntryMaterialMappingsPAK> MaterialMappingEntries = new List<EntryMaterialMappingsPAK>();
 
         /* Parse the file listing for a material map PAK */
         private List<string> ParseMaterialMappingsPAK()
         {
-            return null;
+            //Parse header
+            ArchiveFile.BaseStream.Position += 8;
+            int NumberOfFiles = ArchiveFile.ReadInt32();
+
+            //Parse entries (XML is broken in the build files - doesn't get shipped)
+            for (int x = 0; x < NumberOfFiles; x++)
+            {
+                //This entry
+                EntryMaterialMappingsPAK new_entry = new EntryMaterialMappingsPAK();
+                new_entry.header = ArchiveFile.ReadBytes(4);
+                new_entry.entry_number = ArchiveFile.ReadInt32();
+                ArchiveFile.BaseStream.Position += 4; //skip nulls (always nulls?)
+                for (int p = 0; p < (new_entry.entry_number * 2) + 1; p++)
+                {
+                    //String
+                    int this_string_length = ArchiveFile.ReadInt32();
+                    string this_string = "";
+                    for (int i = 0; i < this_string_length; i++)
+                    {
+                        this_string += ArchiveFile.ReadChar();
+                    }
+
+                    //First string is filename, others are materials
+                    if (p == 0)
+                    {
+                        new_entry.filename = this_string.Replace("n:/", ""); //Remove the system root from the name
+                    }
+                    else
+                    {
+                        new_entry.materials.Add(this_string);
+                    }
+                }
+                MaterialMappingEntries.Add(new_entry);
+            }
+
+            //Compile all filenames for return
+            List<string> MaterialMapFilenames = new List<string>();
+            foreach (EntryMaterialMappingsPAK MatEntry in MaterialMappingEntries)
+            {
+                MaterialMapFilenames.Add(MatEntry.filename);
+            }
+            return MaterialMapFilenames;
         }
 
-        /* Get a file's size from the material map PAK */
+        /* Get a file's size from the material map PAK (kinda faked for now) */
         private int FileSizeMaterialMappingsPAK(string FileName)
         {
-            return -1;
+            int size = -1;
+            foreach (EntryMaterialMappingsPAK MatEntry in MaterialMappingEntries)
+            {
+                if (MatEntry.filename == FileName)
+                {
+                    size = 0;
+                    foreach (string MatMap in MatEntry.materials)
+                    {
+                        size += MatMap.Length;
+                    }
+                    break;
+                }
+            }
+            return size;
         }
 
         /* Export a file from the material map PAK */

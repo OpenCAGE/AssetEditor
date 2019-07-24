@@ -130,6 +130,8 @@ namespace AlienPAK
                     return "BIN (Binary File)";
                 case "BML":
                     return "BML (Binary XML)";
+                case "XML":
+                    return "XML (Markup)";
             }
             return "";
         }
