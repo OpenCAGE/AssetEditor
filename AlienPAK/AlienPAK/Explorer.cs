@@ -38,6 +38,7 @@ namespace AlienPAK
         private void OpenFileAndPopulateGUI(string filename)
         {
             //Open PAK
+            Cursor.Current = Cursors.WaitCursor;
             AlienPAK.Open(filename);
 
             //Parse the PAK's file list
@@ -45,6 +46,7 @@ namespace AlienPAK
             ParsedFiles = AlienPAK.Parse();
             if (ParsedFiles == null)
             {
+                Cursor.Current = Cursors.Default;
                 MessageBox.Show("The selected PAK is currently unsupported.", "Unsupported", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
@@ -58,9 +60,11 @@ namespace AlienPAK
                 AddFileToTree(FileNameParts, 0, FileTree.Nodes);
             }
             UpdateSelectedFilePreview();
-            
+            FileTree.Sort();
+
             //Update title
             this.Text = "Alien: Isolation PAK Tool - " + Path.GetFileName(filename);
+            Cursor.Current = Cursors.Default;
         }
 
         /* Add a file to the GUI tree structure */
