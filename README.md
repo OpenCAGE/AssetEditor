@@ -10,34 +10,35 @@ On launch, the toolkit will automatically alert you if a new version is availabl
 
 ***
 
-This PAK Tool is available within the [Alien: Isolation Mod Tools](https://github.com/MattFiler/LegendPlugin) as of V0.6.3.0! Future updates will be ported, as development continues on this repo for the standalone version.
+This PAK Tool is available within the [Alien: Isolation Mod Tools](https://github.com/MattFiler/LegendPlugin) as of V0.6.3.0! Future updates will be ported, as development continues on this repo for the extended standalone version.
 
 
 ## Currently supported
 
-- PAK2 (ui/animations)
+- PAK2 (UI.PAK, ANIMATIONS.PAK)
   - Open archive
   - Import files
   - Export files
   
-- PAK (textures)
+- Texture PAK (LEVEL_TEXTURES.ALL.PAK, GLOBAL_TEXTURES.ALL.PAK)
   - Open archive
   - Import files [experimental!]
   - Export files
 
+- Scripts PAK (COMMANDS.PAK)
+	- Open archive
+
+- Material Mappings PAK (MATERIAL_MAPPINGS.PAK)
+	- Open archive
+
+
 ## Coming soon
 
-- PAK2 (ui/animations)
-  - Preview files
-
-- PAK (textures)
-  - Preview files
-  
-- PAK (models)
-  - Open archive
-  - Export files
-  - Preview files
-  - Import files(?)
+Intended functionality for upcoming versions includes: 
+- Ability to import/export material mappings.
+- Ability to open models PAK (should be soon-ish, then exporting).
+- Ability to export/import scripts (lots of work still to do).
+- Ability to preview images when selecting them.
 
 
 ## Recommended tools

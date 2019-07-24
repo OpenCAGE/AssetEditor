@@ -38,6 +38,7 @@ namespace AlienPAK
         private void OpenFileAndPopulateGUI(string filename)
         {
             //Open PAK
+            Cursor.Current = Cursors.WaitCursor;
             AlienPAK.Open(filename);
 
             //Parse the PAK's file list
@@ -45,6 +46,7 @@ namespace AlienPAK
             ParsedFiles = AlienPAK.Parse();
             if (ParsedFiles == null)
             {
+                Cursor.Current = Cursors.Default;
                 MessageBox.Show("The selected PAK is currently unsupported.", "Unsupported", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
@@ -58,9 +60,11 @@ namespace AlienPAK
                 AddFileToTree(FileNameParts, 0, FileTree.Nodes);
             }
             UpdateSelectedFilePreview();
-            
+            FileTree.Sort();
+
             //Update title
             this.Text = "Alien: Isolation PAK Tool - " + Path.GetFileName(filename);
+            Cursor.Current = Cursors.Default;
         }
 
         /* Add a file to the GUI tree structure */
@@ -116,6 +120,10 @@ namespace AlienPAK
         /* Get type description based on extension */
         private string GetFileTypeDescription(string FileExtension)
         {
+            if (FileExtension == "")
+            {
+                return "Cathode Script";
+            }
             switch (FileExtension.Substring(1).ToUpper())
             {
                 case "DDS":
@@ -130,6 +138,8 @@ namespace AlienPAK
                     return "BIN (Binary File)";
                 case "BML":
                     return "BML (Binary XML)";
+                case "XML":
+                    return "XML (Markup)";
             }
             return "";
         }
@@ -187,7 +197,7 @@ namespace AlienPAK
                         MessageBox.Show("The selected file was imported successfully.", "Imported file", MessageBoxButtons.OK, MessageBoxIcon.Information);
                         break;
                     case PAK.PAKReturnType.FAILED_UNSUPPORTED:
-                        MessageBox.Show("An error occurred while importing the selected file.\nThe texture you are trying to replace is currently unsupported.", "An error occurred", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        MessageBox.Show("An error occurred while importing the selected file.\nThe file you are trying to replace is currently unsupported.", "An error occurred", MessageBoxButtons.OK, MessageBoxIcon.Error);
                         break;
                     case PAK.PAKReturnType.FAILED_UNKNOWN:
                         MessageBox.Show("An unknown error occurred while importing the selected file.\nA further popup will appear with detailed information.\nPlease log this information via the GitHub issue tracker.", "An error occurred", MessageBoxButtons.OK, MessageBoxIcon.Error);
