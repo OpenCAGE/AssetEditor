@@ -113,6 +113,7 @@ namespace AlienPAK
             FilePadding.Clear();
             TextureEntries.Clear();
             MaterialMappingEntries.Clear();
+            CommandsEntries.Clear();
 
             switch (Format)
             {
@@ -863,19 +864,257 @@ namespace AlienPAK
 
 
         /* --- COMMANDS PAK --- */
+        List<EntryCommandsPAK> CommandsEntries = new List<EntryCommandsPAK>();
 
-        /* Parse the entries in a scripts PAK */
+        /* Parse the entries in a scripts PAK (BIG WIP!) */
         private List<string> ParseCommandsPAK()
         {
-            
+            List<byte[]> CommandsHeaderMagics = new List<byte[]>();
+            ExtraBinaryUtils BinaryUtils = new ExtraBinaryUtils();
+
+            /* **************************** */
+            /* *********  Header  ********* */
+
+            ArchiveFile.BaseStream.Position = 28; //Skip header
+
+            /* **************************** */
+            /* ********* "Blocks" ********* */
+            CommandsHeaderMagics.Add(new byte[] { 0xDA, 0x6B, 0xD7, 0x02 });
+            CommandsHeaderMagics.Add(new byte[] { 0x84, 0x11, 0xCD, 0x38 });
+            CommandsHeaderMagics.Add(new byte[] { 0x5E, 0x8E, 0x8E, 0x5A });
+            CommandsHeaderMagics.Add(new byte[] { 0xBF, 0xA7, 0x62, 0x8C });
+            CommandsHeaderMagics.Add(new byte[] { 0xF6, 0xAF, 0x08, 0x93 });
+            CommandsHeaderMagics.Add(new byte[] { 0xF0, 0x0B, 0x76, 0x96 });
+            CommandsHeaderMagics.Add(new byte[] { 0x38, 0x43, 0xFF, 0xBF });
+            CommandsHeaderMagics.Add(new byte[] { 0x87, 0xC1, 0x25, 0xE7 });
+            CommandsHeaderMagics.Add(new byte[] { 0xDC, 0x72, 0x74, 0xFD });
+
+            //Block one
+            ParseGenericCommandsPakBlock(CommandsHeaderMagics[0], CommandsHeaderMagics[1]);
+
+            //String block
+            List<string> ScriptStringDump = new List<string>();
+            for (int i = 0; i < 99999999; i++)
+            {
+                int ResetPos = (int)ArchiveFile.BaseStream.Position;
+
+                //Check header magic exists
+                if (!BinaryUtils.UpcomingBytesMatchMagic(ArchiveFile, CommandsHeaderMagics[1]))
+                {
+                    ArchiveFile.BaseStream.Position = ResetPos;
+                    break; //If it doesn't, we've reached the end of the strings
+                }
+
+                //Continue with data & string
+                int unk3 = ArchiveFile.ReadUInt16();
+                int unk4 = ArchiveFile.ReadUInt16();
+                int unk5 = ArchiveFile.ReadUInt16();
+                int unk6 = ArchiveFile.ReadUInt16();
+                string StringEntry = "";
+                bool ShouldFinish = false;
+                for (int x = 0; x < 9999; x++)
+                {
+                    byte ThisByte = ArchiveFile.ReadByte();
+                    if (ThisByte == 0x00)
+                    {
+                        ShouldFinish = true;
+                        continue; //We're getting to the end of the string...
+                    }
+                    if (ShouldFinish)
+                    {
+                        ArchiveFile.BaseStream.Position -= 1;
+                        break; //Reached the end - push the stream position back and break out.
+                    }
+                    StringEntry += (char)ThisByte;
+                }
+                ScriptStringDump.Add(StringEntry);
+            }
+
+            //Blocks two through seven
+            for (int i = 2; i < 8; i++)
+            {
+                ParseGenericCommandsPakBlock(CommandsHeaderMagics[i], CommandsHeaderMagics[i + 1]);
+            }
+
+            //Block eight
+            for (int i = 0; i < 99999999; i++)
+            {
+                int ResetPos = (int)ArchiveFile.BaseStream.Position;
+                //Each entry here is 8 bytes: 4 header and 4 unknown, if header matches, we have an entry
+                if (BinaryUtils.UpcomingBytesMatchMagic(ArchiveFile, CommandsHeaderMagics[8]))
+                {
+                    ArchiveFile.BaseStream.Position += 4;
+                    continue;
+                }
+                ArchiveFile.BaseStream.Position = ResetPos;
+                break; //If the header doesn't match, we have finished this block
+            }
 
 
-            return null;
+            /* ***************************** */
+            /* ********* "Scripts" ********* */
+            CommandsHeaderMagics.Add(new byte[] { 0x07, 0x00, 0x00, 0x00 }); //Not really a header, but used as such here.
+            CommandsHeaderMagics.Add(new byte[] { 0x0E, 0x00, 0x00, 0x00 }); //Not really a header, but used as such here.
+
+            //Parse each script entry
+            for (int i = 0; i < 99999999; i++)
+            {
+                EntryCommandsPAK NewScriptEntry = new EntryCommandsPAK();
+
+                //Read-in script's unique ID
+                NewScriptEntry.ScriptID = ArchiveFile.ReadBytes(4);
+
+                //Check to see if we reached the garbage block 
+                if (BinaryUtils.DoBytesMatch(NewScriptEntry.ScriptID, CommandsHeaderMagics[9]))
+                {
+                    if (BinaryUtils.DoBytesMatch(ArchiveFile.ReadBytes(4), CommandsHeaderMagics[10]))
+                    {
+                        ArchiveFile.BaseStream.Position -= 8;
+                        break;
+                    }
+                    ArchiveFile.BaseStream.Position -= 4;
+                }
+
+                //Read-in script string
+                bool ShouldFinish = false;
+                for (int x = 0; x < 99999999; x++)
+                {
+                    byte ThisByte = ArchiveFile.ReadByte();
+                    if (ThisByte == 0x00)
+                    {
+                        if (ArchiveFile.BaseStream.Position % 4 == 0)
+                        {
+                            break; //We're still in the nulls, but we're byte aligned - so this is the end
+                        }
+                        ShouldFinish = true;
+                        continue; //We're getting to the end of the string...
+                    }
+                    if (ShouldFinish)
+                    {
+                        ArchiveFile.BaseStream.Position -= 1;
+                        break; //Reached the end - push the stream position back and break out.
+                    }
+                    NewScriptEntry.ScriptName += (char)ThisByte;
+                }
+
+                //Get the script's magic (used to denote the start/end of the script)
+                NewScriptEntry.ScriptMarker = ArchiveFile.ReadBytes(4);
+                for (int x = 0; x < 4; x++) { NewScriptEntry.ScriptContent.Add(NewScriptEntry.ScriptMarker[x]); }
+
+                //Capture the script until we hit the end magic
+                bool TriggeredReset = false;
+                ScriptLoopStart:
+                for (int x = 0; x < 99999999; x++)
+                {
+                    int ResetPos = (int)ArchiveFile.BaseStream.Position;
+
+                    //We've reached the end
+                    if (!TriggeredReset && BinaryUtils.UpcomingBytesMatchMagic(ArchiveFile, NewScriptEntry.ScriptMarker))
+                    {
+                        break;
+                    }
+                    TriggeredReset = false;
+
+                    //We haven't reached the end
+                    ArchiveFile.BaseStream.Position = ResetPos;
+
+                    //Add on to the script content
+                    NewScriptEntry.ScriptContent.Add(ArchiveFile.ReadByte());
+                }
+
+                //Parse the numbers at the bottom (?!?)
+                for (int x = 0; x < 24; x++)
+                {
+                    NewScriptEntry.ScriptTrailingInts[x] = ArchiveFile.ReadInt32();
+                }
+
+                //Verify we should've exited when we did (this seems to be a bug from the odd formatting of the PAK's script entry/exit points)
+                int SanityDiff = NewScriptEntry.ScriptTrailingInts[2] - NewScriptEntry.ScriptTrailingInts[0];
+                if (!(SanityDiff < (NewScriptEntry.ScriptTrailingInts[2].ToString().Length * 10000) && SanityDiff >= 0)) // This is a magic number that seems to work: a better solution is required really.
+                {
+                    ArchiveFile.BaseStream.Position -= 100;
+                    TriggeredReset = true;
+                    goto ScriptLoopStart;
+                }
+
+                //Append the magic to the end
+                for (int x = 0; x < 4; x++) { NewScriptEntry.ScriptContent.Add(NewScriptEntry.ScriptMarker[x]); }
+                
+                CommandsEntries.Add(NewScriptEntry);
+            }
+
+
+            /* ***************************** */
+            /* ********** Garbage ********** */
+
+            //Count up the "garbage" at the end - these numbers might actually be IDs for something
+            try
+            {
+                for (int i = 0; i < 999999999; i++)
+                {
+                    int GarbageNumber = ArchiveFile.ReadInt32(); //do something with this
+                }
+            }
+            catch { }
+
+
+            //Compile all filenames for return
+            List<string> ScriptFilenames = new List<string>();
+            foreach (EntryCommandsPAK ScriptEntry in CommandsEntries)
+            {
+                ScriptFilenames.Add(ScriptEntry.ScriptName);
+            }
+            return ScriptFilenames;
+        }
+        private List<int> ParseGenericCommandsPakBlock(byte[] ThisMagic, byte[] NextMagic)
+        {
+            ExtraBinaryUtils BinaryUtils = new ExtraBinaryUtils();
+            List<int> ThisBlockEntries = new List<int>();
+            int EntryLength = 0;
+            bool IsFirstRun = true;
+            for (int i = 0; i < 99999999; i++)
+            {
+                int ResetPos = (int)ArchiveFile.BaseStream.Position + 4;
+
+                //We've reached the end of this entry in the block
+                if (BinaryUtils.UpcomingBytesMatchMagic(ArchiveFile, ThisMagic))
+                {
+                    if (IsFirstRun)
+                    {
+                        IsFirstRun = false;
+                        continue;
+                    }
+                    ThisBlockEntries.Add(EntryLength + 4);
+                    EntryLength = 0;
+                    continue;
+                }
+
+                //We've reached the start of the next block
+                ArchiveFile.BaseStream.Position = ResetPos;
+                if (BinaryUtils.UpcomingBytesMatchMagic(ArchiveFile, NextMagic))
+                {
+                    ThisBlockEntries.Add(EntryLength + 8);
+                    ArchiveFile.BaseStream.Position -= 4;
+                    break;
+                }
+
+                //We're still inside this entry, keep adding up
+                ArchiveFile.BaseStream.Position = ResetPos;
+                EntryLength += 4;
+            }
+            return ThisBlockEntries;
         }
 
         /* Get a file's size from the scripts PAK (compiled size, not actual) */
         private int FileSizeCommandsPAK(string FileName)
         {
+            foreach (EntryCommandsPAK ScriptEntry in CommandsEntries)
+            {
+                if (ScriptEntry.ScriptName == FileName)
+                {
+                    return ScriptEntry.ScriptContent.Count;
+                }
+            }
             return -1;
         }
 
@@ -924,7 +1163,7 @@ namespace AlienPAK
                     //First string is filename, others are materials
                     if (p == 0)
                     {
-                        NewMatEntry.MapFilename = NewMatString.Replace("n:/", ""); //Remove the system root from the name
+                        NewMatEntry.MapFilename = NewMatString;
                     }
                     else
                     {

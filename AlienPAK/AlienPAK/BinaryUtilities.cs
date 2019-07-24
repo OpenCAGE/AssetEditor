@@ -50,11 +50,11 @@ namespace AlienPAK
     }
     class ExtraBinaryUtils
     {
-        private bool UpcomingBytesMatchMagic(BinaryReader reader, byte[] magic)
+        public bool UpcomingBytesMatchMagic(BinaryReader reader, byte[] magic)
         {
             return (reader.ReadByte() == magic[0] && reader.ReadByte() == magic[1] && reader.ReadByte() == magic[2] && reader.ReadByte() == magic[3]);
         }
-        private bool DoBytesMatch(byte[] bytes_1, byte[] bytes_2)
+        public bool DoBytesMatch(byte[] bytes_1, byte[] bytes_2)
         {
             if (bytes_1.Length != bytes_2.Length) { return false; }
             for (int i = 0; i < bytes_1.Length; i++)

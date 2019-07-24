@@ -193,7 +193,7 @@ namespace AlienPAK
                         MessageBox.Show("The selected file was imported successfully.", "Imported file", MessageBoxButtons.OK, MessageBoxIcon.Information);
                         break;
                     case PAK.PAKReturnType.FAILED_UNSUPPORTED:
-                        MessageBox.Show("An error occurred while importing the selected file.\nThe texture you are trying to replace is currently unsupported.", "An error occurred", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        MessageBox.Show("An error occurred while importing the selected file.\nThe file you are trying to replace is currently unsupported.", "An error occurred", MessageBoxButtons.OK, MessageBoxIcon.Error);
                         break;
                     case PAK.PAKReturnType.FAILED_UNKNOWN:
                         MessageBox.Show("An unknown error occurred while importing the selected file.\nA further popup will appear with detailed information.\nPlease log this information via the GitHub issue tracker.", "An error occurred", MessageBoxButtons.OK, MessageBoxIcon.Error);
