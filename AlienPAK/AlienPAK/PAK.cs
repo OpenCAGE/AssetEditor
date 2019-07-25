@@ -287,6 +287,8 @@ namespace AlienPAK
         private int FileSizePAK2(string FileName)
         {
             int FileIndex = GetFileIndex(FileName);
+            if (FileIndex == -1) { return -1; }
+
             ArchiveFile.BaseStream.Position = FileOffsets[FileIndex] + FilePadding[FileIndex];
             return FileOffsets.ElementAt(FileIndex + 1) - (int)ArchiveFile.BaseStream.Position;
         }
@@ -550,6 +552,8 @@ namespace AlienPAK
         private int FileSizeTexturePAK(string FileName)
         {
             int FileIndex = GetFileIndex(FileName);
+            if (FileIndex == -1) { return -1; }
+
             if (TextureEntries[FileIndex].Texture_V2.Saved)
             {
                 return TextureEntries[FileIndex].Texture_V2.Length + 148;
@@ -1059,12 +1063,11 @@ namespace AlienPAK
 
 
             //Compile all filenames for return
-            List<string> ScriptFilenames = new List<string>();
             foreach (EntryCommandsPAK ScriptEntry in CommandsEntries)
             {
-                ScriptFilenames.Add(ScriptEntry.ScriptName);
+                FileList.Add(ScriptEntry.ScriptName);
             }
-            return ScriptFilenames;
+            return FileList;
         }
         private List<int> ParseGenericCommandsPakBlock(byte[] ThisMagic, byte[] NextMagic)
         {
@@ -1108,14 +1111,10 @@ namespace AlienPAK
         /* Get a file's size from the scripts PAK (compiled size, not actual) */
         private int FileSizeCommandsPAK(string FileName)
         {
-            foreach (EntryCommandsPAK ScriptEntry in CommandsEntries)
-            {
-                if (ScriptEntry.ScriptName == FileName)
-                {
-                    return ScriptEntry.ScriptContent.Count;
-                }
-            }
-            return -1;
+            int FileIndex = GetFileIndex(FileName);
+            if (FileIndex == -1) { return -1; }
+
+            return CommandsEntries[FileIndex].ScriptContent.Count;
         }
 
         /* Export a file from the scripts PAK */
@@ -1174,29 +1173,23 @@ namespace AlienPAK
             }
 
             //Compile all filenames for return
-            List<string> MaterialMapFilenames = new List<string>();
             foreach (EntryMaterialMappingsPAK MatEntry in MaterialMappingEntries)
             {
-                MaterialMapFilenames.Add(MatEntry.MapFilename);
+                FileList.Add(MatEntry.MapFilename);
             }
-            return MaterialMapFilenames;
+            return FileList;
         }
 
         /* Get a file's size from the material map PAK (kinda faked for now) */
         private int FileSizeMaterialMappingsPAK(string FileName)
         {
-            int size = -1;
-            foreach (EntryMaterialMappingsPAK MatEntry in MaterialMappingEntries)
+            int FileIndex = GetFileIndex(FileName);
+            if (FileIndex == -1) { return -1; }
+
+            int size = 0;
+            foreach (string MatMap in MaterialMappingEntries[FileIndex].MapMatEntries)
             {
-                if (MatEntry.MapFilename == FileName)
-                {
-                    size = 0;
-                    foreach (string MatMap in MatEntry.MapMatEntries)
-                    {
-                        size += MatMap.Length;
-                    }
-                    break;
-                }
+                size += MatMap.Length;
             }
             return size;
         }
