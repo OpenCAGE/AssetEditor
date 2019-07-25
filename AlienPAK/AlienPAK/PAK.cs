@@ -898,40 +898,46 @@ namespace AlienPAK
 
             //String block
             List<string> ScriptStringDump = new List<string>();
+            string ThisStringEntry = "";
+            bool DidJustSubmit = false;
             for (int i = 0; i < 99999999; i++)
             {
-                int ResetPos = (int)ArchiveFile.BaseStream.Position;
+                //Read a block of four
+                byte[] ThisSegment = ArchiveFile.ReadBytes(4);
 
-                //Check header magic exists
-                if (!BinaryUtils.UpcomingBytesMatchMagic(ArchiveFile, CommandsHeaderMagics[1]))
+                //Check for header magics, and act accordingly
+                if (ThisSegment.SequenceEqual(CommandsHeaderMagics[1]) || ThisSegment.SequenceEqual(CommandsHeaderMagics[2]))
                 {
-                    ArchiveFile.BaseStream.Position = ResetPos;
-                    break; //If it doesn't, we've reached the end of the strings
+                    //Only submit if the string has content
+                    ScriptStringDump.Add(ThisStringEntry);
+                    ThisStringEntry = "";
+
+                    //If we're still in the current list of strings, continue - else break
+                    if (ThisSegment.SequenceEqual(CommandsHeaderMagics[2]))
+                    {
+                        ArchiveFile.BaseStream.Position -= 4;
+                        break;
+                    }
+                    DidJustSubmit = true;
+                    continue;
                 }
 
-                //Continue with data & string
-                int unk3 = ArchiveFile.ReadUInt16();
-                int unk4 = ArchiveFile.ReadUInt16();
-                int unk5 = ArchiveFile.ReadUInt16();
-                int unk6 = ArchiveFile.ReadUInt16();
-                string StringEntry = "";
-                bool ShouldFinish = false;
-                for (int x = 0; x < 9999; x++)
+                //We get eight bytes of unknown for each string - skip them for now 
+                if (DidJustSubmit)
                 {
-                    byte ThisByte = ArchiveFile.ReadByte();
-                    if (ThisByte == 0x00)
-                    {
-                        ShouldFinish = true;
-                        continue; //We're getting to the end of the string...
-                    }
-                    if (ShouldFinish)
-                    {
-                        ArchiveFile.BaseStream.Position -= 1;
-                        break; //Reached the end - push the stream position back and break out.
-                    }
-                    StringEntry += (char)ThisByte;
+                    ArchiveFile.BaseStream.Position += 4;
+                    DidJustSubmit = false;
+                    continue;
                 }
-                ScriptStringDump.Add(StringEntry);
+
+                //We're still inside the current string, add the chars on if they're not null
+                for (int x = 0; x < 4; x++)
+                {
+                    if (ThisSegment[x] != 0x00)
+                    {
+                        ThisStringEntry += (char)ThisSegment[x];
+                    }
+                }
             }
 
             //Blocks two through seven
@@ -941,17 +947,29 @@ namespace AlienPAK
             }
 
             //Block eight
+            List<List<byte>> AllBlockEntries = new List<List<byte>>(); //All entries
+            List<byte> ThisBlockEntry = new List<byte>(); //A single entry
             for (int i = 0; i < 99999999; i++)
             {
-                int ResetPos = (int)ArchiveFile.BaseStream.Position;
-                //Each entry here is 8 bytes: 4 header and 4 unknown, if header matches, we have an entry
-                if (BinaryUtils.UpcomingBytesMatchMagic(ArchiveFile, CommandsHeaderMagics[8]))
+                //Read a segment of four bytes
+                byte[] ThisSegment = ArchiveFile.ReadBytes(4);
+
+                //Each block here is 8 bytes known - so if the header matches, read the following four into our list
+                if (ThisSegment.SequenceEqual(CommandsHeaderMagics[8]))
                 {
-                    ArchiveFile.BaseStream.Position += 4;
+                    byte[] ThisSegmentCont = ArchiveFile.ReadBytes(4);
+                    for (int x = 0; x < 4; x++)
+                    {
+                        ThisBlockEntry.Add(ThisSegmentCont[x]);
+                    }
+                    AllBlockEntries.Add(ThisBlockEntry);
+                    ThisBlockEntry.Clear();
                     continue;
                 }
-                ArchiveFile.BaseStream.Position = ResetPos;
-                break; //If the header doesn't match, we have finished this block
+
+                //We didn't match the header, so we must be at the scripts
+                ArchiveFile.BaseStream.Position -= 4;
+                break;
             }
 
 
@@ -961,44 +979,38 @@ namespace AlienPAK
             CommandsHeaderMagics.Add(new byte[] { 0x0E, 0x00, 0x00, 0x00 }); //Not really a header, but used as such here.
 
             //Parse each script entry
+            //Parse each script entry
+            EntryCommandsPAK NewScriptEntry;
             for (int i = 0; i < 99999999; i++)
             {
-                EntryCommandsPAK NewScriptEntry = new EntryCommandsPAK();
+                byte[] ThisSegment = ArchiveFile.ReadBytes(4);
 
-                //Read-in script's unique ID
-                NewScriptEntry.ScriptID = ArchiveFile.ReadBytes(4);
-
-                //Check to see if we reached the garbage block 
-                if (BinaryUtils.DoBytesMatch(NewScriptEntry.ScriptID, CommandsHeaderMagics[9]))
+                //We reached the garbage block
+                if (ThisSegment.SequenceEqual(CommandsHeaderMagics[9]))
                 {
-                    if (BinaryUtils.DoBytesMatch(ArchiveFile.ReadBytes(4), CommandsHeaderMagics[10]))
-                    {
-                        ArchiveFile.BaseStream.Position -= 8;
-                        break;
-                    }
                     ArchiveFile.BaseStream.Position -= 4;
+                    break;
                 }
 
+                //We didn't reach the garbage block - make a new entry and assign the bytes (ID)
+                NewScriptEntry = new EntryCommandsPAK();
+                NewScriptEntry.ScriptID = ThisSegment;
+
                 //Read-in script string
-                bool ShouldFinish = false;
+                bool should_stop = false;
                 for (int x = 0; x < 99999999; x++)
                 {
-                    byte ThisByte = ArchiveFile.ReadByte();
-                    if (ThisByte == 0x00)
+                    byte[] ThisSegmentCont = ArchiveFile.ReadBytes(4);
+                    for (int y = 0; y < 4; y++)
                     {
-                        if (ArchiveFile.BaseStream.Position % 4 == 0)
+                        if (ThisSegmentCont[y] == 0x00)
                         {
-                            break; //We're still in the nulls, but we're byte aligned - so this is the end
+                            should_stop = true;
+                            break;
                         }
-                        ShouldFinish = true;
-                        continue; //We're getting to the end of the string...
+                        NewScriptEntry.ScriptName += (char)ThisSegmentCont[y];
                     }
-                    if (ShouldFinish)
-                    {
-                        ArchiveFile.BaseStream.Position -= 1;
-                        break; //Reached the end - push the stream position back and break out.
-                    }
-                    NewScriptEntry.ScriptName += (char)ThisByte;
+                    if (should_stop) { break; }
                 }
 
                 //Get the script's magic (used to denote the start/end of the script)
@@ -1010,20 +1022,20 @@ namespace AlienPAK
                 ScriptLoopStart:
                 for (int x = 0; x < 99999999; x++)
                 {
-                    int ResetPos = (int)ArchiveFile.BaseStream.Position;
+                    byte[] ThisSegmentCont = ArchiveFile.ReadBytes(4);
 
                     //We've reached the end
-                    if (!TriggeredReset && BinaryUtils.UpcomingBytesMatchMagic(ArchiveFile, NewScriptEntry.ScriptMarker))
+                    if (!TriggeredReset && ThisSegmentCont.SequenceEqual(NewScriptEntry.ScriptMarker))
                     {
                         break;
                     }
                     TriggeredReset = false;
 
-                    //We haven't reached the end
-                    ArchiveFile.BaseStream.Position = ResetPos;
-
-                    //Add on to the script content
-                    NewScriptEntry.ScriptContent.Add(ArchiveFile.ReadByte());
+                    //We haven't reached the end, keep reading the script
+                    for (int y = 0; y < 4; y++)
+                    {
+                        NewScriptEntry.ScriptContent.Add(ThisSegmentCont[y]);
+                    }
                 }
 
                 //Parse the numbers at the bottom (?!?)
@@ -1032,7 +1044,7 @@ namespace AlienPAK
                     NewScriptEntry.ScriptTrailingInts[x] = ArchiveFile.ReadInt32();
                 }
 
-                //Verify we should've exited when we did (this seems to be a bug from the odd formatting of the PAK's script entry/exit points)
+                //Verify we should've exited when we did (this is a bug from the odd formatting of the PAK's script entry/exit points)
                 int SanityDiff = NewScriptEntry.ScriptTrailingInts[2] - NewScriptEntry.ScriptTrailingInts[0];
                 if (!(SanityDiff < (NewScriptEntry.ScriptTrailingInts[2].ToString().Length * 10000) && SanityDiff >= 0)) // This is a magic number that seems to work: a better solution is required really.
                 {
@@ -1044,6 +1056,7 @@ namespace AlienPAK
                 //Append the magic to the end
                 for (int x = 0; x < 4; x++) { NewScriptEntry.ScriptContent.Add(NewScriptEntry.ScriptMarker[x]); }
                 
+                //Add to list
                 CommandsEntries.Add(NewScriptEntry);
             }
 
@@ -1069,43 +1082,43 @@ namespace AlienPAK
             }
             return FileList;
         }
-        private List<int> ParseGenericCommandsPakBlock(byte[] ThisMagic, byte[] NextMagic)
+        private List<List<byte>> ParseGenericCommandsPakBlock(byte[] ThisMagic, byte[] NextMagic)
         {
-            ExtraBinaryUtils BinaryUtils = new ExtraBinaryUtils();
-            List<int> ThisBlockEntries = new List<int>();
-            int EntryLength = 0;
-            bool IsFirstRun = true;
+            List<List<byte>> AllBlockEntries = new List<List<byte>>(); //All entries
+            List<byte> ThisBlockEntry = new List<byte>(); //A single entry
+
             for (int i = 0; i < 99999999; i++)
             {
-                int ResetPos = (int)ArchiveFile.BaseStream.Position + 4;
+                //Read a segment of four bytes
+                byte[] ThisSegment = ArchiveFile.ReadBytes(4);
 
-                //We've reached the end of this entry in the block
-                if (BinaryUtils.UpcomingBytesMatchMagic(ArchiveFile, ThisMagic))
+                //We're at the start of a new entry - submit the previous one
+                if (ThisSegment.SequenceEqual(ThisMagic) || ThisSegment.SequenceEqual(NextMagic))
                 {
-                    if (IsFirstRun)
+                    //Only submit if the entry has content
+                    if (ThisBlockEntry.Count > 0)
                     {
-                        IsFirstRun = false;
-                        continue;
+                        AllBlockEntries.Add(ThisBlockEntry);
                     }
-                    ThisBlockEntries.Add(EntryLength + 4);
-                    EntryLength = 0;
+                    ThisBlockEntry.Clear();
+
+                    //If we're still in the current block, continue - else break
+                    if (ThisSegment.SequenceEqual(NextMagic))
+                    {
+                        ArchiveFile.BaseStream.Position -= 4;
+                        break;
+                    }
                     continue;
                 }
 
-                //We've reached the start of the next block
-                ArchiveFile.BaseStream.Position = ResetPos;
-                if (BinaryUtils.UpcomingBytesMatchMagic(ArchiveFile, NextMagic))
+                //We're still inside the current entry, add it on!
+                for (int x = 0; x < 4; x++)
                 {
-                    ThisBlockEntries.Add(EntryLength + 8);
-                    ArchiveFile.BaseStream.Position -= 4;
-                    break;
+                    ThisBlockEntry.Add(ThisSegment[x]);
                 }
-
-                //We're still inside this entry, keep adding up
-                ArchiveFile.BaseStream.Position = ResetPos;
-                EntryLength += 4;
             }
-            return ThisBlockEntries;
+
+            return AllBlockEntries;
         }
 
         /* Get a file's size from the scripts PAK (compiled size, not actual) */
