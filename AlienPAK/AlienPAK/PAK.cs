@@ -917,26 +917,34 @@ namespace AlienPAK
         /* Export a file from the model PAK */
         private PAKReturnType ExportFileModelPAK(string FileName, string ExportPath)
         {
-            //Get the selected model's submeshes
-            List<CS2> ModelSubmeshes = new List<CS2>();
-            foreach (CS2 ThisModel in ModelEntries)
+            try
             {
-                if (ThisModel.Filename == FileName.Replace("/", "\\"))
+                //Get the selected model's submeshes
+                List<CS2> ModelSubmeshes = new List<CS2>();
+                foreach (CS2 ThisModel in ModelEntries)
                 {
-                    ModelSubmeshes.Add(ThisModel);
+                    if (ThisModel.Filename == FileName.Replace("/", "\\"))
+                    {
+                        ModelSubmeshes.Add(ThisModel);
+                    }
                 }
-            }
 
-            //Extract each submesh into a CS2 folder
-            Directory.CreateDirectory(ExportPath);
-            foreach (CS2 Submesh in ModelSubmeshes)
+                //Extract each submesh into a CS2 folder
+                Directory.CreateDirectory(ExportPath);
+                foreach (CS2 Submesh in ModelSubmeshes)
+                {
+                    ArchiveFile.BaseStream.Position = HeaderListEnd + Submesh.PakOffset;
+                    File.WriteAllBytes(ExportPath + "/" + Submesh.ModelPartName, ArchiveFile.ReadBytes(Submesh.PakSize));
+                }
+
+                //Done!
+                return PAKReturnType.SUCCESS;
+            }
+            catch
             {
-                ArchiveFile.BaseStream.Position = HeaderListEnd + Submesh.PakOffset;
-                File.WriteAllBytes(ExportPath + "/" + Submesh.ModelPartName, ArchiveFile.ReadBytes(Submesh.PakSize));
+                //Failed
+                return PAKReturnType.FAILED_UNKNOWN;
             }
-
-            //Done!
-            return PAKReturnType.SUCCESS;
         }
 
         /* Import a file to the model PAK */
