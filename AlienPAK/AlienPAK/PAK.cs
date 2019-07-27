@@ -817,6 +817,7 @@ namespace AlienPAK
         int TableCountPt1 = -1;
         int TableCountPt2 = -1;
         int FilenameListEnd = -1;
+        int HeaderListEnd = -1;
         List<CS2> ModelEntries = new List<CS2>();
 
         /* Parse the file listing for a model PAK */
@@ -871,18 +872,19 @@ namespace AlienPAK
 
             //Get extra info from each header in the PAK
             BigEndianUtils BigEndian = new BigEndianUtils();
-            ArchiveFile.BaseStream.Position += 28; //Skip header
+            ArchiveFile.BaseStream.Position += 32; //Skip header
             for (int i = 0; i < TableCountPt2; i++)
             {
                 //I'm just assuming these will be in the right order!
                 ArchiveFile.BaseStream.Position += 8; //Skip unknowns
                 ModelEntries[i].PakSize = BigEndian.ReadInt32(ArchiveFile);
                 if (ModelEntries[i].PakSize != BigEndian.ReadInt32(ArchiveFile)) {
-                    //throw new FormatException("Model entry header size mismatch."); //Shouldn't hit this hopefully!
+                    throw new FormatException("Model entry header size mismatch."); //Shouldn't hit this hopefully!
                 } 
                 ModelEntries[i].PakOffset = BigEndian.ReadInt32(ArchiveFile);
                 ArchiveFile.BaseStream.Position += 28;
             }
+            HeaderListEnd = (int)ArchiveFile.BaseStream.Position;
 
             //Add all filenames to list (do we eventually want to list submeshes on their own?)
             foreach (CS2 ModelEntry in ModelEntries)
@@ -899,10 +901,17 @@ namespace AlienPAK
         /* Get a file's size from the model PAK */
         private int FileSizeModelPAK(string FileName)
         {
-            int FileIndex = GetFileIndex(FileName);
-            if (FileIndex == -1) { return -1; }
+            //Get the selected model's submeshes and add up their sizes
+            int TotalSize = 0;
+            foreach (CS2 ThisModel in ModelEntries)
+            {
+                if (ThisModel.Filename == FileName.Replace("/", "\\"))
+                {
+                    TotalSize += ThisModel.PakSize;
+                }
+            }
 
-            return ModelEntries[FileIndex].BlockSize;
+            return TotalSize;
         }
 
         /* Export a file from the model PAK */
@@ -912,7 +921,7 @@ namespace AlienPAK
             List<CS2> ModelSubmeshes = new List<CS2>();
             foreach (CS2 ThisModel in ModelEntries)
             {
-                if (ThisModel.Filename == FileName)
+                if (ThisModel.Filename == FileName.Replace("/", "\\"))
                 {
                     ModelSubmeshes.Add(ThisModel);
                 }
@@ -922,7 +931,7 @@ namespace AlienPAK
             Directory.CreateDirectory(ExportPath);
             foreach (CS2 Submesh in ModelSubmeshes)
             {
-                ArchiveFile.BaseStream.Position = Submesh.PakOffset;
+                ArchiveFile.BaseStream.Position = HeaderListEnd + Submesh.PakOffset;
                 File.WriteAllBytes(ExportPath + "/" + Submesh.ModelPartName, ArchiveFile.ReadBytes(Submesh.PakSize));
             }
 
