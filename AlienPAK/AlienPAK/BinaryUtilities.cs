@@ -63,5 +63,19 @@ namespace AlienPAK
             }
             return true;
         }
+        public string GetStringFromByteArray(byte[] byte_array, int position)
+        {
+            string to_return = "";
+            for (int i = 0; i < 999999999; i++)
+            {
+                byte this_byte = byte_array[position + i];
+                if (this_byte == 0x00)
+                {
+                    break;
+                }
+                to_return += (char)this_byte;
+            }
+            return to_return;
+        }
     }
 }
