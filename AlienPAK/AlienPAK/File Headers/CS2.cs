@@ -6,8 +6,9 @@ using System.Threading.Tasks;
 
 namespace AlienPAK
 {
-    class EntryModelBIN
+    class CS2
     {
+        /* BIN */
         public string Filename = "";
         public string ModelPartName = "";
 
@@ -19,5 +20,9 @@ namespace AlienPAK
         public int VertCount = 0;
         public int FaceCount = 0;
         public int BoneCount = 0;
+
+        /* PAK */
+        public int PakOffset = 0;
+        public int PakSize = 0;
     }
 }

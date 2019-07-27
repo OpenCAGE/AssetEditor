@@ -514,9 +514,8 @@ namespace AlienPAK
                 int HeaderPosition = (int)ArchiveFile.BaseStream.Position;
 
                 //Pull the size info
-                int EntrySize = 0;
                 ArchiveFile.BaseStream.Position += 8; //Skip unknowns
-                EntrySize = BigEndian.ReadInt32(ArchiveFile);
+                int EntrySize = BigEndian.ReadInt32(ArchiveFile);
                 if (EntrySize != BigEndian.ReadInt32(ArchiveFile)) { continue; }
                 ArchiveFile.BaseStream.Position += 18; //Skip unknowns
 
@@ -818,7 +817,7 @@ namespace AlienPAK
         int TableCountPt1 = -1;
         int TableCountPt2 = -1;
         int FilenameListEnd = -1;
-        List<EntryModelBIN> ModelEntries = new List<EntryModelBIN>();
+        List<CS2> ModelEntries = new List<CS2>();
 
         /* Parse the file listing for a model PAK */
         private List<string> ParseModelPAK()
@@ -851,7 +850,7 @@ namespace AlienPAK
             ExtraBinaryUtils BinaryUtils = new ExtraBinaryUtils();
             for (int i = 0; i < TableCountPt2; i++)
             {
-                EntryModelBIN new_entry = new EntryModelBIN();
+                CS2 new_entry = new CS2();
                 new_entry.FilenameOffset = ArchiveFileBin.ReadInt32();
                 new_entry.Filename = BinaryUtils.GetStringFromByteArray(filename_bytes, new_entry.FilenameOffset);
                 ArchiveFileBin.BaseStream.Position += 4;
@@ -870,8 +869,23 @@ namespace AlienPAK
                 ModelEntries.Add(new_entry);
             }
 
+            //Get extra info from each header in the PAK
+            BigEndianUtils BigEndian = new BigEndianUtils();
+            ArchiveFile.BaseStream.Position += 28; //Skip header
+            for (int i = 0; i < TableCountPt2; i++)
+            {
+                //I'm just assuming these will be in the right order!
+                ArchiveFile.BaseStream.Position += 8; //Skip unknowns
+                ModelEntries[i].PakSize = BigEndian.ReadInt32(ArchiveFile);
+                if (ModelEntries[i].PakSize != BigEndian.ReadInt32(ArchiveFile)) {
+                    //throw new FormatException("Model entry header size mismatch."); //Shouldn't hit this hopefully!
+                } 
+                ModelEntries[i].PakOffset = BigEndian.ReadInt32(ArchiveFile);
+                ArchiveFile.BaseStream.Position += 28;
+            }
+
             //Add all filenames to list (do we eventually want to list submeshes on their own?)
-            foreach (EntryModelBIN ModelEntry in ModelEntries)
+            foreach (CS2 ModelEntry in ModelEntries)
             {
                 if (!FileList.Contains(ModelEntry.Filename))
                 {
@@ -894,8 +908,26 @@ namespace AlienPAK
         /* Export a file from the model PAK */
         private PAKReturnType ExportFileModelPAK(string FileName, string ExportPath)
         {
-            //WIP
-            return PAKReturnType.FAILED_UNSUPPORTED;
+            //Get the selected model's submeshes
+            List<CS2> ModelSubmeshes = new List<CS2>();
+            foreach (CS2 ThisModel in ModelEntries)
+            {
+                if (ThisModel.Filename == FileName)
+                {
+                    ModelSubmeshes.Add(ThisModel);
+                }
+            }
+
+            //Extract each submesh into a CS2 folder
+            Directory.CreateDirectory(ExportPath);
+            foreach (CS2 Submesh in ModelSubmeshes)
+            {
+                ArchiveFile.BaseStream.Position = Submesh.PakOffset;
+                File.WriteAllBytes(ExportPath + "/" + Submesh.ModelPartName, ArchiveFile.ReadBytes(Submesh.PakSize));
+            }
+
+            //Done!
+            return PAKReturnType.SUCCESS;
         }
 
         /* Import a file to the model PAK */
