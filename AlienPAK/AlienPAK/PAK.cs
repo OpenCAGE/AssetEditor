@@ -114,6 +114,7 @@ namespace AlienPAK
             TextureEntries.Clear();
             MaterialMappingEntries.Clear();
             CommandsEntries.Clear();
+            ModelEntries.Clear();
 
             switch (Format)
             {
@@ -122,8 +123,7 @@ namespace AlienPAK
                 case PAKType.PAK_TEXTURES:
                     return ParseTexturePAK();
                 case PAKType.PAK_MODELS:
-                    //return ParseModelPAK(); <= Even bigger WIP than textures!
-                    return null;
+                    return ParseModelPAK();
                 case PAKType.PAK_SCRIPTS:
                     return ParseCommandsPAK();
                 case PAKType.PAK_MATERIALMAPS:
@@ -544,6 +544,20 @@ namespace AlienPAK
                 ArchiveFile.BaseStream.Position += 12; //Skip unknowns
             }
             HeaderListEndPAK = (int)ArchiveFile.BaseStream.Position;
+            
+            //TESTING CODE FOR MAT LINK PROJECT - REMOVE BEFORE PUSHING
+            /*
+            int index = 0;
+            foreach (TEX4 texture_test in TextureEntries)
+            {
+                if (Path.GetFileNameWithoutExtension(texture_test.FileName) == "graffitti_13" || Path.GetFileNameWithoutExtension(texture_test.FileName) == "graffitti_13.tga")
+                {
+                    string stop_here = "";
+                }
+                index++;
+            }
+            */
+            //END OF TEST CODE
 
             return FileList;
         }
@@ -804,6 +818,7 @@ namespace AlienPAK
         int TableCountPt1 = -1;
         int TableCountPt2 = -1;
         int FilenameListEnd = -1;
+        List<EntryModelBIN> ModelEntries = new List<EntryModelBIN>();
 
         /* Parse the file listing for a model PAK */
         private List<string> ParseModelPAK()
@@ -827,19 +842,41 @@ namespace AlienPAK
 
             //Read file list info
             FilenameListEnd = ArchiveFileBin.ReadInt32();
+            int FilenameListStart = (int)ArchiveFileBin.BaseStream.Position;
 
-            //Read all file names
-            string ThisFileName = "";
-            for (int i = 0; i < FilenameListEnd-4; i++)
+            //Read all file names (bytes)
+            byte[] filename_bytes = ArchiveFileBin.ReadBytes(FilenameListEnd);
+
+            //Read table 2 (skipping all unknowns for now)
+            ExtraBinaryUtils BinaryUtils = new ExtraBinaryUtils();
+            for (int i = 0; i < TableCountPt2; i++)
             {
-                byte ThisByte = ArchiveFileBin.ReadByte();
-                if (ThisByte == 0x00)
+                EntryModelBIN new_entry = new EntryModelBIN();
+                new_entry.FilenameOffset = ArchiveFileBin.ReadInt32();
+                new_entry.Filename = BinaryUtils.GetStringFromByteArray(filename_bytes, new_entry.FilenameOffset);
+                ArchiveFileBin.BaseStream.Position += 4;
+                new_entry.ModelPartNameOffset = ArchiveFileBin.ReadInt32();
+                new_entry.ModelPartName = BinaryUtils.GetStringFromByteArray(filename_bytes, new_entry.ModelPartNameOffset);
+                ArchiveFileBin.BaseStream.Position += 44;
+                new_entry.MaterialLibaryIndex = ArchiveFileBin.ReadInt32();
+                ArchiveFileBin.BaseStream.Position += 8;
+                new_entry.BlockSize = ArchiveFileBin.ReadInt32();
+                ArchiveFileBin.BaseStream.Position += 14;
+                new_entry.ScaleFactor = ArchiveFileBin.ReadInt16(); //Maybe?
+                ArchiveFileBin.BaseStream.Position += 2;
+                new_entry.VertCount = ArchiveFileBin.ReadInt16();
+                new_entry.FaceCount = ArchiveFileBin.ReadInt16();
+                new_entry.BoneCount = ArchiveFileBin.ReadInt16();
+                ModelEntries.Add(new_entry);
+            }
+
+            //Add all filenames to list (do we eventually want to list submeshes on their own?)
+            foreach (EntryModelBIN ModelEntry in ModelEntries)
+            {
+                if (!FileList.Contains(ModelEntry.Filename))
                 {
-                    FileList.Add(ThisFileName);
-                    ThisFileName = "";
-                    continue;
+                    FileList.Add(ModelEntry.Filename);
                 }
-                ThisFileName += (char)ThisByte;
             }
 
             return FileList;
@@ -848,8 +885,10 @@ namespace AlienPAK
         /* Get a file's size from the model PAK */
         private int FileSizeModelPAK(string FileName)
         {
-            //WIP
-            return -1;
+            int FileIndex = GetFileIndex(FileName);
+            if (FileIndex == -1) { return -1; }
+
+            return ModelEntries[FileIndex].BlockSize;
         }
 
         /* Export a file from the model PAK */
