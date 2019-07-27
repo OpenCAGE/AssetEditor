@@ -25,6 +25,9 @@ This PAK Tool is available within the [Alien: Isolation Mod Tools](https://githu
   - Import files [experimental!]
   - Export files
 
+- Models PAK (LEVEL_MODELS.PAK)
+	- Open archive
+
 - Scripts PAK (COMMANDS.PAK)
 	- Open archive
 
@@ -35,8 +38,8 @@ This PAK Tool is available within the [Alien: Isolation Mod Tools](https://githu
 ## Coming soon
 
 Intended functionality for upcoming versions includes: 
-- Ability to import/export material mappings.
-- Ability to open models PAK (should be soon-ish, then exporting).
+- Ability to configure material mappings (still looking at how the system works).
+- Ability to export models (potential import support too, will see).
 - Ability to export/import scripts (lots of work still to do).
 - Ability to preview images when selecting them.
 
