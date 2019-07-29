@@ -11,6 +11,7 @@ namespace AlienPAK
         /* BIN */
         public string Filename = "";
         public string ModelPartName = "";
+        public string MaterialName = ""; //Pulled from MTL with MateralLibraryIndex
 
         public int FilenameOffset = 0;
         public int ModelPartNameOffset = 0;

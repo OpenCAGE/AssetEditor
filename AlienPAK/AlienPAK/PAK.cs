@@ -823,6 +823,35 @@ namespace AlienPAK
         /* Parse the file listing for a model PAK */
         private List<string> ParseModelPAK()
         {
+            //First, parse the MTL file to find material info
+            string PathToMTL = ArchivePath.Substring(0, ArchivePath.Length - 3) + "MTL";
+            BinaryReader ArchiveFileMtl = new BinaryReader(File.OpenRead(PathToMTL));
+            
+            //Header
+            ArchiveFileMtl.BaseStream.Position += 40; //There are some knowns here, just not required for us yet
+            int MaterialEntryCount = ArchiveFileMtl.ReadInt16();
+            ArchiveFileMtl.BaseStream.Position += 2; //Skip unknown
+
+            //Strings - more work will be done on materials eventually, 
+            //but taking their names for now is good enough for model export
+            List<string> MaterialEntries = new List<string>();
+            string ThisMaterialString = "";
+            for (int i = 0; i < MaterialEntryCount; i++)
+            {
+                while (true)
+                {
+                    byte ThisByte = ArchiveFileMtl.ReadByte();
+                    if (ThisByte == 0x00)
+                    {
+                        MaterialEntries.Add(ThisMaterialString);
+                        ThisMaterialString = "";
+                        break;
+                    }
+                    ThisMaterialString += (char)ThisByte;
+                }
+            }
+            ArchiveFileMtl.Close();
+
             //Read the header info from BIN
             ArchiveFileBin.BaseStream.Position += 4; //Skip magic
             TableCountPt2 = ArchiveFileBin.ReadInt32();
@@ -859,6 +888,7 @@ namespace AlienPAK
                 new_entry.ModelPartName = BinaryUtils.GetStringFromByteArray(filename_bytes, new_entry.ModelPartNameOffset);
                 ArchiveFileBin.BaseStream.Position += 44;
                 new_entry.MaterialLibaryIndex = ArchiveFileBin.ReadInt32();
+                new_entry.MaterialName = MaterialEntries[new_entry.MaterialLibaryIndex];
                 ArchiveFileBin.BaseStream.Position += 8;
                 new_entry.BlockSize = ArchiveFileBin.ReadInt32();
                 ArchiveFileBin.BaseStream.Position += 14;
@@ -929,12 +959,19 @@ namespace AlienPAK
                     }
                 }
 
-                //Extract each submesh into a CS2 folder
+                //Extract each submesh into a CS2 folder by material and submesh name
                 Directory.CreateDirectory(ExportPath);
                 foreach (CS2 Submesh in ModelSubmeshes)
                 {
                     ArchiveFile.BaseStream.Position = HeaderListEnd + Submesh.PakOffset;
-                    File.WriteAllBytes(ExportPath + "/" + Submesh.ModelPartName, ArchiveFile.ReadBytes(Submesh.PakSize));
+
+                    string ThisExportPath = ExportPath;
+                    if (Submesh.ModelPartName != "")
+                    {
+                        ThisExportPath = ExportPath + "/" + Submesh.ModelPartName;
+                        Directory.CreateDirectory(ThisExportPath);
+                    }
+                    File.WriteAllBytes(ThisExportPath + "/" + Submesh.MaterialName, ArchiveFile.ReadBytes(Submesh.PakSize));
                 }
 
                 //Done!
