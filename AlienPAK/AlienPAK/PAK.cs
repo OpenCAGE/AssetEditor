@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -28,8 +28,8 @@ namespace AlienPAK
         private BinaryReader ArchiveFileBin = null;
         private List<string> FileList = new List<string>();
         private int NumberOfEntries = -1;
-        private enum PAKType { PAK2, PAK_TEXTURES, PAK_MODELS, PAK_SCRIPTS, PAK_MATERIALMAPS, UNRECOGNISED };
-        private PAKType Format = PAKType.UNRECOGNISED;
+        public enum PAKType { PAK2, PAK_TEXTURES, PAK_MODELS, PAK_SCRIPTS, PAK_MATERIALMAPS, UNRECOGNISED };
+        public PAKType Format = PAKType.UNRECOGNISED;
         public enum PAKReturnType { FAILED_UNKNOWN, FAILED_UNSUPPORTED, SUCCESS, FAILED_LOGIC_ERROR, FAILED_FILE_IN_USE }
         public string LatestError = "";
 
@@ -958,6 +958,8 @@ namespace AlienPAK
         /* Export a file from the model PAK */
         private PAKReturnType ExportFileModelPAK(string FileName, string ExportPath)
         {
+            return PAKReturnType.FAILED_UNSUPPORTED; //Disabling export for main branch
+
             try
             {
                 //Get the selected model's submeshes
