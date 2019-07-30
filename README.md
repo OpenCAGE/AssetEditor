@@ -25,7 +25,7 @@ This PAK Tool is available within the [Alien: Isolation Mod Tools](https://githu
   - Import files [experimental!]
   - Export files
 
-- Models PAK (LEVEL_MODELS.PAK)
+- Models PAK (LEVEL_MODELS.PAK, GLOBAL_MODELS.PAK)
 	- Open archive
 
 - Scripts PAK (COMMANDS.PAK)

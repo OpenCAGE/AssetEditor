@@ -122,7 +122,11 @@ namespace AlienPAK
         {
             if (FileExtension == "")
             {
-                return "Cathode Script";
+                if (AlienPAK.Format == PAK.PAKType.PAK_SCRIPTS)
+                {
+                    return "Cathode Script";
+                }
+                return "Unknown Type";
             }
             switch (FileExtension.Substring(1).ToUpper())
             {

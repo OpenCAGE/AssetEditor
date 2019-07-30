@@ -28,8 +28,8 @@ namespace AlienPAK
         private BinaryReader ArchiveFileBin = null;
         private List<string> FileList = new List<string>();
         private int NumberOfEntries = -1;
-        private enum PAKType { PAK2, PAK_TEXTURES, PAK_MODELS, PAK_SCRIPTS, PAK_MATERIALMAPS, UNRECOGNISED };
-        private PAKType Format = PAKType.UNRECOGNISED;
+        public enum PAKType { PAK2, PAK_TEXTURES, PAK_MODELS, PAK_SCRIPTS, PAK_MATERIALMAPS, UNRECOGNISED };
+        public PAKType Format = PAKType.UNRECOGNISED;
         public enum PAKReturnType { FAILED_UNKNOWN, FAILED_UNSUPPORTED, SUCCESS, FAILED_LOGIC_ERROR, FAILED_FILE_IN_USE }
         public string LatestError = "";
 
@@ -514,9 +514,8 @@ namespace AlienPAK
                 int HeaderPosition = (int)ArchiveFile.BaseStream.Position;
 
                 //Pull the size info
-                int EntrySize = 0;
                 ArchiveFile.BaseStream.Position += 8; //Skip unknowns
-                EntrySize = BigEndian.ReadInt32(ArchiveFile);
+                int EntrySize = BigEndian.ReadInt32(ArchiveFile);
                 if (EntrySize != BigEndian.ReadInt32(ArchiveFile)) { continue; }
                 ArchiveFile.BaseStream.Position += 18; //Skip unknowns
 
@@ -818,11 +817,41 @@ namespace AlienPAK
         int TableCountPt1 = -1;
         int TableCountPt2 = -1;
         int FilenameListEnd = -1;
-        List<EntryModelBIN> ModelEntries = new List<EntryModelBIN>();
+        int HeaderListEnd = -1;
+        List<CS2> ModelEntries = new List<CS2>();
 
         /* Parse the file listing for a model PAK */
         private List<string> ParseModelPAK()
         {
+            //First, parse the MTL file to find material info
+            string PathToMTL = ArchivePath.Substring(0, ArchivePath.Length - 3) + "MTL";
+            BinaryReader ArchiveFileMtl = new BinaryReader(File.OpenRead(PathToMTL));
+            
+            //Header
+            ArchiveFileMtl.BaseStream.Position += 40; //There are some knowns here, just not required for us yet
+            int MaterialEntryCount = ArchiveFileMtl.ReadInt16();
+            ArchiveFileMtl.BaseStream.Position += 2; //Skip unknown
+
+            //Strings - more work will be done on materials eventually, 
+            //but taking their names for now is good enough for model export
+            List<string> MaterialEntries = new List<string>();
+            string ThisMaterialString = "";
+            for (int i = 0; i < MaterialEntryCount; i++)
+            {
+                while (true)
+                {
+                    byte ThisByte = ArchiveFileMtl.ReadByte();
+                    if (ThisByte == 0x00)
+                    {
+                        MaterialEntries.Add(ThisMaterialString);
+                        ThisMaterialString = "";
+                        break;
+                    }
+                    ThisMaterialString += (char)ThisByte;
+                }
+            }
+            ArchiveFileMtl.Close();
+
             //Read the header info from BIN
             ArchiveFileBin.BaseStream.Position += 4; //Skip magic
             TableCountPt2 = ArchiveFileBin.ReadInt32();
@@ -851,7 +880,7 @@ namespace AlienPAK
             ExtraBinaryUtils BinaryUtils = new ExtraBinaryUtils();
             for (int i = 0; i < TableCountPt2; i++)
             {
-                EntryModelBIN new_entry = new EntryModelBIN();
+                CS2 new_entry = new CS2();
                 new_entry.FilenameOffset = ArchiveFileBin.ReadInt32();
                 new_entry.Filename = BinaryUtils.GetStringFromByteArray(filename_bytes, new_entry.FilenameOffset);
                 ArchiveFileBin.BaseStream.Position += 4;
@@ -859,6 +888,7 @@ namespace AlienPAK
                 new_entry.ModelPartName = BinaryUtils.GetStringFromByteArray(filename_bytes, new_entry.ModelPartNameOffset);
                 ArchiveFileBin.BaseStream.Position += 44;
                 new_entry.MaterialLibaryIndex = ArchiveFileBin.ReadInt32();
+                new_entry.MaterialName = MaterialEntries[new_entry.MaterialLibaryIndex];
                 ArchiveFileBin.BaseStream.Position += 8;
                 new_entry.BlockSize = ArchiveFileBin.ReadInt32();
                 ArchiveFileBin.BaseStream.Position += 14;
@@ -870,8 +900,35 @@ namespace AlienPAK
                 ModelEntries.Add(new_entry);
             }
 
+            //Get extra info from each header in the PAK
+            BigEndianUtils BigEndian = new BigEndianUtils();
+            ArchiveFile.BaseStream.Position += 32; //Skip header
+            for (int i = 0; i < TableCountPt2; i++)
+            {
+                ArchiveFile.BaseStream.Position += 8; //Skip unknowns
+                int ThisPakSize = BigEndian.ReadInt32(ArchiveFile);
+                if (ThisPakSize != BigEndian.ReadInt32(ArchiveFile))
+                {
+                    //Dud entry... handle this somehow?
+                }
+                int ThisPakOffset = BigEndian.ReadInt32(ArchiveFile);
+                ArchiveFile.BaseStream.Position += 14;
+                int ThisIndex = BigEndian.ReadInt16(ArchiveFile);
+                ArchiveFile.BaseStream.Position += 12;
+
+                if (ThisIndex == -1)
+                {
+                    continue; //Again, dud entry. Need to look into this!
+                }
+
+                //Push it into the correct entry
+                ModelEntries[ThisIndex].PakSize = ThisPakSize;
+                ModelEntries[ThisIndex].PakOffset = ThisPakOffset;
+            }
+            HeaderListEnd = (int)ArchiveFile.BaseStream.Position;
+
             //Add all filenames to list (do we eventually want to list submeshes on their own?)
-            foreach (EntryModelBIN ModelEntry in ModelEntries)
+            foreach (CS2 ModelEntry in ModelEntries)
             {
                 if (!FileList.Contains(ModelEntry.Filename))
                 {
@@ -885,17 +942,59 @@ namespace AlienPAK
         /* Get a file's size from the model PAK */
         private int FileSizeModelPAK(string FileName)
         {
-            int FileIndex = GetFileIndex(FileName);
-            if (FileIndex == -1) { return -1; }
+            //Get the selected model's submeshes and add up their sizes
+            int TotalSize = 0;
+            foreach (CS2 ThisModel in ModelEntries)
+            {
+                if (ThisModel.Filename == FileName.Replace("/", "\\"))
+                {
+                    TotalSize += ThisModel.PakSize;
+                }
+            }
 
-            return ModelEntries[FileIndex].BlockSize;
+            return TotalSize;
         }
 
         /* Export a file from the model PAK */
         private PAKReturnType ExportFileModelPAK(string FileName, string ExportPath)
         {
-            //WIP
-            return PAKReturnType.FAILED_UNSUPPORTED;
+            return PAKReturnType.FAILED_UNSUPPORTED; //Disabling export for main branch
+
+            try
+            {
+                //Get the selected model's submeshes
+                List<CS2> ModelSubmeshes = new List<CS2>();
+                foreach (CS2 ThisModel in ModelEntries)
+                {
+                    if (ThisModel.Filename == FileName.Replace("/", "\\"))
+                    {
+                        ModelSubmeshes.Add(ThisModel);
+                    }
+                }
+
+                //Extract each submesh into a CS2 folder by material and submesh name
+                Directory.CreateDirectory(ExportPath);
+                foreach (CS2 Submesh in ModelSubmeshes)
+                {
+                    ArchiveFile.BaseStream.Position = HeaderListEnd + Submesh.PakOffset;
+
+                    string ThisExportPath = ExportPath;
+                    if (Submesh.ModelPartName != "")
+                    {
+                        ThisExportPath = ExportPath + "/" + Submesh.ModelPartName;
+                        Directory.CreateDirectory(ThisExportPath);
+                    }
+                    File.WriteAllBytes(ThisExportPath + "/" + Submesh.MaterialName, ArchiveFile.ReadBytes(Submesh.PakSize));
+                }
+
+                //Done!
+                return PAKReturnType.SUCCESS;
+            }
+            catch
+            {
+                //Failed
+                return PAKReturnType.FAILED_UNKNOWN;
+            }
         }
 
         /* Import a file to the model PAK */
