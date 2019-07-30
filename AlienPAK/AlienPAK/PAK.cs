@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -905,14 +905,25 @@ namespace AlienPAK
             ArchiveFile.BaseStream.Position += 32; //Skip header
             for (int i = 0; i < TableCountPt2; i++)
             {
-                //I'm just assuming these will be in the right order!
                 ArchiveFile.BaseStream.Position += 8; //Skip unknowns
-                ModelEntries[i].PakSize = BigEndian.ReadInt32(ArchiveFile);
-                if (ModelEntries[i].PakSize != BigEndian.ReadInt32(ArchiveFile)) {
-                    throw new FormatException("Model entry header size mismatch."); //Shouldn't hit this hopefully!
-                } 
-                ModelEntries[i].PakOffset = BigEndian.ReadInt32(ArchiveFile);
-                ArchiveFile.BaseStream.Position += 28;
+                int ThisPakSize = BigEndian.ReadInt32(ArchiveFile);
+                if (ThisPakSize != BigEndian.ReadInt32(ArchiveFile))
+                {
+                    //Dud entry... handle this somehow?
+                }
+                int ThisPakOffset = BigEndian.ReadInt32(ArchiveFile);
+                ArchiveFile.BaseStream.Position += 14;
+                int ThisIndex = BigEndian.ReadInt16(ArchiveFile);
+                ArchiveFile.BaseStream.Position += 12;
+
+                if (ThisIndex == -1)
+                {
+                    continue; //Again, dud entry. Need to look into this!
+                }
+
+                //Push it into the correct entry
+                ModelEntries[ThisIndex].PakSize = ThisPakSize;
+                ModelEntries[ThisIndex].PakOffset = ThisPakOffset;
             }
             HeaderListEnd = (int)ArchiveFile.BaseStream.Position;
 
