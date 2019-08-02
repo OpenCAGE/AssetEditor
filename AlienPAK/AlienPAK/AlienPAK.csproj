@@ -52,6 +52,7 @@
     <Compile Include="BinaryUtilities.cs" />
     <Compile Include="EntryCommandsPAK.cs" />
     <Compile Include="EntryMaterialMappingsPAK.cs" />
+    <Compile Include="EntryPAK2.cs" />
     <Compile Include="File Headers\DDS.cs" />
     <Compile Include="DDSReader.cs" />
     <Compile Include="DDSWriter.cs" />

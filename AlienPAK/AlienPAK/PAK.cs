@@ -109,8 +109,7 @@ namespace AlienPAK
             if (ArchiveFile == null) { return null; }
 
             FileList.Clear();
-            FileOffsets.Clear();
-            FilePadding.Clear();
+            Pak2Files.Clear();
             TextureEntries.Clear();
             MaterialMappingEntries.Clear();
             CommandsEntries.Clear();
@@ -227,10 +226,8 @@ namespace AlienPAK
 
 
         /* --- PAK2 --- */
-        private List<int> FileOffsets = new List<int>();
-        private List<int> FilePadding = new List<int>();
+        private List<EntryPAK2> Pak2Files = new List<EntryPAK2>();
         private int OffsetListBegin = -1;
-        private int DataSize = -1;
 
         /* Parse a PAK2 archive */
         private List<string> ParsePAK2()
@@ -239,9 +236,9 @@ namespace AlienPAK
             ArchiveFile.BaseStream.Position += 4; //Skip magic
             OffsetListBegin = ArchiveFile.ReadInt32() + 16;
             NumberOfEntries = ArchiveFile.ReadInt32();
-            DataSize = ArchiveFile.ReadInt32();
+            ArchiveFile.BaseStream.Position += 4; //Skip "4"
 
-            //Read all file names
+            //Read all file names and create entries
             for (int i = 0; i < NumberOfEntries; i++)
             {
                 string ThisFileName = "";
@@ -249,36 +246,38 @@ namespace AlienPAK
                 {
                     ThisFileName += (char)b;
                 }
-                FileList.Add(ThisFileName);
+
+                EntryPAK2 NewPakFile = new EntryPAK2();
+                NewPakFile.Filename = ThisFileName;
+                Pak2Files.Add(NewPakFile);
+                FileList.Add(ThisFileName); // TODO: This shouldn't really be global anymore, as all PAKs use their own lists for contents now
             }
 
             //Read all file offsets
             ArchiveFile.BaseStream.Position = OffsetListBegin;
-            FileOffsets.Add(OffsetListBegin + (NumberOfEntries * DataSize));
-            List<string> debug = new List<string>();
+            List<int> FileOffsets = new List<int>();
+            FileOffsets.Add(OffsetListBegin + (NumberOfEntries * 4));
             for (int i = 0; i < NumberOfEntries; i++)
             {
                 FileOffsets.Add(ArchiveFile.ReadInt32());
-                debug.Add(FileOffsets.ElementAt(i).ToString());
             }
 
-            //Hacky way to store byte alignment values
+            //Apply file offsets to entries, and create correct size byte arrays
             for (int i = 0; i < NumberOfEntries; i++)
             {
-                ArchiveFile.BaseStream.Position = FileOffsets[i];
-                FilePadding.Add(0);
-                for (int x = 0; x < DataSize + 1; x++)
-                {
-                    if (ArchiveFile.ReadByte() == 0x00)
-                    {
-                        FilePadding[i] += 1;
-                    }
-                    else
-                    {
-                        break;
-                    }
-                }
+                Pak2Files[i].Offset = FileOffsets[i];
             }
+
+            //Read in the files to entries
+            ExtraBinaryUtils BinaryUtils = new ExtraBinaryUtils();
+            for (int i = 0; i < NumberOfEntries; i++)
+            {
+                //Must pass to RemoveLeadingNulls as each file starts with 0-3 null bytes to align files to a 4-byte block reader
+                Pak2Files[i].Content = BinaryUtils.RemoveLeadingNulls(ArchiveFile.ReadBytes(FileOffsets[i + 1] - FileOffsets[i]));
+            }
+
+            //Build up file list
+            //TODO: as noted above
 
             return FileList;
         }
@@ -286,42 +285,44 @@ namespace AlienPAK
         /* Get a file's size from the PAK2 archive */
         private int FileSizePAK2(string FileName)
         {
-            int FileIndex = GetFileIndex(FileName);
-            if (FileIndex == -1) { return -1; }
-
-            ArchiveFile.BaseStream.Position = FileOffsets[FileIndex] + FilePadding[FileIndex];
-            return FileOffsets.ElementAt(FileIndex + 1) - (int)ArchiveFile.BaseStream.Position;
+            foreach (EntryPAK2 ThisFileEntry in Pak2Files)
+            {
+                if (ThisFileEntry.Filename == FileName || ThisFileEntry.Filename == FileName.Replace('/', '\\'))
+                {
+                    return ThisFileEntry.Content.Length;
+                }
+            }
+            return -1;
         }
 
         /* Export a file from the PAK2 archive */
         private PAKReturnType ExportFilePAK2(string FileName, string ExportPath)
         {
-            try
+            foreach (EntryPAK2 ThisFileEntry in Pak2Files)
             {
-                //Update reader position and work out file size
-                int FileLength = FileSizePAK2(FileName);
-
-                //Grab the file's contents (this can probably be optimised!)
-                List<byte> FileExport = new List<byte>();
-                for (int i = 0; i < FileLength; i++)
+                if (ThisFileEntry.Filename == FileName || ThisFileEntry.Filename == FileName.Replace('/', '\\'))
                 {
-                    FileExport.Add(ArchiveFile.ReadByte());
+                    //Try and export the matched file
+                    try
+                    {
+                        File.WriteAllBytes(ExportPath, ThisFileEntry.Content);
+                        return PAKReturnType.SUCCESS;
+                    }
+                    catch (Exception e)
+                    {
+                        LatestError = e.ToString();
+                        return PAKReturnType.FAILED_UNKNOWN;
+                    }
                 }
-
-                //Write the file's contents out
-                File.WriteAllBytes(ExportPath, FileExport.ToArray());
-                return PAKReturnType.SUCCESS;
             }
-            catch (Exception e)
-            {
-                LatestError = e.ToString();
-                return PAKReturnType.FAILED_UNKNOWN;
-            }
+            return PAKReturnType.FAILED_LOGIC_ERROR;
         }
 
         /* Import a file to the PAK2 archive */
         private PAKReturnType ImportFilePAK2(string FileName, string ImportPath)
         {
+            return PAKReturnType.FAILED_UNSUPPORTED;
+            /*
             try
             {
                 //Open PAK for writing, and read contents of import file
@@ -444,6 +445,7 @@ namespace AlienPAK
                 LatestError = e.ToString();
                 return PAKReturnType.FAILED_UNKNOWN;
             }
+            */
         }
 
 
