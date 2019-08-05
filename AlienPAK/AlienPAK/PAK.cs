@@ -260,11 +260,6 @@ namespace AlienPAK
             for (int i = 0; i < NumberOfEntries; i++)
             {
                 FileOffsets.Add(ArchiveFile.ReadInt32());
-            }
-
-            //Apply file offsets to entries, and create correct size byte arrays
-            for (int i = 0; i < NumberOfEntries; i++)
-            {
                 Pak2Files[i].Offset = FileOffsets[i];
             }
 
@@ -275,6 +270,8 @@ namespace AlienPAK
                 //Must pass to RemoveLeadingNulls as each file starts with 0-3 null bytes to align files to a 4-byte block reader
                 Pak2Files[i].Content = BinaryUtils.RemoveLeadingNulls(ArchiveFile.ReadBytes(FileOffsets[i + 1] - FileOffsets[i]));
             }
+
+            ArchiveFile.Close();
 
             //Build up file list
             //TODO: as noted above
@@ -298,35 +295,18 @@ namespace AlienPAK
         /* Import a file to the PAK2 archive */
         private PAKReturnType ImportFilePAK2(string FileName, string ImportPath)
         {
-            /*
-             *
-             * Note to self:
-             * This writer doesn't account for byte alignment - not in offsets or actual file writing.
-             * To fix this, write out the files first, with calculated alignment, and then go back and fill in the offsets after.
-             * Save the aligned offset value to each PAK entry object in the list, and use those to write.
-             * 
-            */
             try
             {
-                //Read new file in place of old file in our list & calculate size difference
-                int FileIndex = GetFileIndex(FileName);
-                int OldLength = Pak2Files[FileIndex].Content.Length;
-                Pak2Files[FileIndex].Content = File.ReadAllBytes(ImportPath);
-                int NewLength = Pak2Files[FileIndex].Content.Length;
-                int NewFileDiff = NewLength - OldLength;
-
-                //Apply size difference to all trailing file offsets
-                for (int i = FileIndex; i < Pak2Files.Count; i++)
-                {
-                    Pak2Files[i].Offset += NewFileDiff; //TODO bin this off
-                }
+                //Store new content to write
+                Pak2Files[GetFileIndex(FileName)].Content = File.ReadAllBytes(ImportPath);
 
                 //Open PAK2 for writing
                 BinaryWriter ArchiveFileWrite = new BinaryWriter(File.OpenWrite(ArchivePath));
+                ExtraBinaryUtils BinaryUtils = new ExtraBinaryUtils();
                 ArchiveFileWrite.BaseStream.SetLength(0);
 
                 //Write header
-                ArchiveFileWrite.Write("PAK2");
+                BinaryUtils.WriteString("PAK2", ArchiveFileWrite);
                 int OffsetListBegin_New = 0;
                 for (int i = 0; i < Pak2Files.Count; i++)
                 {
@@ -339,23 +319,33 @@ namespace AlienPAK
                 //Write filenames
                 for (int i = 0; i < Pak2Files.Count; i++)
                 {
-                    ArchiveFileWrite.Write(Pak2Files[i].Filename);
+                    BinaryUtils.WriteString(Pak2Files[i].Filename, ArchiveFileWrite);
                     ArchiveFileWrite.Write((byte)0x00);
                 }
 
-                //Write offsets
-                int CurrentFileOffset = OffsetListBegin_New + (Pak2Files.Count * 4);
-                ArchiveFileWrite.Write(CurrentFileOffset);
+                //Write placeholder offsets for now, we'll correct them after writing the content
+                OffsetListBegin = (int)ArchiveFileWrite.BaseStream.Position;
                 for (int i = 0; i < Pak2Files.Count; i++)
                 {
-                    CurrentFileOffset += Pak2Files[i].Content.Length;
-                    ArchiveFileWrite.Write(CurrentFileOffset);
+                    ArchiveFileWrite.Write(0);
                 }
 
                 //Write files
                 for (int i = 0; i < Pak2Files.Count; i++)
                 {
+                    while (ArchiveFileWrite.BaseStream.Position % 4 != 0)
+                    {
+                        ArchiveFileWrite.Write((byte)0x00);
+                    }
                     ArchiveFileWrite.Write(Pak2Files[i].Content);
+                    Pak2Files[i].Offset = (int)ArchiveFileWrite.BaseStream.Position;
+                }
+
+                //Re-write offsets with correct values
+                ArchiveFileWrite.BaseStream.Position = OffsetListBegin;
+                for (int i = 0; i < Pak2Files.Count; i++)
+                {
+                    ArchiveFileWrite.Write(Pak2Files[i].Offset);
                 }
 
                 ArchiveFileWrite.Close();

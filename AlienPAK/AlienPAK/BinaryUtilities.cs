@@ -84,5 +84,14 @@ namespace AlienPAK
             Array.Copy(extracted_file, start_offset, to_return, 0, to_return.Length);
             return to_return;
         }
+
+        //Writes a string without a leading length value (C# BinaryWriter default)
+        public void WriteString(string string_to_write, BinaryWriter writer)
+        {
+            foreach (char character in string_to_write)
+            {
+                writer.Write(character);
+            }
+        }
     }
 }
