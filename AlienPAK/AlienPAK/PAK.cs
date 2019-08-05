@@ -202,6 +202,30 @@ namespace AlienPAK
             }
         }
 
+        /* Remove from a PAK archive */
+        public PAKReturnType RemoveFile(string FileName)
+        {
+            if (Format != PAKType.PAK2) { return PAKReturnType.FAILED_UNSUPPORTED; } //Currently only supported in PAK2
+            HandlerPAK2.DeleteFile(FileName);
+            if (HandlerPAK2.Save())
+            {
+                return PAKReturnType.SUCCESS;
+            }
+            return PAKReturnType.FAILED_FILE_IN_USE;
+        }
+
+        /* Add to a PAK archive */
+        public PAKReturnType AddNewFile(string NewFile)
+        {
+            if (Format != PAKType.PAK2) { return PAKReturnType.FAILED_UNSUPPORTED; } //Currently only supported in PAK2
+            HandlerPAK2.AddFile(NewFile);
+            if (HandlerPAK2.Save())
+            {
+                return PAKReturnType.SUCCESS;
+            }
+            return PAKReturnType.FAILED_FILE_IN_USE;
+        }
+
         /* Get the PAK index of the file by name */
         private int GetFileIndex(string FileName)
         {

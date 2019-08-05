@@ -60,8 +60,8 @@
             this.importFile = new System.Windows.Forms.Button();
             this.exportFile = new System.Windows.Forms.Button();
             this.groupBox4 = new System.Windows.Forms.GroupBox();
-            this.button1 = new System.Windows.Forms.Button();
-            this.button2 = new System.Windows.Forms.Button();
+            this.removeFile = new System.Windows.Forms.Button();
+            this.addFile = new System.Windows.Forms.Button();
             this.menuStrip1.SuspendLayout();
             this.fileContextMenu.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.filePreviewImage)).BeginInit();
@@ -320,8 +320,8 @@
             // 
             // groupBox4
             // 
-            this.groupBox4.Controls.Add(this.button1);
-            this.groupBox4.Controls.Add(this.button2);
+            this.groupBox4.Controls.Add(this.removeFile);
+            this.groupBox4.Controls.Add(this.addFile);
             this.groupBox4.Location = new System.Drawing.Point(505, 465);
             this.groupBox4.Name = "groupBox4";
             this.groupBox4.Size = new System.Drawing.Size(277, 57);
@@ -330,25 +330,26 @@
             this.groupBox4.Text = "Archive Utilities";
             this.groupBox4.Visible = false;
             // 
-            // button1
+            // removeFile
             // 
-            this.button1.Enabled = false;
-            this.button1.Location = new System.Drawing.Point(139, 21);
-            this.button1.Name = "button1";
-            this.button1.Size = new System.Drawing.Size(132, 24);
-            this.button1.TabIndex = 1;
-            this.button1.Text = "Delete Selected File";
-            this.button1.UseVisualStyleBackColor = true;
+            this.removeFile.Enabled = false;
+            this.removeFile.Location = new System.Drawing.Point(139, 21);
+            this.removeFile.Name = "removeFile";
+            this.removeFile.Size = new System.Drawing.Size(132, 24);
+            this.removeFile.TabIndex = 1;
+            this.removeFile.Text = "Delete Selected File";
+            this.removeFile.UseVisualStyleBackColor = true;
+            this.removeFile.Click += new System.EventHandler(this.RemoveFileFromArchive_Click);
             // 
-            // button2
+            // addFile
             // 
-            this.button2.Enabled = false;
-            this.button2.Location = new System.Drawing.Point(6, 21);
-            this.button2.Name = "button2";
-            this.button2.Size = new System.Drawing.Size(132, 24);
-            this.button2.TabIndex = 0;
-            this.button2.Text = "Import New File";
-            this.button2.UseVisualStyleBackColor = true;
+            this.addFile.Location = new System.Drawing.Point(6, 21);
+            this.addFile.Name = "addFile";
+            this.addFile.Size = new System.Drawing.Size(132, 24);
+            this.addFile.TabIndex = 0;
+            this.addFile.Text = "Import New File";
+            this.addFile.UseVisualStyleBackColor = true;
+            this.addFile.Click += new System.EventHandler(this.AddFileToArchive_Click);
             // 
             // Explorer
             // 
@@ -415,8 +416,8 @@
         private System.Windows.Forms.ToolStripMenuItem toolsToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem optionsToolStripMenuItem;
         private System.Windows.Forms.GroupBox groupBox4;
-        private System.Windows.Forms.Button button1;
-        private System.Windows.Forms.Button button2;
+        private System.Windows.Forms.Button removeFile;
+        private System.Windows.Forms.Button addFile;
     }
 }
 

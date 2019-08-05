@@ -65,6 +65,14 @@ namespace AlienPAK
             //Update title
             this.Text = "Alien: Isolation PAK Tool - " + Path.GetFileName(filename);
             Cursor.Current = Cursors.Default;
+
+            //Show/hide extended archive support if appropriate
+            if (AlienPAK.Format == PAK.PAKType.PAK2)
+            {
+                groupBox4.Show();
+                return;
+            }
+            groupBox4.Hide();
         }
 
         /* Add a file to the GUI tree structure */
@@ -158,6 +166,7 @@ namespace AlienPAK
             fileTypeInfo.Text = "";
             exportFile.Enabled = false;
             importFile.Enabled = false;
+            removeFile.Enabled = false;
 
             //Exit early if not a file
             if (FileTree.SelectedNode == null || ((TreeItem)FileTree.SelectedNode.Tag).Item_Type != TreeItemType.EXPORTABLE_FILE)
@@ -178,6 +187,7 @@ namespace AlienPAK
             //Enable buttons
             exportFile.Enabled = true;
             importFile.Enabled = true;
+            removeFile.Enabled = true;
         }
 
         /* Import a file to replace the selected PAK entry */
@@ -257,7 +267,77 @@ namespace AlienPAK
                 Cursor.Current = Cursors.Default;
             }
         }
-        
+
+        /* Add file to the loaded archive */
+        private void AddFileToArchive_Click(object sender, EventArgs e)
+        {
+            //Let the user decide what file to add, then add it
+            OpenFileDialog filePicker = new OpenFileDialog();
+            filePicker.Filter = "Any File|*.*";
+            if (filePicker.ShowDialog() == DialogResult.OK)
+            {
+                Cursor.Current = Cursors.WaitCursor;
+                switch (AlienPAK.AddNewFile(filePicker.FileName))
+                {
+                    case PAK.PAKReturnType.SUCCESS:
+                        MessageBox.Show("The selected file was added successfully.", "Exported file", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        break;
+                    case PAK.PAKReturnType.FAILED_UNSUPPORTED:
+                        MessageBox.Show("An error occurred while adding the selected file.\nThis functionality is currently unsupported.", "An error occurred", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        break;
+                    case PAK.PAKReturnType.FAILED_UNKNOWN:
+                        MessageBox.Show("An unknown error occurred while exporting the selected file.\nA further popup will appear with detailed information.\nPlease log this information via the GitHub issue tracker.", "An error occurred", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        MessageBox.Show(AlienPAK.LatestError, "Unknown Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        break;
+                    case PAK.PAKReturnType.FAILED_LOGIC_ERROR:
+                        MessageBox.Show("An error occurred while exporting the selected file.\nPlease reload the PAK file.", "An error occurred", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        break;
+                    case PAK.PAKReturnType.FAILED_FILE_IN_USE:
+                        MessageBox.Show("An error occurred while exporting the selected file.\nMake sure you have write access to the export folder.", "An error occurred", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        break;
+                }
+                Cursor.Current = Cursors.Default;
+            }
+            //TODO: refresh GUI
+        }
+
+        /* Remove selected file from the archive */
+        private void RemoveFileFromArchive_Click(object sender, EventArgs e)
+        {
+            if (FileTree.SelectedNode == null || ((TreeItem)FileTree.SelectedNode.Tag).Item_Type != TreeItemType.EXPORTABLE_FILE)
+            {
+                MessageBox.Show("Please select a file from the list.", "No file selected.", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
+            DialogResult ConfirmRemoval = MessageBox.Show("Are you sure you would like to remove this file?", "About to remove selected file...", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+            if (ConfirmRemoval == DialogResult.Yes)
+            {
+                Cursor.Current = Cursors.WaitCursor;
+                switch (AlienPAK.RemoveFile(((TreeItem)FileTree.SelectedNode.Tag).String_Value))
+                {
+                    case PAK.PAKReturnType.SUCCESS:
+                        MessageBox.Show("The selected file was removed successfully.", "Removed file", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        break;
+                    case PAK.PAKReturnType.FAILED_UNSUPPORTED:
+                        MessageBox.Show("An error occurred while removing the selected file.\nThis functionality is currently unsupported.", "An error occurred", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        break;
+                    case PAK.PAKReturnType.FAILED_UNKNOWN:
+                        MessageBox.Show("An unknown error occurred while removing the selected file.\nA further popup will appear with detailed information.\nPlease log this information via the GitHub issue tracker.", "An error occurred", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        MessageBox.Show(AlienPAK.LatestError, "Unknown Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        break;
+                    case PAK.PAKReturnType.FAILED_LOGIC_ERROR:
+                        MessageBox.Show("An error occurred while removing the selected file.\nPlease reload the PAK file.", "An error occurred", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        break;
+                    case PAK.PAKReturnType.FAILED_FILE_IN_USE:
+                        MessageBox.Show("An error occurred while removing the selected file.\nIf Alien: Isolation is open, it must be closed.", "An error occurred", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        break;
+                }
+                Cursor.Current = Cursors.Default;
+            }
+            //TODO: refresh GUI
+        }
+
         /* Form loads */
         private void Form1_Load(object sender, EventArgs e)
         {
