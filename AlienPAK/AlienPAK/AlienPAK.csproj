@@ -50,13 +50,13 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Archive Handlers\PAK2.cs" />
-    <Compile Include="BinaryUtilities.cs" />
-    <Compile Include="EntryCommandsPAK.cs" />
-    <Compile Include="EntryMaterialMappingsPAK.cs" />
-    <Compile Include="EntryPAK2.cs" />
+    <Compile Include="Utilities\BinaryUtilities.cs" />
+    <Compile Include="File Headers\CathodeScript.cs" />
+    <Compile Include="File Headers\MaterialMap.cs" />
+    <Compile Include="File Headers\PAK2.cs" />
     <Compile Include="File Headers\DDS.cs" />
-    <Compile Include="DDSReader.cs" />
-    <Compile Include="DDSWriter.cs" />
+    <Compile Include="Utilities\DDSReader.cs" />
+    <Compile Include="Utilities\DDSWriter.cs" />
     <Compile Include="File Headers\CS2.cs" />
     <Compile Include="File Headers\TEX4.cs" />
     <Compile Include="Explorer.cs">
@@ -65,7 +65,6 @@
     <Compile Include="Explorer.Designer.cs">
       <DependentUpon>Explorer.cs</DependentUpon>
     </Compile>
-    <Compile Include="EntryModelPAK.cs" />
     <Compile Include="PAK.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

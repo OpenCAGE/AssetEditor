@@ -30,7 +30,6 @@ namespace AlienPAK
         private BinaryReader ArchiveFile = null;
         private BinaryReader ArchiveFileBin = null;
         private List<string> FileList = new List<string>();
-        private int NumberOfEntries = -1;
         public enum PAKType { PAK2, PAK_TEXTURES, PAK_MODELS, PAK_SCRIPTS, PAK_MATERIALMAPS, UNRECOGNISED };
         public PAKType Format = PAKType.UNRECOGNISED;
         public enum PAKReturnType { FAILED_UNKNOWN, FAILED_UNSUPPORTED, SUCCESS, FAILED_LOGIC_ERROR, FAILED_FILE_IN_USE }
