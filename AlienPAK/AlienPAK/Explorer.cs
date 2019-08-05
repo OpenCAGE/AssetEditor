@@ -217,12 +217,12 @@ namespace AlienPAK
             }
 
             //Allow selection of a file (force extension), then drop it in
-            OpenFileDialog filePicker = new OpenFileDialog();
-            filePicker.Filter = "Import File|*" + Path.GetExtension(FileTree.SelectedNode.Text);
-            if (filePicker.ShowDialog() == DialogResult.OK)
+            OpenFileDialog FilePicker = new OpenFileDialog();
+            FilePicker.Filter = "Import File|*" + Path.GetExtension(FileTree.SelectedNode.Text);
+            if (FilePicker.ShowDialog() == DialogResult.OK)
             {
                 Cursor.Current = Cursors.WaitCursor;
-                switch (AlienPAK.ImportFile(((TreeItem)FileTree.SelectedNode.Tag).String_Value, filePicker.FileName))
+                switch (AlienPAK.ImportFile(((TreeItem)FileTree.SelectedNode.Tag).String_Value, FilePicker.FileName))
                 {
                     case PAK.PAKReturnType.SUCCESS:
                         MessageBox.Show("The selected file was imported successfully.", "Imported file", MessageBoxButtons.OK, MessageBoxIcon.Information);
@@ -256,13 +256,13 @@ namespace AlienPAK
             }
 
             //Let the user decide where to save, then save
-            SaveFileDialog filePicker = new SaveFileDialog();
-            filePicker.Filter = "Exported File|*" + Path.GetExtension(FileTree.SelectedNode.Text);
-            filePicker.FileName = Path.GetFileName(FileTree.SelectedNode.Text);
-            if (filePicker.ShowDialog() == DialogResult.OK)
+            SaveFileDialog FilePicker = new SaveFileDialog();
+            FilePicker.Filter = "Exported File|*" + Path.GetExtension(FileTree.SelectedNode.Text);
+            FilePicker.FileName = Path.GetFileName(FileTree.SelectedNode.Text);
+            if (FilePicker.ShowDialog() == DialogResult.OK)
             {
                 Cursor.Current = Cursors.WaitCursor;
-                switch (AlienPAK.ExportFile(((TreeItem)FileTree.SelectedNode.Tag).String_Value, filePicker.FileName))
+                switch (AlienPAK.ExportFile(((TreeItem)FileTree.SelectedNode.Tag).String_Value, FilePicker.FileName))
                 {
                     case PAK.PAKReturnType.SUCCESS:
                         MessageBox.Show("The selected file was exported successfully.", "Exported file", MessageBoxButtons.OK, MessageBoxIcon.Information);
@@ -289,12 +289,12 @@ namespace AlienPAK
         private void AddFileToArchive_Click(object sender, EventArgs e)
         {
             //Let the user decide what file to add, then add it
-            OpenFileDialog filePicker = new OpenFileDialog();
-            filePicker.Filter = "Any File|*.*";
-            if (filePicker.ShowDialog() == DialogResult.OK)
+            OpenFileDialog FilePicker = new OpenFileDialog();
+            FilePicker.Filter = "Any File|*.*";
+            if (FilePicker.ShowDialog() == DialogResult.OK)
             {
                 Cursor.Current = Cursors.WaitCursor;
-                switch (AlienPAK.AddNewFile(filePicker.FileName))
+                switch (AlienPAK.AddNewFile(FilePicker.FileName))
                 {
                     case PAK.PAKReturnType.SUCCESS:
                         MessageBox.Show("The selected file was added successfully.", "Exported file", MessageBoxButtons.OK, MessageBoxIcon.Information);
@@ -370,11 +370,11 @@ namespace AlienPAK
         private void openToolStripMenuItem_Click(object sender, EventArgs e)
         {
             //Allow selection of a PAK from filepicker, then open
-            OpenFileDialog filePicker = new OpenFileDialog();
-            filePicker.Filter = "Alien: Isolation PAK|*.PAK";
-            if (filePicker.ShowDialog() == DialogResult.OK)
+            OpenFileDialog ArchivePicker = new OpenFileDialog();
+            ArchivePicker.Filter = "Alien: Isolation PAK|*.PAK";
+            if (ArchivePicker.ShowDialog() == DialogResult.OK)
             {
-                OpenFileAndPopulateGUI(filePicker.FileName);
+                OpenFileAndPopulateGUI(ArchivePicker.FileName);
             }
         }
 
@@ -429,6 +429,54 @@ namespace AlienPAK
         {
             ToolOptions OptionsForm = new ToolOptions();
             OptionsForm.Show();
+        }
+
+        /* Create a PAK2 archive from a specified directory */
+        private void createPAK2FromDirectoryToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            MessageBox.Show("Please select a folder to convert to PAK2.", "Select folder...", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            FolderBrowserDialog FolderToParse = new FolderBrowserDialog();
+            if (FolderToParse.ShowDialog() == DialogResult.OK)
+            {
+                List<string> FilesToAdd = new List<string>();
+                ListAllFiles(FolderToParse.SelectedPath, FilesToAdd);
+
+                MessageBox.Show("Please select a location to save the new PAK2 archive.", "Select output location...", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                SaveFileDialog PathToPAK2 = new SaveFileDialog();
+                PathToPAK2.Filter = "PAK2 Archive|*.PAK";
+                if (PathToPAK2.ShowDialog() == DialogResult.OK)
+                {
+                    PAK2 NewArchive = new PAK2(PathToPAK2.FileName);
+                    foreach (string FileName in FilesToAdd)
+                    {
+                        NewArchive.AddFile(FileName, FolderToParse.SelectedPath.Length+1);
+                    }
+                    NewArchive.Save();
+                    MessageBox.Show("Archive successfully created!", "Finished...", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    return;
+                }
+            }
+            MessageBox.Show("The PAK2 was not created.", "Process cancelled.", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        }
+        public void ListAllFiles(string ThisDirectory, List<string> FilesInDir)
+        {
+            try
+            {
+                foreach (string ThisFile in Directory.GetFiles(ThisDirectory))
+                {
+                    FilesInDir.Add(ThisFile);
+                }
+                foreach (string NextDirectory in Directory.GetDirectories(ThisDirectory))
+                {
+                    ListAllFiles(NextDirectory, FilesInDir);
+                }
+            } catch { }
+        }
+
+        /* Export all files from the current archive */
+        private void exportAllFilesToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            MessageBox.Show("This functionality is coming soon!", "Coming soon...", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
         }
     }
 }
