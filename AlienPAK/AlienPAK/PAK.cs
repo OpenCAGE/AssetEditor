@@ -21,6 +21,9 @@ namespace AlienPAK
     {
         ToolOptionsHandler ToolSettings = new ToolOptionsHandler();
 
+        //WIP: Slowly moving all archive handling to specialised classes... only PAK2 atm.
+        PAK2 HandlerPAK2;
+
         /* --- COMMON PAK --- */
         private string ArchivePath = "";
         private string ArchivePathBin = "";
@@ -36,15 +39,14 @@ namespace AlienPAK
         /* Open a PAK archive */
         public void Open(string FilePath)
         {
-            //Open new PAK
+            //Close old PAK if open
             if (ArchiveFile != null) { ArchiveFile.Close(); }
             if (ArchiveFileBin != null) { ArchiveFileBin.Close(); }
-            ArchiveFile = new BinaryReader(File.OpenRead(FilePath));
 
             //Update our info
             ArchivePath = FilePath;
             ArchivePathBin = "";
-            string FileName = Path.GetFileName(FilePath);
+            string FileName = Path.GetFileName(ArchivePath);
             switch (FileName)
             {
                 case "GLOBAL_TEXTURES.ALL.PAK":
@@ -62,23 +64,20 @@ namespace AlienPAK
                     Format = PAKType.PAK_SCRIPTS;
                     break;
                 default:
-                    try
+                    HandlerPAK2 = new PAK2(ArchivePath);
+                    if (HandlerPAK2.Load())
                     {
-                        string PAKMagic = "";
-                        for (int i = 0; i < 4; i++)
-                        {
-                            PAKMagic += ArchiveFile.ReadChar();
-                        }
-                        ArchiveFile.BaseStream.Position = 0;
-                        if (PAKMagic == "PAK2")
-                        {
-                            Format = PAKType.PAK2;
-                            break;
-                        }
+                        Format = PAKType.PAK2;
+                        break;
                     }
-                    catch { }
                     Format = PAKType.UNRECOGNISED;
-                    break;
+                    return;
+            }
+
+            //Open new PAK (unless PAK2, then we've done this already)
+            if (Format != PAKType.PAK2)
+            {
+                ArchiveFile = new BinaryReader(File.OpenRead(FilePath));
             }
 
             //Certain formats have associated BIN files
@@ -87,17 +86,17 @@ namespace AlienPAK
                 case PAKType.PAK_TEXTURES:
                     if (FileName.Substring(0, 5).ToUpper() == "LEVEL")
                     {
-                        ArchivePathBin = FilePath.Substring(0, FilePath.Length - FileName.Length) + "LEVEL_TEXTURE_HEADERS.ALL.BIN";
+                        ArchivePathBin = ArchivePath.Substring(0, ArchivePath.Length - FileName.Length) + "LEVEL_TEXTURE_HEADERS.ALL.BIN";
                         ArchiveFileBin = new BinaryReader(File.OpenRead(ArchivePathBin));
                     }
                     else
                     {
-                        ArchivePathBin = FilePath.Substring(0, FilePath.Length - FileName.Length) + "GLOBAL_TEXTURES_HEADERS.ALL.BIN";
+                        ArchivePathBin = ArchivePath.Substring(0, ArchivePath.Length - FileName.Length) + "GLOBAL_TEXTURES_HEADERS.ALL.BIN";
                         ArchiveFileBin = new BinaryReader(File.OpenRead(ArchivePathBin));
                     }
                     break;
                 case PAKType.PAK_MODELS:
-                    ArchivePathBin = FilePath.Substring(0, FilePath.Length - FileName.Length) + "MODELS_" + FileName.Substring(0, FileName.Length - 11) + ".BIN";
+                    ArchivePathBin = ArchivePath.Substring(0, ArchivePath.Length - FileName.Length) + "MODELS_" + FileName.Substring(0, FileName.Length - 11) + ".BIN";
                     ArchiveFileBin = new BinaryReader(File.OpenRead(ArchivePathBin));
                     break;
             }
@@ -106,11 +105,9 @@ namespace AlienPAK
         /* Parse a PAK archive */
         public List<string> Parse()
         {
-            if (ArchiveFile == null) { return null; }
+            if (ArchiveFile == null && Format != PAKType.PAK2) { return null; }
 
             FileList.Clear();
-            FileOffsets.Clear();
-            FilePadding.Clear();
             TextureEntries.Clear();
             MaterialMappingEntries.Clear();
             CommandsEntries.Clear();
@@ -119,7 +116,7 @@ namespace AlienPAK
             switch (Format)
             {
                 case PAKType.PAK2:
-                    return ParsePAK2();
+                    return HandlerPAK2.GetFileNames();
                 case PAKType.PAK_TEXTURES:
                     return ParseTexturePAK();
                 case PAKType.PAK_MODELS:
@@ -136,12 +133,12 @@ namespace AlienPAK
         /* Get the size of a file within the PAK archive */
         public int GetFileSize(string FileName)
         {
-            if (ArchiveFile == null) { return -1; }
+            if (ArchiveFile == null && Format != PAKType.PAK2) { return -1; }
 
             switch (Format)
             {
                 case PAKType.PAK2:
-                    return FileSizePAK2(FileName);
+                    return HandlerPAK2.GetFilesize(FileName);
                 case PAKType.PAK_TEXTURES:
                     return FileSizeTexturePAK(FileName);
                 case PAKType.PAK_MODELS:
@@ -158,12 +155,13 @@ namespace AlienPAK
         /* Export from a PAK archive */
         public PAKReturnType ExportFile(string FileName, string ExportPath)
         {
-            if (ArchiveFile == null) { return PAKReturnType.FAILED_LOGIC_ERROR; }
+            if (ArchiveFile == null && Format != PAKType.PAK2) { return PAKReturnType.FAILED_LOGIC_ERROR; }
 
             switch (Format)
             {
                 case PAKType.PAK2:
-                    return ExportFilePAK2(FileName, ExportPath);
+                    HandlerPAK2.ExportFile(ExportPath, FileName);
+                    return PAKReturnType.SUCCESS;
                 case PAKType.PAK_TEXTURES:
                     return ExportFileTexturePAK(FileName, ExportPath);
                 case PAKType.PAK_MODELS:
@@ -180,12 +178,17 @@ namespace AlienPAK
         /* Import to a PAK archive */
         public PAKReturnType ImportFile(string FileName, string ImportPath)
         {
-            if (ArchiveFile == null) { return PAKReturnType.FAILED_LOGIC_ERROR; }
+            if (ArchiveFile == null && Format != PAKType.PAK2) { return PAKReturnType.FAILED_LOGIC_ERROR; }
 
             switch (Format)
             {
                 case PAKType.PAK2:
-                    return ImportFilePAK2(FileName, ImportPath);
+                    HandlerPAK2.ReplaceFile(ImportPath, FileName);
+                    if (HandlerPAK2.Save())
+                    {
+                        return PAKReturnType.SUCCESS;
+                    }
+                    return PAKReturnType.FAILED_FILE_IN_USE;
                 case PAKType.PAK_TEXTURES:
                     return ImportFileTexturePAK(FileName, ImportPath);
                 case PAKType.PAK_MODELS:
@@ -197,6 +200,30 @@ namespace AlienPAK
                 default:
                     return PAKReturnType.FAILED_UNSUPPORTED;
             }
+        }
+
+        /* Remove from a PAK archive */
+        public PAKReturnType RemoveFile(string FileName)
+        {
+            if (Format != PAKType.PAK2) { return PAKReturnType.FAILED_UNSUPPORTED; } //Currently only supported in PAK2
+            HandlerPAK2.DeleteFile(FileName);
+            if (HandlerPAK2.Save())
+            {
+                return PAKReturnType.SUCCESS;
+            }
+            return PAKReturnType.FAILED_FILE_IN_USE;
+        }
+
+        /* Add to a PAK archive */
+        public PAKReturnType AddNewFile(string NewFile)
+        {
+            if (Format != PAKType.PAK2) { return PAKReturnType.FAILED_UNSUPPORTED; } //Currently only supported in PAK2
+            HandlerPAK2.AddFile(NewFile);
+            if (HandlerPAK2.Save())
+            {
+                return PAKReturnType.SUCCESS;
+            }
+            return PAKReturnType.FAILED_FILE_IN_USE;
         }
 
         /* Get the PAK index of the file by name */
@@ -221,229 +248,8 @@ namespace AlienPAK
                 }
             }
 
-            //Failed to find
-            return -1;
-        }
-
-
-        /* --- PAK2 --- */
-        private List<int> FileOffsets = new List<int>();
-        private List<int> FilePadding = new List<int>();
-        private int OffsetListBegin = -1;
-        private int DataSize = -1;
-
-        /* Parse a PAK2 archive */
-        private List<string> ParsePAK2()
-        {
-            //Read the header info
-            ArchiveFile.BaseStream.Position += 4; //Skip magic
-            OffsetListBegin = ArchiveFile.ReadInt32() + 16;
-            NumberOfEntries = ArchiveFile.ReadInt32();
-            DataSize = ArchiveFile.ReadInt32();
-
-            //Read all file names
-            for (int i = 0; i < NumberOfEntries; i++)
-            {
-                string ThisFileName = "";
-                for (byte b; (b = ArchiveFile.ReadByte()) != 0x00;)
-                {
-                    ThisFileName += (char)b;
-                }
-                FileList.Add(ThisFileName);
-            }
-
-            //Read all file offsets
-            ArchiveFile.BaseStream.Position = OffsetListBegin;
-            FileOffsets.Add(OffsetListBegin + (NumberOfEntries * DataSize));
-            List<string> debug = new List<string>();
-            for (int i = 0; i < NumberOfEntries; i++)
-            {
-                FileOffsets.Add(ArchiveFile.ReadInt32());
-                debug.Add(FileOffsets.ElementAt(i).ToString());
-            }
-
-            //Hacky way to store byte alignment values
-            for (int i = 0; i < NumberOfEntries; i++)
-            {
-                ArchiveFile.BaseStream.Position = FileOffsets[i];
-                FilePadding.Add(0);
-                for (int x = 0; x < DataSize + 1; x++)
-                {
-                    if (ArchiveFile.ReadByte() == 0x00)
-                    {
-                        FilePadding[i] += 1;
-                    }
-                    else
-                    {
-                        break;
-                    }
-                }
-            }
-
-            return FileList;
-        }
-
-        /* Get a file's size from the PAK2 archive */
-        private int FileSizePAK2(string FileName)
-        {
-            int FileIndex = GetFileIndex(FileName);
-            if (FileIndex == -1) { return -1; }
-
-            ArchiveFile.BaseStream.Position = FileOffsets[FileIndex] + FilePadding[FileIndex];
-            return FileOffsets.ElementAt(FileIndex + 1) - (int)ArchiveFile.BaseStream.Position;
-        }
-
-        /* Export a file from the PAK2 archive */
-        private PAKReturnType ExportFilePAK2(string FileName, string ExportPath)
-        {
-            try
-            {
-                //Update reader position and work out file size
-                int FileLength = FileSizePAK2(FileName);
-
-                //Grab the file's contents (this can probably be optimised!)
-                List<byte> FileExport = new List<byte>();
-                for (int i = 0; i < FileLength; i++)
-                {
-                    FileExport.Add(ArchiveFile.ReadByte());
-                }
-
-                //Write the file's contents out
-                File.WriteAllBytes(ExportPath, FileExport.ToArray());
-                return PAKReturnType.SUCCESS;
-            }
-            catch (Exception e)
-            {
-                LatestError = e.ToString();
-                return PAKReturnType.FAILED_UNKNOWN;
-            }
-        }
-
-        /* Import a file to the PAK2 archive */
-        private PAKReturnType ImportFilePAK2(string FileName, string ImportPath)
-        {
-            try
-            {
-                //Open PAK for writing, and read contents of import file
-                BinaryReader ImportFile = new BinaryReader(File.OpenRead(ImportPath));
-
-                //Old/new file lengths
-                int FileIndex = GetFileIndex(FileName);
-                int OldLength = FileOffsets.ElementAt(FileIndex + 1) - FileOffsets.ElementAt(FileIndex);
-                int NewLength = (int)ImportFile.BaseStream.Length + FilePadding.ElementAt(FileIndex);
-
-                //Old/new "padding" (next file in sequence's byte alignment)
-                int OldNextPadding = (FileIndex != FilePadding.Count - 1) ? FilePadding.ElementAt(FileIndex + 1) : 0;
-                int NewNextPadding = 0; //This will be set later
-
-                //Grab the first section of the archive
-                ArchiveFile.BaseStream.Position = 0;
-                byte[] ArchivePt1 = new byte[FileOffsets.ElementAt(FileIndex)];
-                for (int i = 0; i < ArchivePt1.Length; i++)
-                {
-                    ArchivePt1[i] = ArchiveFile.ReadByte();
-                }
-
-                //Update file offset information
-                for (int i = 0; i < (NumberOfEntries - FileIndex); i++)
-                {
-                    //Read original offset
-                    byte[] OffsetRaw = new byte[DataSize];
-                    for (int x = 0; x < OffsetRaw.Length; x++)
-                    {
-                        OffsetRaw[x] = ArchivePt1[OffsetListBegin + ((FileIndex + i) * DataSize) + x]; //+1?
-                    }
-
-                    //Update original offset
-                    int Offset = BitConverter.ToInt32(OffsetRaw, 0);
-                    Offset = Offset - OldLength + NewLength;
-                    if (i == 0 && FileIndex != NumberOfEntries - 1)
-                    {
-                        //Correct the byte alignment for first trailing file (if we have one)
-                        while ((Offset + NewNextPadding) % 4 != 0)
-                        {
-                            NewNextPadding += 1;
-                        }
-                        FilePadding[FileIndex + 1] = NewNextPadding;
-                    }
-                    else
-                    {
-                        //Flow new padding over to each following file
-                        Offset += (NewNextPadding - OldNextPadding);
-                    }
-                    OffsetRaw = BitConverter.GetBytes(Offset);
-
-                    //Write back new offset
-                    for (int x = 0; x < OffsetRaw.Length; x++)
-                    {
-                        ArchivePt1[OffsetListBegin + ((FileIndex + i) * DataSize) + x] = OffsetRaw[x]; //+1?
-                    }
-                }
-
-                //Grab the second half of the archive after the file, and correct the byte offset
-                ArchiveFile.BaseStream.Position = FileOffsets.ElementAt(FileIndex + 1);
-                byte[] ArchivePt2 = new byte[FileOffsets.ElementAt(FileOffsets.Count - 1) - FileOffsets.ElementAt(FileIndex + 1) + (NewNextPadding - OldNextPadding)];
-                ArchiveFile.BaseStream.Position += OldNextPadding;
-                for (int i = 0; i < NewNextPadding; i++)
-                {
-                    ArchivePt2[i] = 0x00;
-                }
-                for (int i = NewNextPadding; i < ArchivePt2.Length; i++)
-                {
-                    ArchivePt2[i] = ArchiveFile.ReadByte();
-                }
-
-                //Compose new archive from the two old parts and the new file stuck in the middle
-                byte[] NewArchive = new byte[FileOffsets.ElementAt(FileOffsets.Count - 1) - OldLength + NewLength + (NewNextPadding - OldNextPadding)];
-                int ArchiveIndex = 0;
-                for (int i = 0; i < ArchivePt1.Length; i++)
-                {
-                    NewArchive[ArchiveIndex] = ArchivePt1[i];
-                    ArchiveIndex++;
-                }
-                for (int i = 0; i < FilePadding.ElementAt(FileIndex); i++)
-                {
-                    NewArchive[ArchiveIndex] = 0x00;
-                    ArchiveIndex++;
-                }
-                for (int i = 0; i < (int)ImportFile.BaseStream.Length; i++)
-                {
-                    NewArchive[ArchiveIndex] = ImportFile.ReadByte();
-                    ArchiveIndex++;
-                }
-                for (int i = 0; i < ArchivePt2.Length; i++)
-                {
-                    NewArchive[ArchiveIndex] = ArchivePt2[i];
-                    ArchiveIndex++;
-                }
-
-                ArchiveFile.Close();
-                try
-                {
-                    //Write out the new archive
-                    BinaryWriter ArchiveFileWrite = new BinaryWriter(File.OpenWrite(ArchivePath));
-                    ArchiveFileWrite.BaseStream.SetLength(0);
-                    ArchiveFileWrite.Write(NewArchive);
-                    ArchiveFileWrite.Close();
-                }
-                catch
-                {
-                    //File is probably in-use by the game, re-open for reading and exit as fail
-                    Open(ArchivePath);
-                    return PAKReturnType.FAILED_FILE_IN_USE;
-                }
-
-                //Reload the archive for us
-                Open(ArchivePath);
-                ParsePAK2();
-
-                return PAKReturnType.SUCCESS;
-            }
-            catch (Exception e)
-            {
-                LatestError = e.ToString();
-                return PAKReturnType.FAILED_UNKNOWN;
-            }
+            //Failed to find - fatal issue
+            throw new Exception("Could not find PAK entry - fatal!");
         }
 
 
@@ -543,20 +349,6 @@ namespace AlienPAK
                 ArchiveFile.BaseStream.Position += 12; //Skip unknowns
             }
             HeaderListEndPAK = (int)ArchiveFile.BaseStream.Position;
-            
-            //TESTING CODE FOR MAT LINK PROJECT - REMOVE BEFORE PUSHING
-            /*
-            int index = 0;
-            foreach (TEX4 texture_test in TextureEntries)
-            {
-                if (Path.GetFileNameWithoutExtension(texture_test.FileName) == "graffitti_13" || Path.GetFileNameWithoutExtension(texture_test.FileName) == "graffitti_13.tga")
-                {
-                    string stop_here = "";
-                }
-                index++;
-            }
-            */
-            //END OF TEST CODE
 
             return FileList;
         }
@@ -565,7 +357,6 @@ namespace AlienPAK
         private int FileSizeTexturePAK(string FileName)
         {
             int FileIndex = GetFileIndex(FileName);
-            if (FileIndex == -1) { return -1; }
 
             if (TextureEntries[FileIndex].Texture_V2.Saved)
             {
@@ -576,6 +367,7 @@ namespace AlienPAK
             {
                 return TextureEntries[FileIndex].Texture_V1.Length + 148;
             }
+
             return -1; //Should never get here
         }
 
@@ -1262,10 +1054,7 @@ namespace AlienPAK
         /* Get a file's size from the scripts PAK (compiled size, not actual) */
         private int FileSizeCommandsPAK(string FileName)
         {
-            int FileIndex = GetFileIndex(FileName);
-            if (FileIndex == -1) { return -1; }
-
-            return CommandsEntries[FileIndex].ScriptContent.Count;
+            return CommandsEntries[GetFileIndex(FileName)].ScriptContent.Count;
         }
 
         /* Export a file from the scripts PAK */
@@ -1334,11 +1123,8 @@ namespace AlienPAK
         /* Get a file's size from the material map PAK (kinda faked for now) */
         private int FileSizeMaterialMappingsPAK(string FileName)
         {
-            int FileIndex = GetFileIndex(FileName);
-            if (FileIndex == -1) { return -1; }
-
             int size = 0;
-            foreach (string MatMap in MaterialMappingEntries[FileIndex].MapMatEntries)
+            foreach (string MatMap in MaterialMappingEntries[GetFileIndex(FileName)].MapMatEntries)
             {
                 size += MatMap.Length;
             }

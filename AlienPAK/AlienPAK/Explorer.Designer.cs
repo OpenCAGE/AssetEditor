@@ -39,6 +39,8 @@
             this.viewToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.expandAllDirectoriesToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.shrinkAllDirectoriesToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.toolsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.optionsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
             this.FileTree = new System.Windows.Forms.TreeView();
             this.fileContextMenu = new System.Windows.Forms.ContextMenuStrip(this.components);
@@ -57,14 +59,16 @@
             this.groupBox3 = new System.Windows.Forms.GroupBox();
             this.importFile = new System.Windows.Forms.Button();
             this.exportFile = new System.Windows.Forms.Button();
-            this.toolsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.optionsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.groupBox4 = new System.Windows.Forms.GroupBox();
+            this.removeFile = new System.Windows.Forms.Button();
+            this.addFile = new System.Windows.Forms.Button();
             this.menuStrip1.SuspendLayout();
             this.fileContextMenu.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.filePreviewImage)).BeginInit();
             this.groupBox1.SuspendLayout();
             this.groupBox2.SuspendLayout();
             this.groupBox3.SuspendLayout();
+            this.groupBox4.SuspendLayout();
             this.SuspendLayout();
             // 
             // menuStrip1
@@ -138,6 +142,21 @@
             this.shrinkAllDirectoriesToolStripMenuItem.Size = new System.Drawing.Size(189, 22);
             this.shrinkAllDirectoriesToolStripMenuItem.Text = "Shrink All Directories";
             this.shrinkAllDirectoriesToolStripMenuItem.Click += new System.EventHandler(this.shrinkAllDirectoriesToolStripMenuItem_Click);
+            // 
+            // toolsToolStripMenuItem
+            // 
+            this.toolsToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.optionsToolStripMenuItem});
+            this.toolsToolStripMenuItem.Name = "toolsToolStripMenuItem";
+            this.toolsToolStripMenuItem.Size = new System.Drawing.Size(46, 20);
+            this.toolsToolStripMenuItem.Text = "Tools";
+            // 
+            // optionsToolStripMenuItem
+            // 
+            this.optionsToolStripMenuItem.Name = "optionsToolStripMenuItem";
+            this.optionsToolStripMenuItem.Size = new System.Drawing.Size(116, 22);
+            this.optionsToolStripMenuItem.Text = "Options";
+            this.optionsToolStripMenuItem.Click += new System.EventHandler(this.optionsToolStripMenuItem_Click);
             // 
             // FileTree
             // 
@@ -268,11 +287,12 @@
             // 
             // groupBox3
             // 
+            this.groupBox3.Controls.Add(this.removeFile);
             this.groupBox3.Controls.Add(this.importFile);
             this.groupBox3.Controls.Add(this.exportFile);
             this.groupBox3.Location = new System.Drawing.Point(505, 402);
             this.groupBox3.Name = "groupBox3";
-            this.groupBox3.Size = new System.Drawing.Size(277, 57);
+            this.groupBox3.Size = new System.Drawing.Size(277, 78);
             this.groupBox3.TabIndex = 10;
             this.groupBox3.TabStop = false;
             this.groupBox3.Text = "File Utilities";
@@ -284,7 +304,8 @@
             this.importFile.Name = "importFile";
             this.importFile.Size = new System.Drawing.Size(132, 24);
             this.importFile.TabIndex = 1;
-            this.importFile.Text = "Import";
+            this.importFile.Text = "Replace Selected";
+            this.toolTip1.SetToolTip(this.importFile, "With a file selected, press this button to replace it with a new file.");
             this.importFile.UseVisualStyleBackColor = true;
             this.importFile.Click += new System.EventHandler(this.importFile_Click);
             // 
@@ -295,30 +316,51 @@
             this.exportFile.Name = "exportFile";
             this.exportFile.Size = new System.Drawing.Size(132, 24);
             this.exportFile.TabIndex = 0;
-            this.exportFile.Text = "Export";
+            this.exportFile.Text = "Export Selected";
+            this.toolTip1.SetToolTip(this.exportFile, "With a file selected, press this to export it from the archive.");
             this.exportFile.UseVisualStyleBackColor = true;
             this.exportFile.Click += new System.EventHandler(this.exportFile_Click);
             // 
-            // toolsToolStripMenuItem
+            // groupBox4
             // 
-            this.toolsToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.optionsToolStripMenuItem});
-            this.toolsToolStripMenuItem.Name = "toolsToolStripMenuItem";
-            this.toolsToolStripMenuItem.Size = new System.Drawing.Size(46, 20);
-            this.toolsToolStripMenuItem.Text = "Tools";
+            this.groupBox4.Controls.Add(this.addFile);
+            this.groupBox4.Location = new System.Drawing.Point(505, 486);
+            this.groupBox4.Name = "groupBox4";
+            this.groupBox4.Size = new System.Drawing.Size(277, 52);
+            this.groupBox4.TabIndex = 11;
+            this.groupBox4.TabStop = false;
+            this.groupBox4.Text = "Archive Utilities";
+            this.groupBox4.Visible = false;
             // 
-            // optionsToolStripMenuItem
+            // removeFile
             // 
-            this.optionsToolStripMenuItem.Name = "optionsToolStripMenuItem";
-            this.optionsToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
-            this.optionsToolStripMenuItem.Text = "Options";
-            this.optionsToolStripMenuItem.Click += new System.EventHandler(this.optionsToolStripMenuItem_Click);
+            this.removeFile.Enabled = false;
+            this.removeFile.Location = new System.Drawing.Point(6, 47);
+            this.removeFile.Name = "removeFile";
+            this.removeFile.Size = new System.Drawing.Size(265, 24);
+            this.removeFile.TabIndex = 1;
+            this.removeFile.Text = "Delete Selected";
+            this.toolTip1.SetToolTip(this.removeFile, "With a file selected, press this button to delete it from the archive.");
+            this.removeFile.UseVisualStyleBackColor = true;
+            this.removeFile.Click += new System.EventHandler(this.RemoveFileFromArchive_Click);
+            // 
+            // addFile
+            // 
+            this.addFile.Location = new System.Drawing.Point(6, 21);
+            this.addFile.Name = "addFile";
+            this.addFile.Size = new System.Drawing.Size(265, 24);
+            this.addFile.TabIndex = 0;
+            this.addFile.Text = "Import New File";
+            this.toolTip1.SetToolTip(this.addFile, "Add a new file to the current PAK archive.");
+            this.addFile.UseVisualStyleBackColor = true;
+            this.addFile.Click += new System.EventHandler(this.AddFileToArchive_Click);
             // 
             // Explorer
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(789, 703);
+            this.Controls.Add(this.groupBox4);
             this.Controls.Add(this.groupBox3);
             this.Controls.Add(this.groupBox2);
             this.Controls.Add(this.groupBox1);
@@ -340,6 +382,7 @@
             this.groupBox2.ResumeLayout(false);
             this.groupBox2.PerformLayout();
             this.groupBox3.ResumeLayout(false);
+            this.groupBox4.ResumeLayout(false);
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -376,6 +419,9 @@
         private System.Windows.Forms.Button exportFile;
         private System.Windows.Forms.ToolStripMenuItem toolsToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem optionsToolStripMenuItem;
+        private System.Windows.Forms.GroupBox groupBox4;
+        private System.Windows.Forms.Button removeFile;
+        private System.Windows.Forms.Button addFile;
     }
 }
 

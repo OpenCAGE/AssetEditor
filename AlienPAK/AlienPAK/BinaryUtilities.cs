@@ -50,19 +50,7 @@ namespace AlienPAK
     }
     class ExtraBinaryUtils
     {
-        public bool UpcomingBytesMatchMagic(BinaryReader reader, byte[] magic)
-        {
-            return (reader.ReadByte() == magic[0] && reader.ReadByte() == magic[1] && reader.ReadByte() == magic[2] && reader.ReadByte() == magic[3]);
-        }
-        public bool DoBytesMatch(byte[] bytes_1, byte[] bytes_2)
-        {
-            if (bytes_1.Length != bytes_2.Length) { return false; }
-            for (int i = 0; i < bytes_1.Length; i++)
-            {
-                if (bytes_1[i] != bytes_2[i]) { return false; }
-            }
-            return true;
-        }
+        //Gets a string from a byte array (at position) by reading chars until a null is hit
         public string GetStringFromByteArray(byte[] byte_array, int position)
         {
             string to_return = "";
@@ -76,6 +64,34 @@ namespace AlienPAK
                 to_return += (char)this_byte;
             }
             return to_return;
+        }
+
+        //Removes the leading nulls from a byte array, useful for cleaning byte-aligned file extracts
+        public byte[] RemoveLeadingNulls(byte[] extracted_file)
+        {
+            //Remove from leading
+            int start_offset = 0;
+            for (int i = 0; i < 4; i++)
+            {
+                if (extracted_file[i] == 0x00)
+                {
+                    start_offset = i+1;
+                    continue;
+                }
+                break;
+            }
+            byte[] to_return = new byte[extracted_file.Length - start_offset];
+            Array.Copy(extracted_file, start_offset, to_return, 0, to_return.Length);
+            return to_return;
+        }
+
+        //Writes a string without a leading length value (C# BinaryWriter default)
+        public void WriteString(string string_to_write, BinaryWriter writer)
+        {
+            foreach (char character in string_to_write)
+            {
+                writer.Write(character);
+            }
         }
     }
 }

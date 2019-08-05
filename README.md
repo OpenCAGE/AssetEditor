@@ -17,8 +17,10 @@ This PAK Tool is available within the [Alien: Isolation Mod Tools](https://githu
 
 - PAK2 (UI.PAK, ANIMATIONS.PAK)
   - Open archive
-  - Import files
+  - Add files
+  - Replace files
   - Export files
+  - Remove files
   
 - Texture PAK (LEVEL_TEXTURES.ALL.PAK, GLOBAL_TEXTURES.ALL.PAK)
   - Open archive
