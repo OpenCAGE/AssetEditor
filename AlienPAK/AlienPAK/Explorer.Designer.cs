@@ -39,6 +39,8 @@
             this.viewToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.expandAllDirectoriesToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.shrinkAllDirectoriesToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.toolsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.optionsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
             this.FileTree = new System.Windows.Forms.TreeView();
             this.fileContextMenu = new System.Windows.Forms.ContextMenuStrip(this.components);
@@ -57,14 +59,16 @@
             this.groupBox3 = new System.Windows.Forms.GroupBox();
             this.importFile = new System.Windows.Forms.Button();
             this.exportFile = new System.Windows.Forms.Button();
-            this.toolsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.optionsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.groupBox4 = new System.Windows.Forms.GroupBox();
+            this.button1 = new System.Windows.Forms.Button();
+            this.button2 = new System.Windows.Forms.Button();
             this.menuStrip1.SuspendLayout();
             this.fileContextMenu.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.filePreviewImage)).BeginInit();
             this.groupBox1.SuspendLayout();
             this.groupBox2.SuspendLayout();
             this.groupBox3.SuspendLayout();
+            this.groupBox4.SuspendLayout();
             this.SuspendLayout();
             // 
             // menuStrip1
@@ -138,6 +142,21 @@
             this.shrinkAllDirectoriesToolStripMenuItem.Size = new System.Drawing.Size(189, 22);
             this.shrinkAllDirectoriesToolStripMenuItem.Text = "Shrink All Directories";
             this.shrinkAllDirectoriesToolStripMenuItem.Click += new System.EventHandler(this.shrinkAllDirectoriesToolStripMenuItem_Click);
+            // 
+            // toolsToolStripMenuItem
+            // 
+            this.toolsToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.optionsToolStripMenuItem});
+            this.toolsToolStripMenuItem.Name = "toolsToolStripMenuItem";
+            this.toolsToolStripMenuItem.Size = new System.Drawing.Size(46, 20);
+            this.toolsToolStripMenuItem.Text = "Tools";
+            // 
+            // optionsToolStripMenuItem
+            // 
+            this.optionsToolStripMenuItem.Name = "optionsToolStripMenuItem";
+            this.optionsToolStripMenuItem.Size = new System.Drawing.Size(116, 22);
+            this.optionsToolStripMenuItem.Text = "Options";
+            this.optionsToolStripMenuItem.Click += new System.EventHandler(this.optionsToolStripMenuItem_Click);
             // 
             // FileTree
             // 
@@ -284,7 +303,7 @@
             this.importFile.Name = "importFile";
             this.importFile.Size = new System.Drawing.Size(132, 24);
             this.importFile.TabIndex = 1;
-            this.importFile.Text = "Import";
+            this.importFile.Text = "Replace Selected";
             this.importFile.UseVisualStyleBackColor = true;
             this.importFile.Click += new System.EventHandler(this.importFile_Click);
             // 
@@ -295,30 +314,48 @@
             this.exportFile.Name = "exportFile";
             this.exportFile.Size = new System.Drawing.Size(132, 24);
             this.exportFile.TabIndex = 0;
-            this.exportFile.Text = "Export";
+            this.exportFile.Text = "Export Selected";
             this.exportFile.UseVisualStyleBackColor = true;
             this.exportFile.Click += new System.EventHandler(this.exportFile_Click);
             // 
-            // toolsToolStripMenuItem
+            // groupBox4
             // 
-            this.toolsToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.optionsToolStripMenuItem});
-            this.toolsToolStripMenuItem.Name = "toolsToolStripMenuItem";
-            this.toolsToolStripMenuItem.Size = new System.Drawing.Size(46, 20);
-            this.toolsToolStripMenuItem.Text = "Tools";
+            this.groupBox4.Controls.Add(this.button1);
+            this.groupBox4.Controls.Add(this.button2);
+            this.groupBox4.Location = new System.Drawing.Point(505, 465);
+            this.groupBox4.Name = "groupBox4";
+            this.groupBox4.Size = new System.Drawing.Size(277, 57);
+            this.groupBox4.TabIndex = 11;
+            this.groupBox4.TabStop = false;
+            this.groupBox4.Text = "Archive Utilities";
+            this.groupBox4.Visible = false;
             // 
-            // optionsToolStripMenuItem
+            // button1
             // 
-            this.optionsToolStripMenuItem.Name = "optionsToolStripMenuItem";
-            this.optionsToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
-            this.optionsToolStripMenuItem.Text = "Options";
-            this.optionsToolStripMenuItem.Click += new System.EventHandler(this.optionsToolStripMenuItem_Click);
+            this.button1.Enabled = false;
+            this.button1.Location = new System.Drawing.Point(139, 21);
+            this.button1.Name = "button1";
+            this.button1.Size = new System.Drawing.Size(132, 24);
+            this.button1.TabIndex = 1;
+            this.button1.Text = "Delete Selected File";
+            this.button1.UseVisualStyleBackColor = true;
+            // 
+            // button2
+            // 
+            this.button2.Enabled = false;
+            this.button2.Location = new System.Drawing.Point(6, 21);
+            this.button2.Name = "button2";
+            this.button2.Size = new System.Drawing.Size(132, 24);
+            this.button2.TabIndex = 0;
+            this.button2.Text = "Import New File";
+            this.button2.UseVisualStyleBackColor = true;
             // 
             // Explorer
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(789, 703);
+            this.Controls.Add(this.groupBox4);
             this.Controls.Add(this.groupBox3);
             this.Controls.Add(this.groupBox2);
             this.Controls.Add(this.groupBox1);
@@ -340,6 +377,7 @@
             this.groupBox2.ResumeLayout(false);
             this.groupBox2.PerformLayout();
             this.groupBox3.ResumeLayout(false);
+            this.groupBox4.ResumeLayout(false);
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -376,6 +414,9 @@
         private System.Windows.Forms.Button exportFile;
         private System.Windows.Forms.ToolStripMenuItem toolsToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem optionsToolStripMenuItem;
+        private System.Windows.Forms.GroupBox groupBox4;
+        private System.Windows.Forms.Button button1;
+        private System.Windows.Forms.Button button2;
     }
 }
 
