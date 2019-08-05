@@ -62,6 +62,10 @@
             this.groupBox4 = new System.Windows.Forms.GroupBox();
             this.removeFile = new System.Windows.Forms.Button();
             this.addFile = new System.Windows.Forms.Button();
+            this.toolStripSeparator1 = new System.Windows.Forms.ToolStripSeparator();
+            this.exportAllFilesToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.toolStripSeparator3 = new System.Windows.Forms.ToolStripSeparator();
+            this.createPAK2FromDirectoryToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.menuStrip1.SuspendLayout();
             this.fileContextMenu.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.filePreviewImage)).BeginInit();
@@ -89,7 +93,9 @@
             this.openToolStripMenuItem,
             this.toolStripSeparator2,
             this.importFileToolStripMenuItem,
-            this.exportFileToolStripMenuItem});
+            this.exportFileToolStripMenuItem,
+            this.toolStripSeparator1,
+            this.exportAllFilesToolStripMenuItem});
             this.fileToolStripMenuItem.Name = "fileToolStripMenuItem";
             this.fileToolStripMenuItem.Size = new System.Drawing.Size(37, 20);
             this.fileToolStripMenuItem.Text = "File";
@@ -146,7 +152,9 @@
             // toolsToolStripMenuItem
             // 
             this.toolsToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.optionsToolStripMenuItem});
+            this.optionsToolStripMenuItem,
+            this.toolStripSeparator3,
+            this.createPAK2FromDirectoryToolStripMenuItem});
             this.toolsToolStripMenuItem.Name = "toolsToolStripMenuItem";
             this.toolsToolStripMenuItem.Size = new System.Drawing.Size(46, 20);
             this.toolsToolStripMenuItem.Text = "Tools";
@@ -355,6 +363,30 @@
             this.addFile.UseVisualStyleBackColor = true;
             this.addFile.Click += new System.EventHandler(this.AddFileToArchive_Click);
             // 
+            // toolStripSeparator1
+            // 
+            this.toolStripSeparator1.Name = "toolStripSeparator1";
+            this.toolStripSeparator1.Size = new System.Drawing.Size(177, 6);
+            // 
+            // exportAllFilesToolStripMenuItem
+            // 
+            this.exportAllFilesToolStripMenuItem.Name = "exportAllFilesToolStripMenuItem";
+            this.exportAllFilesToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.exportAllFilesToolStripMenuItem.Text = "Export All Files";
+            this.exportAllFilesToolStripMenuItem.Click += new System.EventHandler(this.exportAllFilesToolStripMenuItem_Click);
+            // 
+            // toolStripSeparator3
+            // 
+            this.toolStripSeparator3.Name = "toolStripSeparator3";
+            this.toolStripSeparator3.Size = new System.Drawing.Size(217, 6);
+            // 
+            // createPAK2FromDirectoryToolStripMenuItem
+            // 
+            this.createPAK2FromDirectoryToolStripMenuItem.Name = "createPAK2FromDirectoryToolStripMenuItem";
+            this.createPAK2FromDirectoryToolStripMenuItem.Size = new System.Drawing.Size(220, 22);
+            this.createPAK2FromDirectoryToolStripMenuItem.Text = "Create PAK2 From Directory";
+            this.createPAK2FromDirectoryToolStripMenuItem.Click += new System.EventHandler(this.createPAK2FromDirectoryToolStripMenuItem_Click);
+            // 
             // Explorer
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -422,6 +454,10 @@
         private System.Windows.Forms.GroupBox groupBox4;
         private System.Windows.Forms.Button removeFile;
         private System.Windows.Forms.Button addFile;
+        private System.Windows.Forms.ToolStripSeparator toolStripSeparator1;
+        private System.Windows.Forms.ToolStripMenuItem exportAllFilesToolStripMenuItem;
+        private System.Windows.Forms.ToolStripSeparator toolStripSeparator3;
+        private System.Windows.Forms.ToolStripMenuItem createPAK2FromDirectoryToolStripMenuItem;
     }
 }
 

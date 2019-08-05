@@ -114,10 +114,11 @@ namespace AlienPAK
         }
 
         /* Add a file to the PAK2 */
-        public void AddFile(string PathToNewFile)
+        public void AddFile(string PathToNewFile, int TrimFromPath = 0) //TrimFromPath is available to leave some directory trace in the filename
         {
             EntryPAK2 NewFile = new EntryPAK2();
-            NewFile.Filename = Path.GetFileName(PathToNewFile).ToUpper(); //Virtual directory support here would be nice
+            if (TrimFromPath == 0) { NewFile.Filename = Path.GetFileName(PathToNewFile).ToUpper(); } //Virtual directory support here would be nice too
+            else { NewFile.Filename = PathToNewFile.Substring(TrimFromPath).ToUpper(); } //Easy to fail here, so be careful on function usage!
             NewFile.Content = File.ReadAllBytes(PathToNewFile);
             Pak2Files.Add(NewFile);
         }
