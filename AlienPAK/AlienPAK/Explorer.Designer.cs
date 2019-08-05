@@ -287,11 +287,12 @@
             // 
             // groupBox3
             // 
+            this.groupBox3.Controls.Add(this.removeFile);
             this.groupBox3.Controls.Add(this.importFile);
             this.groupBox3.Controls.Add(this.exportFile);
             this.groupBox3.Location = new System.Drawing.Point(505, 402);
             this.groupBox3.Name = "groupBox3";
-            this.groupBox3.Size = new System.Drawing.Size(277, 57);
+            this.groupBox3.Size = new System.Drawing.Size(277, 78);
             this.groupBox3.TabIndex = 10;
             this.groupBox3.TabStop = false;
             this.groupBox3.Text = "File Utilities";
@@ -304,6 +305,7 @@
             this.importFile.Size = new System.Drawing.Size(132, 24);
             this.importFile.TabIndex = 1;
             this.importFile.Text = "Replace Selected";
+            this.toolTip1.SetToolTip(this.importFile, "With a file selected, press this button to replace it with a new file.");
             this.importFile.UseVisualStyleBackColor = true;
             this.importFile.Click += new System.EventHandler(this.importFile_Click);
             // 
@@ -315,16 +317,16 @@
             this.exportFile.Size = new System.Drawing.Size(132, 24);
             this.exportFile.TabIndex = 0;
             this.exportFile.Text = "Export Selected";
+            this.toolTip1.SetToolTip(this.exportFile, "With a file selected, press this to export it from the archive.");
             this.exportFile.UseVisualStyleBackColor = true;
             this.exportFile.Click += new System.EventHandler(this.exportFile_Click);
             // 
             // groupBox4
             // 
-            this.groupBox4.Controls.Add(this.removeFile);
             this.groupBox4.Controls.Add(this.addFile);
-            this.groupBox4.Location = new System.Drawing.Point(505, 465);
+            this.groupBox4.Location = new System.Drawing.Point(505, 486);
             this.groupBox4.Name = "groupBox4";
-            this.groupBox4.Size = new System.Drawing.Size(277, 57);
+            this.groupBox4.Size = new System.Drawing.Size(277, 52);
             this.groupBox4.TabIndex = 11;
             this.groupBox4.TabStop = false;
             this.groupBox4.Text = "Archive Utilities";
@@ -333,11 +335,12 @@
             // removeFile
             // 
             this.removeFile.Enabled = false;
-            this.removeFile.Location = new System.Drawing.Point(139, 21);
+            this.removeFile.Location = new System.Drawing.Point(6, 47);
             this.removeFile.Name = "removeFile";
-            this.removeFile.Size = new System.Drawing.Size(132, 24);
+            this.removeFile.Size = new System.Drawing.Size(265, 24);
             this.removeFile.TabIndex = 1;
-            this.removeFile.Text = "Delete Selected File";
+            this.removeFile.Text = "Delete Selected";
+            this.toolTip1.SetToolTip(this.removeFile, "With a file selected, press this button to delete it from the archive.");
             this.removeFile.UseVisualStyleBackColor = true;
             this.removeFile.Click += new System.EventHandler(this.RemoveFileFromArchive_Click);
             // 
@@ -345,9 +348,10 @@
             // 
             this.addFile.Location = new System.Drawing.Point(6, 21);
             this.addFile.Name = "addFile";
-            this.addFile.Size = new System.Drawing.Size(132, 24);
+            this.addFile.Size = new System.Drawing.Size(265, 24);
             this.addFile.TabIndex = 0;
             this.addFile.Text = "Import New File";
+            this.toolTip1.SetToolTip(this.addFile, "Add a new file to the current PAK archive.");
             this.addFile.UseVisualStyleBackColor = true;
             this.addFile.Click += new System.EventHandler(this.AddFileToArchive_Click);
             // 

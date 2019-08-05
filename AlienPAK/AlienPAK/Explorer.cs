@@ -52,15 +52,7 @@ namespace AlienPAK
             }
 
             //Populate the GUI with the files found within the archive
-            FileTree.Nodes.Clear();
-            foreach (string FileName in ParsedFiles)
-            {
-                string[] FileNameParts = FileName.Split('/');
-                if (FileNameParts.Length == 1) { FileNameParts = FileName.Split('\\'); }
-                AddFileToTree(FileNameParts, 0, FileTree.Nodes);
-            }
-            UpdateSelectedFilePreview();
-            FileTree.Sort();
+            UpdateFileTree(ParsedFiles);
 
             //Update title
             this.Text = "Alien: Isolation PAK Tool - " + Path.GetFileName(filename);
@@ -73,6 +65,20 @@ namespace AlienPAK
                 return;
             }
             groupBox4.Hide();
+        }
+
+        /* Update the file tree GUI */
+        private void UpdateFileTree(List<string> FilesToList)
+        {
+            FileTree.Nodes.Clear();
+            foreach (string FileName in FilesToList)
+            {
+                string[] FileNameParts = FileName.Split('/');
+                if (FileNameParts.Length == 1) { FileNameParts = FileName.Split('\\'); }
+                AddFileToTree(FileNameParts, 0, FileTree.Nodes);
+            }
+            UpdateSelectedFilePreview();
+            FileTree.Sort();
         }
 
         /* Add a file to the GUI tree structure */
@@ -142,6 +148,10 @@ namespace AlienPAK
                     return "DDS (Image)";
                 case "TGA":
                     return "TGA (Image)";
+                case "PNG":
+                    return "PNG (Image)";
+                case "JPG":
+                    return "JPG (Image)";
                 case "GFX":
                     return "GFX (Adobe Flash)";
                 case "CS2":
@@ -152,6 +162,8 @@ namespace AlienPAK
                     return "BML (Binary XML)";
                 case "XML":
                     return "XML (Markup)";
+                case "TXT":
+                    return "TXT (Text)";
             }
             return "";
         }
@@ -167,27 +179,32 @@ namespace AlienPAK
             exportFile.Enabled = false;
             importFile.Enabled = false;
             removeFile.Enabled = false;
+            addFile.Enabled = true; //Eventually move this to only be enabled on directory selection
 
-            //Exit early if not a file
-            if (FileTree.SelectedNode == null || ((TreeItem)FileTree.SelectedNode.Tag).Item_Type != TreeItemType.EXPORTABLE_FILE)
-            {
+            //Exit early if nothing selected
+            if (FileTree.SelectedNode == null) {
                 return;
             }
-            string FileName = ((TreeItem)FileTree.SelectedNode.Tag).String_Value;
+            
+            //Handle file selection
+            if (((TreeItem)FileTree.SelectedNode.Tag).Item_Type == TreeItemType.EXPORTABLE_FILE)
+            {
+                string FileName = ((TreeItem)FileTree.SelectedNode.Tag).String_Value;
 
-            //Populate filename/type info
-            fileNameInfo.Text = Path.GetFileName(FileName);
-            fileTypeInfo.Text = GetFileTypeDescription(Path.GetExtension(FileName));
+                //Populate filename/type info
+                fileNameInfo.Text = Path.GetFileName(FileName);
+                fileTypeInfo.Text = GetFileTypeDescription(Path.GetExtension(FileName));
 
-            //Populate file size info
-            int FileSize = AlienPAK.GetFileSize(FileName);
-            if (FileSize == -1) { return; }
-            fileSizeInfo.Text = FileSize.ToString() + " bytes";
+                //Populate file size info
+                int FileSize = AlienPAK.GetFileSize(FileName);
+                if (FileSize == -1) { return; }
+                fileSizeInfo.Text = FileSize.ToString() + " bytes";
 
-            //Enable buttons
-            exportFile.Enabled = true;
-            importFile.Enabled = true;
-            removeFile.Enabled = true;
+                //Enable buttons
+                exportFile.Enabled = true;
+                importFile.Enabled = true;
+                removeFile.Enabled = true;
+            }
         }
 
         /* Import a file to replace the selected PAK entry */
@@ -298,7 +315,9 @@ namespace AlienPAK
                 }
                 Cursor.Current = Cursors.Default;
             }
-            //TODO: refresh GUI
+            //This is an expensive call for any PAK except PAK2, as it uses the new system.
+            //We only can call with PAK2 here so it's fine, but worth noting.
+            UpdateFileTree(AlienPAK.Parse());
         }
 
         /* Remove selected file from the archive */
@@ -321,7 +340,7 @@ namespace AlienPAK
                         break;
                     case PAK.PAKReturnType.FAILED_UNSUPPORTED:
                         MessageBox.Show("An error occurred while removing the selected file.\nThis functionality is currently unsupported.", "An error occurred", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                        break;
+                        return;
                     case PAK.PAKReturnType.FAILED_UNKNOWN:
                         MessageBox.Show("An unknown error occurred while removing the selected file.\nA further popup will appear with detailed information.\nPlease log this information via the GitHub issue tracker.", "An error occurred", MessageBoxButtons.OK, MessageBoxIcon.Error);
                         MessageBox.Show(AlienPAK.LatestError, "Unknown Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
@@ -335,7 +354,9 @@ namespace AlienPAK
                 }
                 Cursor.Current = Cursors.Default;
             }
-            //TODO: refresh GUI
+            //This is an expensive call for any PAK except PAK2, as it uses the new system.
+            //We only can call with PAK2 here so it's fine, but worth noting.
+            UpdateFileTree(AlienPAK.Parse()); 
         }
 
         /* Form loads */

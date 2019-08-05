@@ -117,7 +117,7 @@ namespace AlienPAK
         public void AddFile(string PathToNewFile)
         {
             EntryPAK2 NewFile = new EntryPAK2();
-            NewFile.Filename = Path.GetFileName(PathToNewFile).ToUpper(); //Should probs allow virtual directory choice here also - E.G. "DATA/UI/"
+            NewFile.Filename = Path.GetFileName(PathToNewFile).ToUpper(); //Virtual directory support here would be nice
             NewFile.Content = File.ReadAllBytes(PathToNewFile);
             Pak2Files.Add(NewFile);
         }
