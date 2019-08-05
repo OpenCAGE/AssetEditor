@@ -17,6 +17,7 @@ This PAK Tool is available within the [Alien: Isolation Mod Tools](https://githu
 
 - PAK2 (UI.PAK, ANIMATIONS.PAK)
   - Open archive
+  - Create archive
   - Add files
   - Replace files
   - Export files
