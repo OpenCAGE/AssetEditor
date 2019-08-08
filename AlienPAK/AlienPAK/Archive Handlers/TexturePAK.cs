@@ -220,8 +220,9 @@ namespace AlienPAK
 
                 //Load the BIN and write out updated BIN texture header
                 BinaryWriter ArchiveFileBinWriter = new BinaryWriter(File.OpenWrite(FilePathBIN));
+                ExtraBinaryUtils BinaryUtils = new ExtraBinaryUtils();
                 ArchiveFileBinWriter.BaseStream.Position = TextureEntry.HeaderPos;
-                ArchiveFileBinWriter.Write(TextureEntry.Magic);
+                BinaryUtils.WriteString(TextureEntry.Magic, ArchiveFileBinWriter);
                 ArchiveFileBinWriter.Write(BitConverter.GetBytes((int)TextureEntry.Format));
                 ArchiveFileBinWriter.Write(TextureEntry.Texture_V2.Length);
                 ArchiveFileBinWriter.Write(TextureEntry.Texture_V1.Length);
@@ -236,19 +237,20 @@ namespace AlienPAK
 
                 //Update headers for V1+2 in PAK
                 BinaryWriter ArchiveFileWriter = new BinaryWriter(File.OpenWrite(FilePathPAK));
+                BigEndianUtils BigEndian = new BigEndianUtils();
                 ArchiveFileWriter.BaseStream.Position = TextureEntry.Texture_V1.HeaderPos;
                 ArchiveFileWriter.Write(TextureEntry.Texture_V1.UnknownHeaderLead);
-                ArchiveFileWriter.Write(TextureEntry.Texture_V1.Length);
-                ArchiveFileWriter.Write(TextureEntry.Texture_V1.Length);
+                ArchiveFileWriter.Write(BigEndian.FlipEndian(BitConverter.GetBytes(TextureEntry.Texture_V1.Length)));
+                ArchiveFileWriter.Write(BigEndian.FlipEndian(BitConverter.GetBytes(TextureEntry.Texture_V1.Length)));
                 ArchiveFileWriter.Write(TextureEntry.Texture_V1.UnknownHeaderTrail_1);
-                ArchiveFileWriter.Write(EntryIndex);
+                ArchiveFileWriter.Write(BigEndian.FlipEndian(BitConverter.GetBytes(EntryIndex)));
                 ArchiveFileWriter.Write(TextureEntry.Texture_V1.UnknownHeaderTrail_2);
                 ArchiveFileWriter.BaseStream.Position = TextureEntry.Texture_V2.HeaderPos;
                 ArchiveFileWriter.Write(TextureEntry.Texture_V2.UnknownHeaderLead);
-                ArchiveFileWriter.Write(TextureEntry.Texture_V2.Length);
-                ArchiveFileWriter.Write(TextureEntry.Texture_V2.Length);
+                ArchiveFileWriter.Write(BigEndian.FlipEndian(BitConverter.GetBytes(TextureEntry.Texture_V2.Length)));
+                ArchiveFileWriter.Write(BigEndian.FlipEndian(BitConverter.GetBytes(TextureEntry.Texture_V2.Length)));
                 ArchiveFileWriter.Write(TextureEntry.Texture_V2.UnknownHeaderTrail_1);
-                ArchiveFileWriter.Write(EntryIndex);
+                ArchiveFileWriter.Write(BigEndian.FlipEndian(BitConverter.GetBytes(EntryIndex)));
                 ArchiveFileWriter.Write(TextureEntry.Texture_V2.UnknownHeaderTrail_2);
                 ArchiveFileWriter.Close();
 
