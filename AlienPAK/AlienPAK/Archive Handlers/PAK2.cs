@@ -114,31 +114,63 @@ namespace AlienPAK
         }
 
         /* Add a file to the PAK2 */
-        public void AddFile(string PathToNewFile, int TrimFromPath = 0) //TrimFromPath is available to leave some directory trace in the filename
+        public bool AddFile(string PathToNewFile, int TrimFromPath = 0) //TrimFromPath is available to leave some directory trace in the filename
         {
-            EntryPAK2 NewFile = new EntryPAK2();
-            if (TrimFromPath == 0) { NewFile.Filename = Path.GetFileName(PathToNewFile).ToUpper(); } //Virtual directory support here would be nice too
-            else { NewFile.Filename = PathToNewFile.Substring(TrimFromPath).ToUpper(); } //Easy to fail here, so be careful on function usage!
-            NewFile.Content = File.ReadAllBytes(PathToNewFile);
-            Pak2Files.Add(NewFile);
+            try
+            {
+                EntryPAK2 NewFile = new EntryPAK2();
+                if (TrimFromPath == 0) { NewFile.Filename = Path.GetFileName(PathToNewFile).ToUpper(); } //Virtual directory support here would be nice too
+                else { NewFile.Filename = PathToNewFile.Substring(TrimFromPath).ToUpper(); } //Easy to fail here, so be careful on function usage!
+                NewFile.Content = File.ReadAllBytes(PathToNewFile);
+                Pak2Files.Add(NewFile);
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
         }
 
         /* Delete a file from the PAK2 */
-        public void DeleteFile(string FileName)
+        public bool DeleteFile(string FileName)
         {
-            Pak2Files.RemoveAt(GetFileIndex(FileName));
+            try
+            {
+                Pak2Files.RemoveAt(GetFileIndex(FileName));
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
         }
 
         /* Replace an existing file in the PAK2 archive */
-        public void ReplaceFile(string PathToNewFile, string FileName)
+        public bool ReplaceFile(string PathToNewFile, string FileName)
         {
-            Pak2Files[GetFileIndex(FileName)].Content = File.ReadAllBytes(PathToNewFile);
+            try
+            {
+                Pak2Files[GetFileIndex(FileName)].Content = File.ReadAllBytes(PathToNewFile);
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
         }
 
         /* Export an existing file from the PAK2 archive */
-        public void ExportFile(string PathToExport, string FileName)
+        public bool ExportFile(string PathToExport, string FileName)
         {
-            File.WriteAllBytes(PathToExport, Pak2Files[GetFileIndex(FileName)].Content);
+            try
+            {
+                File.WriteAllBytes(PathToExport, Pak2Files[GetFileIndex(FileName)].Content);
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
         }
 
         /* Save out our PAK2 archive */

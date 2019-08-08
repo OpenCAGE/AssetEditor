@@ -50,6 +50,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Archive Handlers\PAK2.cs" />
+    <Compile Include="Archive Handlers\TexturePAK.cs" />
     <Compile Include="Utilities\BinaryUtilities.cs" />
     <Compile Include="File Headers\CathodeScript.cs" />
     <Compile Include="File Headers\MaterialMap.cs" />
