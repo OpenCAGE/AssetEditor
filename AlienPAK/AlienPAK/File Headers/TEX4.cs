@@ -20,7 +20,7 @@ namespace AlienPAK
     class TEX4
     {
         //Misc header info (used for rewriting and not a lot else)
-        public string Magic = ""; //Do we even bother reading this?
+        public string Magic = ""; 
         public int Length_V2 = -1;
         public int Length_V1 = -1;
         public Int16 Unk_V2 = -1;

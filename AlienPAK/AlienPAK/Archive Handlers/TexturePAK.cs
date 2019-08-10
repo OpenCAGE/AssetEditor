@@ -206,9 +206,27 @@ namespace AlienPAK
                 //CATHODE seems to ignore texture header information regarding size, so as default, resize any imported textures to the original size.
                 //An option is provided in the toolkit to write size information to the header (done above) however, so don't resize if that's the case.
                 //More work needs to be done to figure out why CATHODE doesn't honour the header's size value.
+                int OriginalLength = TextureEntry.Texture_V2.Length;
                 if (!ToolSettings.GetSetting(ToolOptionsHandler.Settings.EXPERIMENTAL_TEXTURE_IMPORT))
                 {
-                    Array.Resize(ref NewTexture.DataBlock, TextureEntry.Texture_V2.Length);
+                    //User opted to use safe import, so resize new texture content to old size
+                    Array.Resize(ref NewTexture.DataBlock, OriginalLength);
+                }
+                else
+                {
+                    //User opted to import as-is, so update all our internal offset info for files further down the PAK where required
+                    int SizeDiff = NewTexture.DataBlock.Length - OriginalLength;
+                    for (int i = 0; i < TextureEntries.Count; i++)
+                    {
+                        if (TextureEntries[i].Texture_V1.StartPos > TextureEntry.Texture_V2.StartPos)
+                        {
+                            TextureEntries[i].Texture_V1.StartPos += SizeDiff;
+                        }
+                        if (TextureEntries[i].Texture_V2.StartPos > TextureEntry.Texture_V2.StartPos)
+                        {
+                            TextureEntries[i].Texture_V2.StartPos += SizeDiff;
+                        }
+                    }
                 }
 
                 //Update our internal knowledge of the textures
@@ -243,21 +261,21 @@ namespace AlienPAK
                 ArchiveFileWriter.Write(BigEndian.FlipEndian(BitConverter.GetBytes(TextureEntry.Texture_V1.Length)));
                 ArchiveFileWriter.Write(BigEndian.FlipEndian(BitConverter.GetBytes(TextureEntry.Texture_V1.Length)));
                 ArchiveFileWriter.Write(TextureEntry.Texture_V1.UnknownHeaderTrail_1);
-                ArchiveFileWriter.Write(BigEndian.FlipEndian(BitConverter.GetBytes(EntryIndex)));
+                ArchiveFileWriter.Write(BigEndian.FlipEndian(BitConverter.GetBytes((Int16)EntryIndex)));
                 ArchiveFileWriter.Write(TextureEntry.Texture_V1.UnknownHeaderTrail_2);
                 ArchiveFileWriter.BaseStream.Position = TextureEntry.Texture_V2.HeaderPos;
                 ArchiveFileWriter.Write(TextureEntry.Texture_V2.UnknownHeaderLead);
                 ArchiveFileWriter.Write(BigEndian.FlipEndian(BitConverter.GetBytes(TextureEntry.Texture_V2.Length)));
                 ArchiveFileWriter.Write(BigEndian.FlipEndian(BitConverter.GetBytes(TextureEntry.Texture_V2.Length)));
                 ArchiveFileWriter.Write(TextureEntry.Texture_V2.UnknownHeaderTrail_1);
-                ArchiveFileWriter.Write(BigEndian.FlipEndian(BitConverter.GetBytes(EntryIndex)));
+                ArchiveFileWriter.Write(BigEndian.FlipEndian(BitConverter.GetBytes((Int16)EntryIndex)));
                 ArchiveFileWriter.Write(TextureEntry.Texture_V2.UnknownHeaderTrail_2);
                 ArchiveFileWriter.Close();
 
                 //Pull PAK sections before/after V2
                 BinaryReader ArchiveFile = new BinaryReader(File.OpenRead(FilePathPAK));
                 byte[] PAK_Pt1 = ArchiveFile.ReadBytes(TextureEntry.Texture_V2.StartPos);
-                ArchiveFile.BaseStream.Position += TextureEntry.Texture_V2.Length;
+                ArchiveFile.BaseStream.Position += OriginalLength;
                 byte[] PAK_Pt2 = ArchiveFile.ReadBytes((int)ArchiveFile.BaseStream.Length - (int)ArchiveFile.BaseStream.Position);
                 ArchiveFile.Close();
 

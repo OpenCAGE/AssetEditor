@@ -31,9 +31,9 @@
             this.components = new System.ComponentModel.Container();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(ToolOptions));
             this.groupBox1 = new System.Windows.Forms.GroupBox();
+            this.label1 = new System.Windows.Forms.Label();
             this.enableExperimentalTextureImport = new System.Windows.Forms.CheckBox();
             this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
-            this.label1 = new System.Windows.Forms.Label();
             this.groupBox1.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -48,6 +48,15 @@
             this.groupBox1.TabStop = false;
             this.groupBox1.Text = "Experimental Texture Import";
             // 
+            // label1
+            // 
+            this.label1.AutoSize = true;
+            this.label1.Location = new System.Drawing.Point(6, 48);
+            this.label1.Name = "label1";
+            this.label1.Size = new System.Drawing.Size(368, 65);
+            this.label1.TabIndex = 1;
+            this.label1.Text = resources.GetString("label1.Text");
+            // 
             // enableExperimentalTextureImport
             // 
             this.enableExperimentalTextureImport.AutoSize = true;
@@ -61,15 +70,6 @@
             this.enableExperimentalTextureImport.UseVisualStyleBackColor = true;
             this.enableExperimentalTextureImport.CheckedChanged += new System.EventHandler(this.enableExperimentalTextureImport_CheckedChanged);
             // 
-            // label1
-            // 
-            this.label1.AutoSize = true;
-            this.label1.Location = new System.Drawing.Point(6, 48);
-            this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(368, 65);
-            this.label1.TabIndex = 1;
-            this.label1.Text = resources.GetString("label1.Text");
-            // 
             // ToolOptions
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -81,7 +81,7 @@
             this.MaximizeBox = false;
             this.MinimizeBox = false;
             this.Name = "ToolOptions";
-            this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
+            this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
             this.Text = "Alien: Isolation PAK Tool Options";
             this.Load += new System.EventHandler(this.ToolOptions_Load);
             this.groupBox1.ResumeLayout(false);
