@@ -36,11 +36,11 @@ namespace AlienPAK
         }
 
         /* Load the contents of an existing TexturePAK */
-        public bool Load()
+        public PAKReturnType Load()
         {
             if (!File.Exists(FilePathPAK))
             {
-                throw new Exception("Cannot load non-written TexturePAK!");
+                return PAKReturnType.FAIL_TRIED_TO_LOAD_VIRTUAL_ARCHIVE;
             }
             
             try
@@ -50,7 +50,7 @@ namespace AlienPAK
 
                 //Read the header info from the BIN
                 VersionNumber_BIN = ArchiveFileBin.ReadInt32();
-                if (VersionNumber_BIN != 45) { return false; } //BIN version number is 45 for textures, anything else and we've got the wrong PAK
+                if (VersionNumber_BIN != 45) { return PAKReturnType.FAIL_ARCHIVE_IS_NOT_EXCPETED_TYPE; } //BIN version number is 45 for textures
                 NumberOfEntriesBIN = ArchiveFileBin.ReadInt32();
                 HeaderListBeginBIN = ArchiveFileBin.ReadInt32();
 
@@ -137,13 +137,10 @@ namespace AlienPAK
 
                 //Close PAK
                 ArchiveFile.Close();
-                return true;
+                return PAKReturnType.SUCCESS;
             }
-            catch (Exception e)
-            {
-                string sdfsdf = e.ToString();
-                return false;
-            }
+            catch (IOException e) { return PAKReturnType.FAIL_COULD_NOT_ACCESS_FILE; }
+            catch (Exception e) { return PAKReturnType.FAIL_UNKNOWN; }
         }
 
         /* Return a list of filenames for files in the TexturePAK archive */
@@ -170,7 +167,7 @@ namespace AlienPAK
             {
                 return TextureEntries[FileIndex].Texture_V1.Length + 148;
             }
-            throw new Exception("Texture has no size! Logic error.");
+            throw new Exception("Texture has no size! Fatal logic error.");
         }
 
         /* Find the a file entry object by name */
@@ -187,7 +184,7 @@ namespace AlienPAK
         }
 
         /* Replace an existing file in the TexturePAK archive */
-        public bool ReplaceFile(string PathToNewFile, string FileName)
+        public PAKReturnType ReplaceFile(string PathToNewFile, string FileName)
         {
             try
             {
@@ -200,7 +197,7 @@ namespace AlienPAK
                 //Currently we only support textures that have V1 and V2
                 if (TextureEntry.Texture_V2.HeaderPos == -1 || !TextureEntry.Texture_V2.Saved)
                 {
-                    return false;
+                    return PAKReturnType.FAIL_REQUEST_IS_UNSUPPORTED;
                 }
 
                 //CATHODE seems to ignore texture header information regarding size, so as default, resize any imported textures to the original size.
@@ -287,16 +284,14 @@ namespace AlienPAK
                 ArchiveFileWriter.Write(PAK_Pt2);
                 ArchiveFileWriter.Close();
 
-                return true;
+                return PAKReturnType.SUCCESS;
             }
-            catch
-            {
-                return false;
-            }
+            catch (IOException e) { return PAKReturnType.FAIL_COULD_NOT_ACCESS_FILE; }
+            catch (Exception e) { return PAKReturnType.FAIL_UNKNOWN; }
         }
 
         /* Export an existing file from the TexturePAK archive */
-        public bool ExportFile(string PathToExport, string FileName)
+        public PAKReturnType ExportFile(string PathToExport, string FileName)
         {
             try
             {
@@ -315,7 +310,7 @@ namespace AlienPAK
                 }
                 else
                 {
-                    return false;
+                    return PAKReturnType.FAIL_REQUEST_IS_UNSUPPORTED;
                 }
 
                 //Pull the texture part content from the PAK
@@ -349,25 +344,16 @@ namespace AlienPAK
                 }
 
                 //Try and save out the part
-                try
+                if (FailsafeSave)
                 {
-                    if (FailsafeSave)
-                    {
-                        TextureOutput.SaveCrude(PathToExport);
-                        return true;
-                    }
-                    TextureOutput.Save(PathToExport);
-                    return true;
+                    TextureOutput.SaveCrude(PathToExport);
+                    return PAKReturnType.SUCCESS_WITH_WARNINGS;
                 }
-                catch
-                {
-                    return false;
-                }
+                TextureOutput.Save(PathToExport);
+                return PAKReturnType.SUCCESS;
             }
-            catch
-            {
-                return false;
-            }
+            catch (IOException e) { return PAKReturnType.FAIL_COULD_NOT_ACCESS_FILE; }
+            catch (Exception e) { return PAKReturnType.FAIL_UNKNOWN; }
         }
     }
 }

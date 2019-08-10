@@ -21,11 +21,11 @@ namespace AlienPAK
         }
 
         /* Load the contents of an existing PAK2 */
-        public bool Load()
+        public PAKReturnType Load()
         {
             if (!File.Exists(FilePath))
             {
-                throw new Exception("Cannot load non-written PAK2!");
+                return PAKReturnType.FAIL_TRIED_TO_LOAD_VIRTUAL_ARCHIVE;
             }
 
             try
@@ -36,7 +36,7 @@ namespace AlienPAK
                 //Read the header info
                 string MagicValidation = "";
                 for (int i = 0; i < 4; i++) { MagicValidation += ArchiveFile.ReadChar(); }
-                if (MagicValidation != "PAK2") { ArchiveFile.Close(); return false; }
+                if (MagicValidation != "PAK2") { ArchiveFile.Close(); return PAKReturnType.FAIL_ARCHIVE_IS_NOT_EXCPETED_TYPE; }
                 OffsetListBegin = ArchiveFile.ReadInt32() + 16;
                 NumberOfEntries = ArchiveFile.ReadInt32();
                 ArchiveFile.BaseStream.Position += 4; //Skip "4"
@@ -75,12 +75,10 @@ namespace AlienPAK
 
                 //Close PAK
                 ArchiveFile.Close();
-                return true;
+                return PAKReturnType.SUCCESS;
             }
-            catch
-            {
-                return false;
-            }
+            catch (IOException e) { return PAKReturnType.FAIL_COULD_NOT_ACCESS_FILE; }
+            catch (Exception e) { return PAKReturnType.FAIL_UNKNOWN; }
         }
 
         /* Return a list of filenames for files in the PAK2 archive */
@@ -110,11 +108,11 @@ namespace AlienPAK
                     return i;
                 }
             }
-            throw new Exception("Could not find the requested file in PAK2!");
+            throw new Exception("Could not find the requested file in PAK2! Fatal logic error.");
         }
 
         /* Add a file to the PAK2 */
-        public bool AddFile(string PathToNewFile, int TrimFromPath = 0) //TrimFromPath is available to leave some directory trace in the filename
+        public PAKReturnType AddFile(string PathToNewFile, int TrimFromPath = 0) //TrimFromPath is available to leave some directory trace in the filename
         {
             try
             {
@@ -123,58 +121,52 @@ namespace AlienPAK
                 else { NewFile.Filename = PathToNewFile.Substring(TrimFromPath).ToUpper(); } //Easy to fail here, so be careful on function usage!
                 NewFile.Content = File.ReadAllBytes(PathToNewFile);
                 Pak2Files.Add(NewFile);
-                return true;
+                return PAKReturnType.SUCCESS;
             }
-            catch
-            {
-                return false;
-            }
+            catch (IOException e) { return PAKReturnType.FAIL_COULD_NOT_ACCESS_FILE; }
+            catch (Exception e) { return PAKReturnType.FAIL_UNKNOWN; }
         }
 
         /* Delete a file from the PAK2 */
-        public bool DeleteFile(string FileName)
+        public PAKReturnType DeleteFile(string FileName)
         {
             try
             {
                 Pak2Files.RemoveAt(GetFileIndex(FileName));
-                return true;
+                return PAKReturnType.SUCCESS;
             }
             catch
             {
-                return false;
+                return PAKReturnType.FAIL_UNKNOWN;
             }
         }
 
         /* Replace an existing file in the PAK2 archive */
-        public bool ReplaceFile(string PathToNewFile, string FileName)
+        public PAKReturnType ReplaceFile(string PathToNewFile, string FileName)
         {
             try
             {
                 Pak2Files[GetFileIndex(FileName)].Content = File.ReadAllBytes(PathToNewFile);
-                return true;
+                return PAKReturnType.SUCCESS;
             }
-            catch
-            {
-                return false;
-            }
+            catch (IOException e) { return PAKReturnType.FAIL_COULD_NOT_ACCESS_FILE; }
+            catch (Exception e) { return PAKReturnType.FAIL_UNKNOWN; }
         }
 
         /* Export an existing file from the PAK2 archive */
-        public bool ExportFile(string PathToExport, string FileName)
+        public PAKReturnType ExportFile(string PathToExport, string FileName)
         {
             try
             {
                 File.WriteAllBytes(PathToExport, Pak2Files[GetFileIndex(FileName)].Content);
-                return true;
+                return PAKReturnType.SUCCESS;
             }
-            catch
-            {
-                return false;
-            }
+            catch (IOException e) { return PAKReturnType.FAIL_COULD_NOT_ACCESS_FILE; }
+            catch (Exception e) { return PAKReturnType.FAIL_UNKNOWN; }
         }
 
         /* Save out our PAK2 archive */
-        public bool Save()
+        public PAKReturnType Save()
         {
             try
             {
@@ -235,12 +227,10 @@ namespace AlienPAK
                 }
 
                 ArchiveFileWrite.Close();
-                return true;
+                return PAKReturnType.SUCCESS;
             }
-            catch
-            {
-                return false;
-            }
+            catch (IOException e) { return PAKReturnType.FAIL_COULD_NOT_ACCESS_FILE; }
+            catch (Exception e) { return PAKReturnType.FAIL_UNKNOWN; }
         }
     }
 }

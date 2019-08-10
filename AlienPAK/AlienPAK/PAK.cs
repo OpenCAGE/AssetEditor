@@ -32,13 +32,11 @@ namespace AlienPAK
         private BinaryReader ArchiveFile = null;
         private BinaryReader ArchiveFileBin = null;
         private List<string> FileList = new List<string>();
-        public enum PAKType { PAK2, PAK_TEXTURES, PAK_MODELS, PAK_SCRIPTS, PAK_MATERIALMAPS, UNRECOGNISED };
         public PAKType Format = PAKType.UNRECOGNISED;
-        public enum PAKReturnType { FAILED_UNKNOWN, FAILED_UNSUPPORTED, SUCCESS, FAILED_LOGIC_ERROR, FAILED_FILE_IN_USE }
         public string LatestError = "";
 
         /* Open a PAK archive */
-        public void Open(string FilePath)
+        public PAKReturnType Open(string FilePath)
         {
             //Close old PAK if open
             if (ArchiveFile != null) { ArchiveFile.Close(); }
@@ -53,13 +51,17 @@ namespace AlienPAK
                 case "GLOBAL_TEXTURES.ALL.PAK":
                 case "LEVEL_TEXTURES.ALL.PAK":
                     HandlerTexturePAK = new TexturePAK(ArchivePath);
-                    if (HandlerTexturePAK.Load())
+                    PAKReturnType LoadTexturePAK = HandlerTexturePAK.Load();
+                    switch (LoadTexturePAK)
                     {
-                        Format = PAKType.PAK_TEXTURES;
-                        return;
+                        case PAKReturnType.SUCCESS:
+                            Format = PAKType.PAK_TEXTURES;
+                            return LoadTexturePAK;
+                        case PAKReturnType.FAIL_ARCHIVE_IS_NOT_EXCPETED_TYPE:
+                            Format = PAKType.UNRECOGNISED;
+                            return LoadTexturePAK;
                     }
-                    Format = PAKType.UNRECOGNISED;
-                    return;
+                    return LoadTexturePAK;
                 case "GLOBAL_MODELS.PAK":
                 case "LEVEL_MODELS.PAK":
                     Format = PAKType.PAK_MODELS;
@@ -72,13 +74,17 @@ namespace AlienPAK
                     break;
                 default:
                     HandlerPAK2 = new PAK2(ArchivePath);
-                    if (HandlerPAK2.Load())
+                    PAKReturnType LoadPAK2 = HandlerPAK2.Load();
+                    switch (LoadPAK2)
                     {
-                        Format = PAKType.PAK2;
-                        return;
+                        case PAKReturnType.SUCCESS:
+                            Format = PAKType.PAK2;
+                            return LoadPAK2;
+                        case PAKReturnType.FAIL_ARCHIVE_IS_NOT_EXCPETED_TYPE:
+                            Format = PAKType.UNRECOGNISED;
+                            return LoadPAK2;
                     }
-                    Format = PAKType.UNRECOGNISED;
-                    return;
+                    return LoadPAK2;
             }
 
             //Open new PAK
@@ -87,23 +93,13 @@ namespace AlienPAK
             //Certain formats have associated BIN files
             switch (Format)
             {
-                case PAKType.PAK_TEXTURES:
-                    if (FileName.Substring(0, 5).ToUpper() == "LEVEL")
-                    {
-                        ArchivePathBin = ArchivePath.Substring(0, ArchivePath.Length - FileName.Length) + "LEVEL_TEXTURE_HEADERS.ALL.BIN";
-                        ArchiveFileBin = new BinaryReader(File.OpenRead(ArchivePathBin));
-                    }
-                    else
-                    {
-                        ArchivePathBin = ArchivePath.Substring(0, ArchivePath.Length - FileName.Length) + "GLOBAL_TEXTURES_HEADERS.ALL.BIN";
-                        ArchiveFileBin = new BinaryReader(File.OpenRead(ArchivePathBin));
-                    }
-                    break;
                 case PAKType.PAK_MODELS:
                     ArchivePathBin = ArchivePath.Substring(0, ArchivePath.Length - FileName.Length) + "MODELS_" + FileName.Substring(0, FileName.Length - 11) + ".BIN";
                     ArchiveFileBin = new BinaryReader(File.OpenRead(ArchivePathBin));
                     break;
             }
+
+            return PAKReturnType.SUCCESS;
         }
 
         /* Parse a PAK archive */
@@ -158,22 +154,14 @@ namespace AlienPAK
         /* Export from a PAK archive */
         public PAKReturnType ExportFile(string FileName, string ExportPath)
         {
-            if (ArchiveFile == null && (Format != PAKType.PAK2 && Format != PAKType.PAK_TEXTURES)) { return PAKReturnType.FAILED_LOGIC_ERROR; }
+            if (ArchiveFile == null && (Format != PAKType.PAK2 && Format != PAKType.PAK_TEXTURES)) { return PAKReturnType.FAIL_GENERAL_LOGIC_ERROR; }
 
             switch (Format)
             {
                 case PAKType.PAK2:
-                    if (HandlerPAK2.ExportFile(ExportPath, FileName))
-                    {
-                        return PAKReturnType.SUCCESS;
-                    }
-                    return PAKReturnType.FAILED_UNKNOWN;
+                    return HandlerPAK2.ExportFile(ExportPath, FileName);
                 case PAKType.PAK_TEXTURES:
-                    if (HandlerTexturePAK.ExportFile(ExportPath, FileName))
-                    {
-                        return PAKReturnType.SUCCESS;
-                    }
-                    return PAKReturnType.FAILED_UNKNOWN;
+                    return HandlerTexturePAK.ExportFile(ExportPath, FileName);
                 case PAKType.PAK_MODELS:
                     return ExportFileModelPAK(FileName, ExportPath);
                 case PAKType.PAK_SCRIPTS:
@@ -181,30 +169,26 @@ namespace AlienPAK
                 case PAKType.PAK_MATERIALMAPS:
                     return ExportFileMaterialMappingsPAK(FileName, ExportPath);
                 default:
-                    return PAKReturnType.FAILED_UNSUPPORTED;
+                    return PAKReturnType.FAIL_REQUEST_IS_UNSUPPORTED;
             }
         }
 
         /* Import to a PAK archive */
         public PAKReturnType ImportFile(string FileName, string ImportPath)
         {
-            if (ArchiveFile == null && (Format != PAKType.PAK2 && Format != PAKType.PAK_TEXTURES)) { return PAKReturnType.FAILED_LOGIC_ERROR; }
+            if (ArchiveFile == null && (Format != PAKType.PAK2 && Format != PAKType.PAK_TEXTURES)) { return PAKReturnType.FAIL_GENERAL_LOGIC_ERROR; }
 
             switch (Format)
             {
                 case PAKType.PAK2:
-                    HandlerPAK2.ReplaceFile(ImportPath, FileName);
-                    if (HandlerPAK2.Save())
+                    PAKReturnType ReplaceFilePAK2 = HandlerPAK2.ReplaceFile(ImportPath, FileName);
+                    if (ReplaceFilePAK2 == PAKReturnType.SUCCESS)
                     {
-                        return PAKReturnType.SUCCESS;
+                        return HandlerPAK2.Save();
                     }
-                    return PAKReturnType.FAILED_FILE_IN_USE;
+                    return ReplaceFilePAK2;
                 case PAKType.PAK_TEXTURES:
-                    if (HandlerTexturePAK.ReplaceFile(ImportPath, FileName))
-                    { //We have no Save() method here as TexturePAK is handled slightly differently.
-                        return PAKReturnType.SUCCESS;
-                    }
-                    return PAKReturnType.FAILED_FILE_IN_USE;
+                    return HandlerTexturePAK.ReplaceFile(ImportPath, FileName);
                 case PAKType.PAK_MODELS:
                     return ImportFileModelPAK(FileName, ImportPath);
                 case PAKType.PAK_SCRIPTS:
@@ -212,32 +196,32 @@ namespace AlienPAK
                 case PAKType.PAK_MATERIALMAPS:
                     return ImportFileMaterialMappingsPAK(FileName, ImportPath);
                 default:
-                    return PAKReturnType.FAILED_UNSUPPORTED;
+                    return PAKReturnType.FAIL_REQUEST_IS_UNSUPPORTED;
             }
         }
 
         /* Remove from a PAK archive */
         public PAKReturnType RemoveFile(string FileName)
         {
-            if (Format != PAKType.PAK2) { return PAKReturnType.FAILED_UNSUPPORTED; } //Currently only supported in PAK2
-            HandlerPAK2.DeleteFile(FileName);
-            if (HandlerPAK2.Save())
+            if (Format != PAKType.PAK2) { return PAKReturnType.FAIL_FEATURE_IS_COMING_SOON; } //Currently only supported in PAK2
+            PAKReturnType DeleteFilePAK2 = HandlerPAK2.DeleteFile(FileName);
+            if (DeleteFilePAK2 == PAKReturnType.SUCCESS)
             {
-                return PAKReturnType.SUCCESS;
+                return HandlerPAK2.Save();
             }
-            return PAKReturnType.FAILED_FILE_IN_USE;
+            return DeleteFilePAK2;
         }
 
         /* Add to a PAK archive */
         public PAKReturnType AddNewFile(string NewFile)
         {
-            if (Format != PAKType.PAK2) { return PAKReturnType.FAILED_UNSUPPORTED; } //Currently only supported in PAK2
-            HandlerPAK2.AddFile(NewFile);
-            if (HandlerPAK2.Save())
+            if (Format != PAKType.PAK2) { return PAKReturnType.FAIL_FEATURE_IS_COMING_SOON; } //Currently only supported in PAK2
+            PAKReturnType AddFilePAK2 = HandlerPAK2.AddFile(NewFile);
+            if (AddFilePAK2 == PAKReturnType.SUCCESS)
             {
-                return PAKReturnType.SUCCESS;
+                return HandlerPAK2.Save();
             }
-            return PAKReturnType.FAILED_FILE_IN_USE;
+            return AddFilePAK2;
         }
 
         /* Get the PAK index of the file by name */
@@ -412,7 +396,7 @@ namespace AlienPAK
         /* Export a file from the model PAK */
         private PAKReturnType ExportFileModelPAK(string FileName, string ExportPath)
         {
-            return PAKReturnType.FAILED_UNSUPPORTED; //Disabling export for main branch
+            return PAKReturnType.FAIL_FEATURE_IS_COMING_SOON; //Disabling export for main branch
 
             try
             {
@@ -447,7 +431,7 @@ namespace AlienPAK
             catch
             {
                 //Failed
-                return PAKReturnType.FAILED_UNKNOWN;
+                return PAKReturnType.FAIL_UNKNOWN;
             }
         }
 
@@ -455,7 +439,7 @@ namespace AlienPAK
         private PAKReturnType ImportFileModelPAK(string FileName, string ImportPath)
         {
             //WIP
-            return PAKReturnType.FAILED_UNSUPPORTED;
+            return PAKReturnType.FAIL_FEATURE_IS_COMING_SOON;
         }
 
 
@@ -723,13 +707,13 @@ namespace AlienPAK
         private PAKReturnType ExportFileCommandsPAK(string FileName, string ExportPath)
         {
             //There's no point exporting/importing until the format is understood better.
-            return PAKReturnType.FAILED_UNSUPPORTED;
+            return PAKReturnType.FAIL_FEATURE_IS_COMING_SOON;
         }
 
         /* Import a file to the scripts PAK */
         private PAKReturnType ImportFileCommandsPAK(string FileName, string ImportPath)
         {
-            return PAKReturnType.FAILED_UNSUPPORTED;
+            return PAKReturnType.FAIL_FEATURE_IS_COMING_SOON;
         }
 
 
@@ -797,13 +781,13 @@ namespace AlienPAK
         private PAKReturnType ExportFileMaterialMappingsPAK(string FileName, string ExportPath)
         {
             //Files don't get shipped - how should we export the data?
-            return PAKReturnType.FAILED_UNSUPPORTED;
+            return PAKReturnType.FAIL_FEATURE_IS_COMING_SOON;
         }
 
         /* Import a file to the material map PAK */
         private PAKReturnType ImportFileMaterialMappingsPAK(string FileName, string ImportPath)
         {
-            return PAKReturnType.FAILED_UNSUPPORTED;
+            return PAKReturnType.FAIL_FEATURE_IS_COMING_SOON;
         }
     }
 }

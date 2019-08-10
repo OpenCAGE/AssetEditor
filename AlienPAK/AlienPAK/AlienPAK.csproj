@@ -83,6 +83,8 @@
     <Compile Include="UpdateCheck.Designer.cs">
       <DependentUpon>UpdateCheck.cs</DependentUpon>
     </Compile>
+    <Compile Include="Utilities\ErrorMessages.cs" />
+    <Compile Include="Utilities\Types.cs" />
     <EmbeddedResource Include="Explorer.resx">
       <DependentUpon>Explorer.cs</DependentUpon>
     </EmbeddedResource>
