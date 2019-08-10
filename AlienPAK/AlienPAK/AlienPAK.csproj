@@ -50,6 +50,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Archive Handlers\PAK2.cs" />
+    <Compile Include="Archive Handlers\TexturePAK.cs" />
     <Compile Include="Utilities\BinaryUtilities.cs" />
     <Compile Include="File Headers\CathodeScript.cs" />
     <Compile Include="File Headers\MaterialMap.cs" />
@@ -82,6 +83,8 @@
     <Compile Include="UpdateCheck.Designer.cs">
       <DependentUpon>UpdateCheck.cs</DependentUpon>
     </Compile>
+    <Compile Include="Utilities\ErrorMessages.cs" />
+    <Compile Include="Utilities\Types.cs" />
     <EmbeddedResource Include="Explorer.resx">
       <DependentUpon>Explorer.cs</DependentUpon>
     </EmbeddedResource>

@@ -14,6 +14,7 @@ namespace AlienPAK
     public partial class Explorer : Form
     {
         PAK AlienPAK = new PAK();
+        ErrorMessages AlienErrors = new ErrorMessages();
         ToolOptionsHandler ToolSettings = new ToolOptionsHandler();
 
         public Explorer(string[] args)
@@ -59,7 +60,7 @@ namespace AlienPAK
             Cursor.Current = Cursors.Default;
 
             //Show/hide extended archive support if appropriate
-            if (AlienPAK.Format == PAK.PAKType.PAK2)
+            if (AlienPAK.Format == PAKType.PAK2)
             {
                 groupBox4.Show();
                 return;
@@ -136,7 +137,7 @@ namespace AlienPAK
         {
             if (FileExtension == "")
             {
-                if (AlienPAK.Format == PAK.PAKType.PAK_SCRIPTS)
+                if (AlienPAK.Format == PAKType.PAK_SCRIPTS)
                 {
                     return "Cathode Script";
                 }
@@ -222,25 +223,8 @@ namespace AlienPAK
             if (FilePicker.ShowDialog() == DialogResult.OK)
             {
                 Cursor.Current = Cursors.WaitCursor;
-                switch (AlienPAK.ImportFile(((TreeItem)FileTree.SelectedNode.Tag).String_Value, FilePicker.FileName))
-                {
-                    case PAK.PAKReturnType.SUCCESS:
-                        MessageBox.Show("The selected file was imported successfully.", "Imported file", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                        break;
-                    case PAK.PAKReturnType.FAILED_UNSUPPORTED:
-                        MessageBox.Show("An error occurred while importing the selected file.\nThe file you are trying to replace is currently unsupported.", "An error occurred", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                        break;
-                    case PAK.PAKReturnType.FAILED_UNKNOWN:
-                        MessageBox.Show("An unknown error occurred while importing the selected file.\nA further popup will appear with detailed information.\nPlease log this information via the GitHub issue tracker.", "An error occurred", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                        MessageBox.Show(AlienPAK.LatestError, "Unknown Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                        break;
-                    case PAK.PAKReturnType.FAILED_LOGIC_ERROR:
-                        MessageBox.Show("An error occurred while importing the selected file.\nPlease reload the PAK file.", "An error occurred", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                        break;
-                    case PAK.PAKReturnType.FAILED_FILE_IN_USE:
-                        MessageBox.Show("An error occurred while importing the selected file.\nIf Alien: Isolation is open, it must be closed.", "An error occurred", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                        break;
-                }
+                PAKReturnType ResponseCode = AlienPAK.ImportFile(((TreeItem)FileTree.SelectedNode.Tag).String_Value, FilePicker.FileName);
+                MessageBox.Show(AlienErrors.ErrorMessageBody(ResponseCode), AlienErrors.ErrorMessageTitle(ResponseCode), MessageBoxButtons.OK, MessageBoxIcon.Information);
                 Cursor.Current = Cursors.Default;
             }
             UpdateSelectedFilePreview();
@@ -262,25 +246,8 @@ namespace AlienPAK
             if (FilePicker.ShowDialog() == DialogResult.OK)
             {
                 Cursor.Current = Cursors.WaitCursor;
-                switch (AlienPAK.ExportFile(((TreeItem)FileTree.SelectedNode.Tag).String_Value, FilePicker.FileName))
-                {
-                    case PAK.PAKReturnType.SUCCESS:
-                        MessageBox.Show("The selected file was exported successfully.", "Exported file", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                        break;
-                    case PAK.PAKReturnType.FAILED_UNSUPPORTED:
-                        MessageBox.Show("An error occurred while exporting the selected file.\nThis file is currently unsupported.", "An error occurred", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                        break;
-                    case PAK.PAKReturnType.FAILED_UNKNOWN:
-                        MessageBox.Show("An unknown error occurred while exporting the selected file.\nA further popup will appear with detailed information.\nPlease log this information via the GitHub issue tracker.", "An error occurred", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                        MessageBox.Show(AlienPAK.LatestError, "Unknown Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                        break;
-                    case PAK.PAKReturnType.FAILED_LOGIC_ERROR:
-                        MessageBox.Show("An error occurred while exporting the selected file.\nPlease reload the PAK file.", "An error occurred", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                        break;
-                    case PAK.PAKReturnType.FAILED_FILE_IN_USE:
-                        MessageBox.Show("An error occurred while exporting the selected file.\nMake sure you have write access to the export folder.", "An error occurred", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                        break;
-                }
+                PAKReturnType ResponseCode = AlienPAK.ExportFile(((TreeItem)FileTree.SelectedNode.Tag).String_Value, FilePicker.FileName);
+                MessageBox.Show(AlienErrors.ErrorMessageBody(ResponseCode), AlienErrors.ErrorMessageTitle(ResponseCode), MessageBoxButtons.OK, MessageBoxIcon.Information);
                 Cursor.Current = Cursors.Default;
             }
         }
@@ -294,25 +261,8 @@ namespace AlienPAK
             if (FilePicker.ShowDialog() == DialogResult.OK)
             {
                 Cursor.Current = Cursors.WaitCursor;
-                switch (AlienPAK.AddNewFile(FilePicker.FileName))
-                {
-                    case PAK.PAKReturnType.SUCCESS:
-                        MessageBox.Show("The selected file was added successfully.", "Exported file", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                        break;
-                    case PAK.PAKReturnType.FAILED_UNSUPPORTED:
-                        MessageBox.Show("An error occurred while adding the selected file.\nThis functionality is currently unsupported.", "An error occurred", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                        break;
-                    case PAK.PAKReturnType.FAILED_UNKNOWN:
-                        MessageBox.Show("An unknown error occurred while exporting the selected file.\nA further popup will appear with detailed information.\nPlease log this information via the GitHub issue tracker.", "An error occurred", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                        MessageBox.Show(AlienPAK.LatestError, "Unknown Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                        break;
-                    case PAK.PAKReturnType.FAILED_LOGIC_ERROR:
-                        MessageBox.Show("An error occurred while exporting the selected file.\nPlease reload the PAK file.", "An error occurred", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                        break;
-                    case PAK.PAKReturnType.FAILED_FILE_IN_USE:
-                        MessageBox.Show("An error occurred while exporting the selected file.\nMake sure you have write access to the export folder.", "An error occurred", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                        break;
-                }
+                PAKReturnType ResponseCode = AlienPAK.AddNewFile(FilePicker.FileName);
+                MessageBox.Show(AlienErrors.ErrorMessageBody(ResponseCode), AlienErrors.ErrorMessageTitle(ResponseCode), MessageBoxButtons.OK, MessageBoxIcon.Information);
                 Cursor.Current = Cursors.Default;
             }
             //This is an expensive call for any PAK except PAK2, as it uses the new system.
@@ -333,25 +283,8 @@ namespace AlienPAK
             if (ConfirmRemoval == DialogResult.Yes)
             {
                 Cursor.Current = Cursors.WaitCursor;
-                switch (AlienPAK.RemoveFile(((TreeItem)FileTree.SelectedNode.Tag).String_Value))
-                {
-                    case PAK.PAKReturnType.SUCCESS:
-                        MessageBox.Show("The selected file was removed successfully.", "Removed file", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                        break;
-                    case PAK.PAKReturnType.FAILED_UNSUPPORTED:
-                        MessageBox.Show("An error occurred while removing the selected file.\nThis functionality is currently unsupported.", "An error occurred", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                        return;
-                    case PAK.PAKReturnType.FAILED_UNKNOWN:
-                        MessageBox.Show("An unknown error occurred while removing the selected file.\nA further popup will appear with detailed information.\nPlease log this information via the GitHub issue tracker.", "An error occurred", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                        MessageBox.Show(AlienPAK.LatestError, "Unknown Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                        break;
-                    case PAK.PAKReturnType.FAILED_LOGIC_ERROR:
-                        MessageBox.Show("An error occurred while removing the selected file.\nPlease reload the PAK file.", "An error occurred", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                        break;
-                    case PAK.PAKReturnType.FAILED_FILE_IN_USE:
-                        MessageBox.Show("An error occurred while removing the selected file.\nIf Alien: Isolation is open, it must be closed.", "An error occurred", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                        break;
-                }
+                PAKReturnType ResponseCode = AlienPAK.RemoveFile(((TreeItem)FileTree.SelectedNode.Tag).String_Value);
+                MessageBox.Show(AlienErrors.ErrorMessageBody(ResponseCode), AlienErrors.ErrorMessageTitle(ResponseCode), MessageBoxButtons.OK, MessageBoxIcon.Information);
                 Cursor.Current = Cursors.Default;
             }
             //This is an expensive call for any PAK except PAK2, as it uses the new system.

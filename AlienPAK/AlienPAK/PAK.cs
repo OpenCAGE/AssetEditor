@@ -23,6 +23,8 @@ namespace AlienPAK
 
         //WIP: Slowly moving all archive handling to specialised classes... only PAK2 atm.
         PAK2 HandlerPAK2;
+        TexturePAK HandlerTexturePAK;
+        //Todo: depreciate PAKReturnType in favour of just true/false - or roll out PAKReturnType to each PAK handler class?
 
         /* --- COMMON PAK --- */
         private string ArchivePath = "";
@@ -30,13 +32,11 @@ namespace AlienPAK
         private BinaryReader ArchiveFile = null;
         private BinaryReader ArchiveFileBin = null;
         private List<string> FileList = new List<string>();
-        public enum PAKType { PAK2, PAK_TEXTURES, PAK_MODELS, PAK_SCRIPTS, PAK_MATERIALMAPS, UNRECOGNISED };
         public PAKType Format = PAKType.UNRECOGNISED;
-        public enum PAKReturnType { FAILED_UNKNOWN, FAILED_UNSUPPORTED, SUCCESS, FAILED_LOGIC_ERROR, FAILED_FILE_IN_USE }
         public string LatestError = "";
 
         /* Open a PAK archive */
-        public void Open(string FilePath)
+        public PAKReturnType Open(string FilePath)
         {
             //Close old PAK if open
             if (ArchiveFile != null) { ArchiveFile.Close(); }
@@ -50,8 +50,18 @@ namespace AlienPAK
             {
                 case "GLOBAL_TEXTURES.ALL.PAK":
                 case "LEVEL_TEXTURES.ALL.PAK":
-                    Format = PAKType.PAK_TEXTURES;
-                    break;
+                    HandlerTexturePAK = new TexturePAK(ArchivePath);
+                    PAKReturnType LoadTexturePAK = HandlerTexturePAK.Load();
+                    switch (LoadTexturePAK)
+                    {
+                        case PAKReturnType.SUCCESS:
+                            Format = PAKType.PAK_TEXTURES;
+                            return LoadTexturePAK;
+                        case PAKReturnType.FAIL_ARCHIVE_IS_NOT_EXCPETED_TYPE:
+                            Format = PAKType.UNRECOGNISED;
+                            return LoadTexturePAK;
+                    }
+                    return LoadTexturePAK;
                 case "GLOBAL_MODELS.PAK":
                 case "LEVEL_MODELS.PAK":
                     Format = PAKType.PAK_MODELS;
@@ -64,50 +74,40 @@ namespace AlienPAK
                     break;
                 default:
                     HandlerPAK2 = new PAK2(ArchivePath);
-                    if (HandlerPAK2.Load())
+                    PAKReturnType LoadPAK2 = HandlerPAK2.Load();
+                    switch (LoadPAK2)
                     {
-                        Format = PAKType.PAK2;
-                        break;
+                        case PAKReturnType.SUCCESS:
+                            Format = PAKType.PAK2;
+                            return LoadPAK2;
+                        case PAKReturnType.FAIL_ARCHIVE_IS_NOT_EXCPETED_TYPE:
+                            Format = PAKType.UNRECOGNISED;
+                            return LoadPAK2;
                     }
-                    Format = PAKType.UNRECOGNISED;
-                    return;
+                    return LoadPAK2;
             }
 
-            //Open new PAK (unless PAK2, then we've done this already)
-            if (Format != PAKType.PAK2)
-            {
-                ArchiveFile = new BinaryReader(File.OpenRead(FilePath));
-            }
+            //Open new PAK
+            ArchiveFile = new BinaryReader(File.OpenRead(FilePath));
 
             //Certain formats have associated BIN files
             switch (Format)
             {
-                case PAKType.PAK_TEXTURES:
-                    if (FileName.Substring(0, 5).ToUpper() == "LEVEL")
-                    {
-                        ArchivePathBin = ArchivePath.Substring(0, ArchivePath.Length - FileName.Length) + "LEVEL_TEXTURE_HEADERS.ALL.BIN";
-                        ArchiveFileBin = new BinaryReader(File.OpenRead(ArchivePathBin));
-                    }
-                    else
-                    {
-                        ArchivePathBin = ArchivePath.Substring(0, ArchivePath.Length - FileName.Length) + "GLOBAL_TEXTURES_HEADERS.ALL.BIN";
-                        ArchiveFileBin = new BinaryReader(File.OpenRead(ArchivePathBin));
-                    }
-                    break;
                 case PAKType.PAK_MODELS:
                     ArchivePathBin = ArchivePath.Substring(0, ArchivePath.Length - FileName.Length) + "MODELS_" + FileName.Substring(0, FileName.Length - 11) + ".BIN";
                     ArchiveFileBin = new BinaryReader(File.OpenRead(ArchivePathBin));
                     break;
             }
+
+            return PAKReturnType.SUCCESS;
         }
 
         /* Parse a PAK archive */
         public List<string> Parse()
         {
-            if (ArchiveFile == null && Format != PAKType.PAK2) { return null; }
+            if (ArchiveFile == null && (Format != PAKType.PAK2 && Format != PAKType.PAK_TEXTURES)) { return null; }
 
             FileList.Clear();
-            TextureEntries.Clear();
             MaterialMappingEntries.Clear();
             CommandsEntries.Clear();
             ModelEntries.Clear();
@@ -117,7 +117,7 @@ namespace AlienPAK
                 case PAKType.PAK2:
                     return HandlerPAK2.GetFileNames();
                 case PAKType.PAK_TEXTURES:
-                    return ParseTexturePAK();
+                    return HandlerTexturePAK.GetFileNames();
                 case PAKType.PAK_MODELS:
                     return ParseModelPAK();
                 case PAKType.PAK_SCRIPTS:
@@ -132,14 +132,14 @@ namespace AlienPAK
         /* Get the size of a file within the PAK archive */
         public int GetFileSize(string FileName)
         {
-            if (ArchiveFile == null && Format != PAKType.PAK2) { return -1; }
+            if (ArchiveFile == null && (Format != PAKType.PAK2 && Format != PAKType.PAK_TEXTURES)) { return -1; }
 
             switch (Format)
             {
                 case PAKType.PAK2:
                     return HandlerPAK2.GetFilesize(FileName);
                 case PAKType.PAK_TEXTURES:
-                    return FileSizeTexturePAK(FileName);
+                    return HandlerTexturePAK.GetFilesize(FileName);
                 case PAKType.PAK_MODELS:
                     return FileSizeModelPAK(FileName);
                 case PAKType.PAK_SCRIPTS:
@@ -154,15 +154,14 @@ namespace AlienPAK
         /* Export from a PAK archive */
         public PAKReturnType ExportFile(string FileName, string ExportPath)
         {
-            if (ArchiveFile == null && Format != PAKType.PAK2) { return PAKReturnType.FAILED_LOGIC_ERROR; }
+            if (ArchiveFile == null && (Format != PAKType.PAK2 && Format != PAKType.PAK_TEXTURES)) { return PAKReturnType.FAIL_GENERAL_LOGIC_ERROR; }
 
             switch (Format)
             {
                 case PAKType.PAK2:
-                    HandlerPAK2.ExportFile(ExportPath, FileName);
-                    return PAKReturnType.SUCCESS;
+                    return HandlerPAK2.ExportFile(ExportPath, FileName);
                 case PAKType.PAK_TEXTURES:
-                    return ExportFileTexturePAK(FileName, ExportPath);
+                    return HandlerTexturePAK.ExportFile(ExportPath, FileName);
                 case PAKType.PAK_MODELS:
                     return ExportFileModelPAK(FileName, ExportPath);
                 case PAKType.PAK_SCRIPTS:
@@ -170,26 +169,26 @@ namespace AlienPAK
                 case PAKType.PAK_MATERIALMAPS:
                     return ExportFileMaterialMappingsPAK(FileName, ExportPath);
                 default:
-                    return PAKReturnType.FAILED_UNSUPPORTED;
+                    return PAKReturnType.FAIL_REQUEST_IS_UNSUPPORTED;
             }
         }
 
         /* Import to a PAK archive */
         public PAKReturnType ImportFile(string FileName, string ImportPath)
         {
-            if (ArchiveFile == null && Format != PAKType.PAK2) { return PAKReturnType.FAILED_LOGIC_ERROR; }
+            if (ArchiveFile == null && (Format != PAKType.PAK2 && Format != PAKType.PAK_TEXTURES)) { return PAKReturnType.FAIL_GENERAL_LOGIC_ERROR; }
 
             switch (Format)
             {
                 case PAKType.PAK2:
-                    HandlerPAK2.ReplaceFile(ImportPath, FileName);
-                    if (HandlerPAK2.Save())
+                    PAKReturnType ReplaceFilePAK2 = HandlerPAK2.ReplaceFile(ImportPath, FileName);
+                    if (ReplaceFilePAK2 == PAKReturnType.SUCCESS)
                     {
-                        return PAKReturnType.SUCCESS;
+                        return HandlerPAK2.Save();
                     }
-                    return PAKReturnType.FAILED_FILE_IN_USE;
+                    return ReplaceFilePAK2;
                 case PAKType.PAK_TEXTURES:
-                    return ImportFileTexturePAK(FileName, ImportPath);
+                    return HandlerTexturePAK.ReplaceFile(ImportPath, FileName);
                 case PAKType.PAK_MODELS:
                     return ImportFileModelPAK(FileName, ImportPath);
                 case PAKType.PAK_SCRIPTS:
@@ -197,32 +196,32 @@ namespace AlienPAK
                 case PAKType.PAK_MATERIALMAPS:
                     return ImportFileMaterialMappingsPAK(FileName, ImportPath);
                 default:
-                    return PAKReturnType.FAILED_UNSUPPORTED;
+                    return PAKReturnType.FAIL_REQUEST_IS_UNSUPPORTED;
             }
         }
 
         /* Remove from a PAK archive */
         public PAKReturnType RemoveFile(string FileName)
         {
-            if (Format != PAKType.PAK2) { return PAKReturnType.FAILED_UNSUPPORTED; } //Currently only supported in PAK2
-            HandlerPAK2.DeleteFile(FileName);
-            if (HandlerPAK2.Save())
+            if (Format != PAKType.PAK2) { return PAKReturnType.FAIL_FEATURE_IS_COMING_SOON; } //Currently only supported in PAK2
+            PAKReturnType DeleteFilePAK2 = HandlerPAK2.DeleteFile(FileName);
+            if (DeleteFilePAK2 == PAKReturnType.SUCCESS)
             {
-                return PAKReturnType.SUCCESS;
+                return HandlerPAK2.Save();
             }
-            return PAKReturnType.FAILED_FILE_IN_USE;
+            return DeleteFilePAK2;
         }
 
         /* Add to a PAK archive */
         public PAKReturnType AddNewFile(string NewFile)
         {
-            if (Format != PAKType.PAK2) { return PAKReturnType.FAILED_UNSUPPORTED; } //Currently only supported in PAK2
-            HandlerPAK2.AddFile(NewFile);
-            if (HandlerPAK2.Save())
+            if (Format != PAKType.PAK2) { return PAKReturnType.FAIL_FEATURE_IS_COMING_SOON; } //Currently only supported in PAK2
+            PAKReturnType AddFilePAK2 = HandlerPAK2.AddFile(NewFile);
+            if (AddFilePAK2 == PAKReturnType.SUCCESS)
             {
-                return PAKReturnType.SUCCESS;
+                return HandlerPAK2.Save();
             }
-            return PAKReturnType.FAILED_FILE_IN_USE;
+            return AddFilePAK2;
         }
 
         /* Get the PAK index of the file by name */
@@ -249,358 +248,6 @@ namespace AlienPAK
 
             //Failed to find - fatal issue
             throw new Exception("Could not find PAK entry - fatal!");
-        }
-
-
-        /* --- TEXTURE PAK --- */
-        int HeaderListBeginBIN = -1;
-        int HeaderListEndPAK = -1;
-        int NumberOfEntriesPAK = -1;
-        int NumberOfEntriesBIN = -1;
-        List<TEX4> TextureEntries = new List<TEX4>();
-
-        /* Parse the file listing for a texture PAK */
-        private List<string> ParseTexturePAK()
-        {
-            //Read the header info from the BIN
-            ArchiveFileBin.BaseStream.Position += 4; //Skip unused value (version?)
-            NumberOfEntriesBIN = ArchiveFileBin.ReadInt32();
-            HeaderListBeginBIN = ArchiveFileBin.ReadInt32();
-
-            //Read all file names from BIN
-            for (int i = 0; i < NumberOfEntriesBIN; i++)
-            {
-                string ThisFileName = "";
-                for (byte b; (b = ArchiveFileBin.ReadByte()) != 0x00;)
-                {
-                    ThisFileName += (char)b;
-                }
-                if (Path.GetExtension(ThisFileName).ToUpper() != ".DDS")
-                {
-                    ThisFileName += ".dds";
-                }
-                FileList.Add(ThisFileName);
-            }
-
-            //Read the texture headers from the BIN
-            ArchiveFileBin.BaseStream.Position = HeaderListBeginBIN + 12;
-            for (int i = 0; i < NumberOfEntriesBIN; i++)
-            {
-                int HeaderPosition = (int)ArchiveFileBin.BaseStream.Position;
-                TEX4 TextureEntry = new TEX4();
-
-                ArchiveFileBin.BaseStream.Position += 4; //Skip magic
-                TextureEntry.Format = (TextureFormat)ArchiveFileBin.ReadInt32();
-                ArchiveFileBin.BaseStream.Position += 4; //Skip V2 length
-                ArchiveFileBin.BaseStream.Position += 4; //Skip V1 length
-                TextureEntry.Texture_V1.Width = ArchiveFileBin.ReadInt16();
-                TextureEntry.Texture_V1.Height = ArchiveFileBin.ReadInt16();
-                ArchiveFileBin.BaseStream.Position += 2; //Skip unknown
-                TextureEntry.Texture_V2.Width = ArchiveFileBin.ReadInt16();
-                TextureEntry.Texture_V2.Height = ArchiveFileBin.ReadInt16();
-                ArchiveFileBin.BaseStream.Position += 22; //Skip unknowns
-                TextureEntry.FileName = FileList[i];
-                TextureEntry.HeaderPos = HeaderPosition;
-
-                TextureEntries.Add(TextureEntry);
-            }
-
-            //Read the header info from the PAK
-            BigEndianUtils BigEndian = new BigEndianUtils();
-            ArchiveFile.BaseStream.Position += 12; //Skip unknowns
-            NumberOfEntriesPAK = BigEndian.ReadInt32(ArchiveFile);
-            ArchiveFile.BaseStream.Position += 16; //Skip unknowns
-
-            //Read the texture headers from the PAK
-            int OffsetTracker = (NumberOfEntriesPAK * 48) + 32;
-            for (int i = 0; i < NumberOfEntriesPAK; i++)
-            {
-                //Header indexes are out of order, so optimise replacements by saving position
-                int HeaderPosition = (int)ArchiveFile.BaseStream.Position;
-
-                //Pull the size info
-                ArchiveFile.BaseStream.Position += 8; //Skip unknowns
-                int EntrySize = BigEndian.ReadInt32(ArchiveFile);
-                if (EntrySize != BigEndian.ReadInt32(ArchiveFile)) { continue; }
-                ArchiveFile.BaseStream.Position += 18; //Skip unknowns
-
-                //Pull the index info and use that to find the texture entry
-                TEX4 TextureEntry = TextureEntries[BigEndian.ReadInt16(ArchiveFile)];
-
-                //Assign size info to the entry with the calculated offset
-                if (!TextureEntry.Texture_V1.Saved)
-                {
-                    TextureEntry.Texture_V1.StartPos = OffsetTracker;
-                    TextureEntry.Texture_V1.Length = EntrySize;
-                    TextureEntry.Texture_V1.Saved = true;
-                    TextureEntry.Texture_V1.HeaderPos = HeaderPosition;
-                }
-                else
-                {
-                    TextureEntry.Texture_V2.StartPos = OffsetTracker;
-                    TextureEntry.Texture_V2.Length = EntrySize;
-                    TextureEntry.Texture_V2.Saved = true;
-                    TextureEntry.Texture_V2.HeaderPos = HeaderPosition;
-                }
-                OffsetTracker += EntrySize;
-
-                //Skip the rest of the header
-                ArchiveFile.BaseStream.Position += 12; //Skip unknowns
-            }
-            HeaderListEndPAK = (int)ArchiveFile.BaseStream.Position;
-
-            return FileList;
-        }
-
-        /* Get a file's size from the texture PAK */
-        private int FileSizeTexturePAK(string FileName)
-        {
-            int FileIndex = GetFileIndex(FileName);
-
-            if (TextureEntries[FileIndex].Texture_V2.Saved)
-            {
-                return TextureEntries[FileIndex].Texture_V2.Length + 148;
-            }
-            //Fallback to V1 if this texture has no V2
-            else if (TextureEntries[FileIndex].Texture_V1.Saved)
-            {
-                return TextureEntries[FileIndex].Texture_V1.Length + 148;
-            }
-
-            return -1; //Should never get here
-        }
-
-        /* Export a file from the texture PAK */
-        private PAKReturnType ExportFileTexturePAK(string FileName, string ExportPath)
-        {
-            try
-            {
-                //Get the texture index
-                int FileIndex = GetFileIndex(FileName);
-
-                //Get the biggest texture part stored
-                TEX4_Part TexturePart;
-                if (TextureEntries[FileIndex].Texture_V2.Saved)
-                {
-                    TexturePart = TextureEntries[FileIndex].Texture_V2;
-                }
-                else if (TextureEntries[FileIndex].Texture_V1.Saved)
-                {
-                    TexturePart = TextureEntries[FileIndex].Texture_V1;
-                }
-                else
-                {
-                    return PAKReturnType.FAILED_UNSUPPORTED;
-                }
-
-                //Pull the texture part content from the archive
-                ArchiveFile.BaseStream.Position = TexturePart.StartPos;
-                byte[] TexturePartContent = ArchiveFile.ReadBytes(TexturePart.Length);
-
-                //Generate a DDS header based on the tex4's information
-                DDSWriter TextureOutput;
-                bool FailsafeSave = false;
-                switch (TextureEntries[FileIndex].Format)
-                {
-                    case TextureFormat.DXGI_FORMAT_BC5_UNORM:
-                        TextureOutput = new DDSWriter(TexturePartContent, TexturePart.Width, TexturePart.Height, 32, 0, TextureType.ATI2N);
-                        break;
-                    case TextureFormat.DXGI_FORMAT_BC1_UNORM:
-                        TextureOutput = new DDSWriter(TexturePartContent, TexturePart.Width, TexturePart.Height, 32, 0, TextureType.Dxt1);
-                        break;
-                    case TextureFormat.DXGI_FORMAT_BC3_UNORM:
-                        TextureOutput = new DDSWriter(TexturePartContent, TexturePart.Width, TexturePart.Height, 32, 0, TextureType.Dxt5);
-                        break;
-                    case TextureFormat.DXGI_FORMAT_B8G8R8A8_UNORM:
-                        TextureOutput = new DDSWriter(TexturePartContent, TexturePart.Width, TexturePart.Height, 32, 0, TextureType.UNCOMPRESSED_GENERAL);
-                        break;
-                    case TextureFormat.DXGI_FORMAT_BC7_UNORM:
-                    default:
-                        TextureOutput = new DDSWriter(TexturePartContent, TexturePart.Width, TexturePart.Height);
-                        FailsafeSave = true;
-                        break;
-                }
-
-                //Try and save out the part
-                try
-                {
-                    if (FailsafeSave)
-                    {
-                        TextureOutput.SaveCrude(ExportPath);
-                        return PAKReturnType.SUCCESS;
-                    }
-                    TextureOutput.Save(ExportPath);
-                    return PAKReturnType.SUCCESS;
-                }
-                catch
-                {
-                    return PAKReturnType.FAILED_FILE_IN_USE;
-                }
-            }
-            catch (Exception e)
-            {
-                LatestError = e.ToString();
-                return PAKReturnType.FAILED_UNKNOWN;
-            }
-        }
-
-        /* Import a file to the texture PAK */
-        private PAKReturnType ImportFileTexturePAK(string FileName, string ImportPath)
-        {
-            try
-            {
-                //Get the texture entry & parse new DDS
-                TEX4 TextureEntry = TextureEntries[GetFileIndex(FileName)];
-                DDSReader NewTexture = new DDSReader(ImportPath);
-
-                //Currently we only support textures that have V1 and V2
-                if (TextureEntry.Texture_V2.HeaderPos == -1)
-                {
-                    return PAKReturnType.FAILED_UNSUPPORTED;
-                }
-
-                //Load the BIN to byte array
-                ArchiveFileBin.BaseStream.Position = 0;
-                byte[] BinFile = new byte[ArchiveFileBin.BaseStream.Length];
-                for (int i = 0; i < BinFile.Length; i++)
-                {
-                    BinFile[i] = ArchiveFileBin.ReadByte();
-                }
-
-                //Update format in BIN
-                int BinOffset = TextureEntry.HeaderPos + 4;
-                byte[] NewFormat = BitConverter.GetBytes((int)NewTexture.Format);
-                for (int i = 0; i < 4; i++)
-                {
-                    BinFile[BinOffset] = NewFormat[i];
-                    BinOffset++;
-                }
-
-                //Change the new filesize dependant on options (SEE LINE 171)
-                int FileSize = TextureEntry.Texture_V2.Length;
-                if (ToolSettings.GetSetting(ToolOptionsHandler.Settings.EXPERIMENTAL_TEXTURE_IMPORT))
-                {
-                    FileSize = (int)NewTexture.DataBlock.Length;
-                }
-
-                //Update filesize in BIN
-                byte[] NewEntrySize = BitConverter.GetBytes(FileSize);
-                for (int i = 0; i < 4; i++)
-                {
-                    BinFile[BinOffset] = NewEntrySize[i];
-                    BinOffset++;
-                }
-                BinOffset += 4; //Skip V1
-
-                //Update dimensions in BIN (imported textures apply to V2 only)
-                BinOffset += 6;
-                byte[] NewWidth = BitConverter.GetBytes((Int16)NewTexture.Width);
-                byte[] NewHeight = BitConverter.GetBytes((Int16)NewTexture.Height);
-                for (int i = 0; i < 2; i++)
-                {
-                    BinFile[BinOffset] = NewWidth[i];
-                    BinOffset++;
-                }
-                for (int i = 0; i < 2; i++)
-                {
-                    BinFile[BinOffset] = NewHeight[i];
-                    BinOffset++;
-                }
-
-                //Take all headers up to the V2 header in PAK
-                ArchiveFile.BaseStream.Position = 0;
-                byte[] ArchivePt1 = new byte[TextureEntry.Texture_V2.HeaderPos];
-                for (int i = 0; i < ArchivePt1.Length; i++)
-                {
-                    ArchivePt1[i] = ArchiveFile.ReadByte();
-                }
-                
-                //Update V2 header for new image filesize in PAK
-                byte[] ArchivePt2 = new byte[48];
-                for (int i = 0; i < ArchivePt2.Length; i++)
-                {
-                    ArchivePt2[i] = ArchiveFile.ReadByte();
-                }
-                Array.Reverse(NewEntrySize); //This file is big endian
-                for (int i = 0; i < 4; i++)
-                {
-                    ArchivePt2[8 + i] = NewEntrySize[i];
-                }
-                for (int i = 0; i < 4; i++)
-                {
-                    ArchivePt2[12 + i] = NewEntrySize[i];
-                }
-
-                //Read to end of headers in PAK
-                byte[] ArchivePt3 = new byte[HeaderListEndPAK - ArchivePt1.Length - 48];
-                for (int i = 0; i < ArchivePt3.Length; i++)
-                {
-                    ArchivePt3[i] = ArchiveFile.ReadByte();
-                }
-
-                //Take all files up to V2 in PAK
-                byte[] ArchivePt4 = new byte[TextureEntry.Texture_V2.StartPos - HeaderListEndPAK];
-                for (int i = 0; i < ArchivePt4.Length; i++)
-                {
-                    ArchivePt4[i] = ArchiveFile.ReadByte();
-                }
-                ArchiveFile.BaseStream.Position += FileSize;
-
-                //Take all files past V2 in PAK
-                byte[] ArchivePt5 = new byte[ArchiveFile.BaseStream.Length - ArchiveFile.BaseStream.Position];
-                for (int i = 0; i < ArchivePt5.Length; i++)
-                {
-                    ArchivePt5[i] = ArchiveFile.ReadByte();
-                }
-
-                //CATHODE seems to ignore texture header information regarding size, so as default, resize any imported textures to the original size.
-                //An option is provided in the toolkit to write size information to the header (done above) however, so don't resize if that's the case.
-                //More work needs to be done to figure out why CATHODE doesn't honour the header's size value.
-                if (!ToolSettings.GetSetting(ToolOptionsHandler.Settings.EXPERIMENTAL_TEXTURE_IMPORT))
-                {
-                    Array.Resize(ref NewTexture.DataBlock, TextureEntry.Texture_V2.Length);
-                }
-
-                //It's time to try and save!
-                try
-                {
-                    //Write out new BIN
-                    ArchiveFileBin.Close();
-                    BinaryWriter ArchiveFileWriteBin = new BinaryWriter(File.OpenWrite(ArchivePathBin));
-                    ArchiveFileWriteBin.BaseStream.SetLength(0);
-                    ArchiveFileWriteBin.Write(BinFile);
-                    ArchiveFileWriteBin.Close();
-
-                    //Write out new PAK
-                    ArchiveFile.Close();
-                    BinaryWriter ArchiveFileWrite = new BinaryWriter(File.OpenWrite(ArchivePath));
-                    ArchiveFileWrite.BaseStream.SetLength(0);
-                    ArchiveFileWrite.Write(ArchivePt1);
-                    ArchiveFileWrite.Write(ArchivePt2);
-                    ArchiveFileWrite.Write(ArchivePt3);
-                    ArchiveFileWrite.Write(ArchivePt4);
-                    ArchiveFileWrite.Write(NewTexture.DataBlock);
-                    ArchiveFileWrite.Write(ArchivePt5);
-                    ArchiveFileWrite.Close();
-                }
-                catch
-                {
-                    //File is probably in-use by the game, re-open for reading and exit as fail
-                    Open(ArchivePath);
-                    return PAKReturnType.FAILED_FILE_IN_USE;
-                }
-
-                //Reload the archive for us
-                Open(ArchivePath);
-                ParseTexturePAK();
-
-                return PAKReturnType.SUCCESS;
-            }
-            catch (Exception e)
-            {
-                LatestError = e.ToString();
-                return PAKReturnType.FAILED_UNKNOWN;
-            }
         }
 
 
@@ -749,7 +396,7 @@ namespace AlienPAK
         /* Export a file from the model PAK */
         private PAKReturnType ExportFileModelPAK(string FileName, string ExportPath)
         {
-            return PAKReturnType.FAILED_UNSUPPORTED; //Disabling export for main branch
+            return PAKReturnType.FAIL_FEATURE_IS_COMING_SOON; //Disabling export for main branch
 
             try
             {
@@ -784,7 +431,7 @@ namespace AlienPAK
             catch
             {
                 //Failed
-                return PAKReturnType.FAILED_UNKNOWN;
+                return PAKReturnType.FAIL_UNKNOWN;
             }
         }
 
@@ -792,7 +439,7 @@ namespace AlienPAK
         private PAKReturnType ImportFileModelPAK(string FileName, string ImportPath)
         {
             //WIP
-            return PAKReturnType.FAILED_UNSUPPORTED;
+            return PAKReturnType.FAIL_FEATURE_IS_COMING_SOON;
         }
 
 
@@ -1060,13 +707,13 @@ namespace AlienPAK
         private PAKReturnType ExportFileCommandsPAK(string FileName, string ExportPath)
         {
             //There's no point exporting/importing until the format is understood better.
-            return PAKReturnType.FAILED_UNSUPPORTED;
+            return PAKReturnType.FAIL_FEATURE_IS_COMING_SOON;
         }
 
         /* Import a file to the scripts PAK */
         private PAKReturnType ImportFileCommandsPAK(string FileName, string ImportPath)
         {
-            return PAKReturnType.FAILED_UNSUPPORTED;
+            return PAKReturnType.FAIL_FEATURE_IS_COMING_SOON;
         }
 
 
@@ -1134,13 +781,13 @@ namespace AlienPAK
         private PAKReturnType ExportFileMaterialMappingsPAK(string FileName, string ExportPath)
         {
             //Files don't get shipped - how should we export the data?
-            return PAKReturnType.FAILED_UNSUPPORTED;
+            return PAKReturnType.FAIL_FEATURE_IS_COMING_SOON;
         }
 
         /* Import a file to the material map PAK */
         private PAKReturnType ImportFileMaterialMappingsPAK(string FileName, string ImportPath)
         {
-            return PAKReturnType.FAILED_UNSUPPORTED;
+            return PAKReturnType.FAIL_FEATURE_IS_COMING_SOON;
         }
     }
 }
