@@ -49,6 +49,10 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Archive Handlers\AnyPAK.cs" />
+    <Compile Include="Archive Handlers\CommandPAK.cs" />
+    <Compile Include="Archive Handlers\MaterialMapPAK.cs" />
+    <Compile Include="Archive Handlers\ModelPAK.cs" />
     <Compile Include="Archive Handlers\PAK2.cs" />
     <Compile Include="Archive Handlers\TexturePAK.cs" />
     <Compile Include="Utilities\BinaryUtilities.cs" />

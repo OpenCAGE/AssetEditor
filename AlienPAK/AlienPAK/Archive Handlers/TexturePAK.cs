@@ -7,7 +7,14 @@ using System.Threading.Tasks;
 
 namespace AlienPAK
 {
-    class TexturePAK
+    /*
+     *
+     * Texture PAK handler.
+     * Allows import/export of CATHODE TEX4 texture files.
+     * More work needs to be done to understand the broken formats and to allow importing for files with only V1.
+     * 
+    */
+    class TexturePAK : AnyPAK
     {
         private List<TEX4> TextureEntries = new List<TEX4>();
         private int HeaderListBeginBIN = -1;
@@ -16,8 +23,6 @@ namespace AlienPAK
         private int NumberOfEntriesBIN = -1;
         private int VersionNumber_BIN = 45;
         private int VersionNumber_PAK = 14;
-        private string FilePathPAK = "";
-        private string FilePathBIN = "";
         ToolOptionsHandler ToolSettings = new ToolOptionsHandler();
 
         /* Initialise the TexturePAK class with the intended location (existing or not) */
@@ -36,7 +41,7 @@ namespace AlienPAK
         }
 
         /* Load the contents of an existing TexturePAK */
-        public PAKReturnType Load()
+        public override PAKReturnType Load()
         {
             if (!File.Exists(FilePathPAK))
             {
@@ -91,7 +96,7 @@ namespace AlienPAK
                     TextureEntries[i].UnknownHeaderBytes = ArchiveFileBin.ReadBytes(20);
                 }
 
-                /* Second, parse the PAK and pull ONLY header info from it - we'll pull textures when requested to save memory */
+                /* Second, parse the PAK and pull ONLY header info from it - we'll pull textures when requested (to save memory) */
                 ArchiveFileBin.Close();
                 BinaryReader ArchiveFile = new BinaryReader(File.OpenRead(FilePathPAK));
 
@@ -139,12 +144,12 @@ namespace AlienPAK
                 ArchiveFile.Close();
                 return PAKReturnType.SUCCESS;
             }
-            catch (IOException e) { return PAKReturnType.FAIL_COULD_NOT_ACCESS_FILE; }
-            catch (Exception e) { return PAKReturnType.FAIL_UNKNOWN; }
+            catch (IOException) { return PAKReturnType.FAIL_COULD_NOT_ACCESS_FILE; }
+            catch (Exception) { return PAKReturnType.FAIL_UNKNOWN; }
         }
 
         /* Return a list of filenames for files in the TexturePAK archive */
-        public List<string> GetFileNames()
+        public override List<string> GetFileNames()
         {
             List<string> FileNameList = new List<string>();
             foreach (TEX4 ArchiveFile in TextureEntries)
@@ -155,7 +160,7 @@ namespace AlienPAK
         }
 
         /* Get the file size of an archive entry */
-        public int GetFilesize(string FileName)
+        public override int GetFilesize(string FileName)
         {
             int FileIndex = GetFileIndex(FileName);
             if (TextureEntries[FileIndex].Texture_V2.Saved)
@@ -170,8 +175,8 @@ namespace AlienPAK
             throw new Exception("Texture has no size! Fatal logic error.");
         }
 
-        /* Find the a file entry object by name */
-        private int GetFileIndex(string FileName)
+        /* Find a file entry object by name */
+        protected override int GetFileIndex(string FileName)
         {
             for (int i = 0; i < TextureEntries.Count; i++)
             {
@@ -184,7 +189,7 @@ namespace AlienPAK
         }
 
         /* Replace an existing file in the TexturePAK archive */
-        public PAKReturnType ReplaceFile(string PathToNewFile, string FileName)
+        public override PAKReturnType ReplaceFile(string PathToNewFile, string FileName)
         {
             try
             {
@@ -286,12 +291,12 @@ namespace AlienPAK
 
                 return PAKReturnType.SUCCESS;
             }
-            catch (IOException e) { return PAKReturnType.FAIL_COULD_NOT_ACCESS_FILE; }
-            catch (Exception e) { return PAKReturnType.FAIL_UNKNOWN; }
+            catch (IOException) { return PAKReturnType.FAIL_COULD_NOT_ACCESS_FILE; }
+            catch (Exception) { return PAKReturnType.FAIL_UNKNOWN; }
         }
 
         /* Export an existing file from the TexturePAK archive */
-        public PAKReturnType ExportFile(string PathToExport, string FileName)
+        public override PAKReturnType ExportFile(string PathToExport, string FileName)
         {
             try
             {
@@ -352,8 +357,8 @@ namespace AlienPAK
                 TextureOutput.Save(PathToExport);
                 return PAKReturnType.SUCCESS;
             }
-            catch (IOException e) { return PAKReturnType.FAIL_COULD_NOT_ACCESS_FILE; }
-            catch (Exception e) { return PAKReturnType.FAIL_UNKNOWN; }
+            catch (IOException) { return PAKReturnType.FAIL_COULD_NOT_ACCESS_FILE; }
+            catch (Exception) { return PAKReturnType.FAIL_UNKNOWN; }
         }
     }
 }

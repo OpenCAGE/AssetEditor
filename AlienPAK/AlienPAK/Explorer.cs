@@ -165,8 +165,9 @@ namespace AlienPAK
                     return "XML (Markup)";
                 case "TXT":
                     return "TXT (Text)";
+                default:
+                    return FileExtension.Substring(1).ToUpper();
             }
-            return "";
         }
 
         /* Update file preview */
