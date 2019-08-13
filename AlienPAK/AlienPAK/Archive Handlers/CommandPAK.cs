@@ -7,6 +7,16 @@ using System.Threading.Tasks;
 
 namespace AlienPAK
 {
+    /*
+     *
+     * Commands PAK handler.
+     * This is a compiled script archive, and more work needs to be done to understand what each "block" contains.
+     * Once this is known, more reliable exporting can happen, and maybe eventually importing also.
+     * Each block seems to be common info (e.g. strings) from every script.
+     * We can currently export the compiled scripts with this, but they're not much use.
+     * It seems to build up to a custom binary format which represents the CATHODE node system.
+     * 
+    */
     class CommandPAK : AnyPAK
     {
         List<EntryCommandsPAK> CommandsEntries = new List<EntryCommandsPAK>();

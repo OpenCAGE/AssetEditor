@@ -7,6 +7,12 @@ using System.Threading.Tasks;
 
 namespace AlienPAK
 {
+    /*
+     *
+     * PAK2 handler.
+     * Allows write/read of a PAK2 archive. Completed!
+     * 
+    */
     class PAK2 : AnyPAK
     {
         private List<EntryPAK2> Pak2Files = new List<EntryPAK2>();

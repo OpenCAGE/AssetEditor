@@ -7,6 +7,13 @@ using System.Threading.Tasks;
 
 namespace AlienPAK
 {
+    /*
+     *
+     * Texture PAK handler.
+     * Allows import/export of CATHODE TEX4 texture files.
+     * More work needs to be done to understand the broken formats and to allow importing for files with only V1.
+     * 
+    */
     class TexturePAK : AnyPAK
     {
         private List<TEX4> TextureEntries = new List<TEX4>();

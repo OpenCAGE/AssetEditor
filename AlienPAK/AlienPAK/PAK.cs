@@ -9,11 +9,8 @@ namespace AlienPAK
 {
     /*
      *
-     * Our PAK handler.
-     * Created by Matt Filer: http://www.mattfiler.co.uk
-     * 
-     * Intended to support various PAK formats for Alien: Isolation (CATHODE).
-     * Currently a WORK IN PROGRESS.
+     * Generic PAK handler.
+     * This can probably be depreciated when all handlers are as complete as the PAK2 implementation.
      * 
     */
     class PAK

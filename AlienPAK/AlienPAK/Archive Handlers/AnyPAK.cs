@@ -6,6 +6,12 @@ using System.Threading.Tasks;
 
 namespace AlienPAK
 {
+    /*
+     *
+     * PAK parent.
+     * All PAK handlers should inherit from this class to provide default "COMING SOON" messages for unimplemented standard methods.
+     * 
+    */
     class AnyPAK
     {
         protected string FilePathPAK = "";

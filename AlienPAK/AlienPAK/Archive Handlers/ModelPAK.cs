@@ -7,6 +7,13 @@ using System.Threading.Tasks;
 
 namespace AlienPAK
 {
+    /*
+     *
+     * Model PAK handler.
+     * Currently doesn't support import/export. WIP!
+     * Also needs to verify the PAK version number, etc.
+     * 
+    */
     class ModelPAK : AnyPAK
     {
         List<CS2> ModelEntries = new List<CS2>();

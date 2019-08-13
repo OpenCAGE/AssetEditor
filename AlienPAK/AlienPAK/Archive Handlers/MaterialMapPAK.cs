@@ -7,6 +7,13 @@ using System.Threading.Tasks;
 
 namespace AlienPAK
 {
+    /*
+     *
+     * Material Mapping PAK handler.
+     * This PAK doesn't ship with full XMLs,so some kind of custom format needs to be implemented.
+     * When this is done, import/export can be added.
+     * 
+    */
     class MaterialMapPAK : AnyPAK
     {
         List<EntryMaterialMappingsPAK> MaterialMappingEntries = new List<EntryMaterialMappingsPAK>();
