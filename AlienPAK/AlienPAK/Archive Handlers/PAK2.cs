@@ -7,23 +7,22 @@ using System.Threading.Tasks;
 
 namespace AlienPAK
 {
-    class PAK2
+    class PAK2 : AnyPAK
     {
         private List<EntryPAK2> Pak2Files = new List<EntryPAK2>();
         private int OffsetListBegin = -1;
         private int NumberOfEntries = -1;
-        private string FilePath = "";
 
         /* Initialise the PAK2 class with the intended PAK2 location (existing or not) */
         public PAK2(string PathToPAK)
         {
-            FilePath = PathToPAK;
+            FilePathPAK = PathToPAK;
         }
 
         /* Load the contents of an existing PAK2 */
-        public PAKReturnType Load()
+        public override PAKReturnType Load()
         {
-            if (!File.Exists(FilePath))
+            if (!File.Exists(FilePathPAK))
             {
                 return PAKReturnType.FAIL_TRIED_TO_LOAD_VIRTUAL_ARCHIVE;
             }
@@ -31,7 +30,7 @@ namespace AlienPAK
             try
             {
                 //Open PAK
-                BinaryReader ArchiveFile = new BinaryReader(File.OpenRead(FilePath));
+                BinaryReader ArchiveFile = new BinaryReader(File.OpenRead(FilePathPAK));
 
                 //Read the header info
                 string MagicValidation = "";
@@ -77,12 +76,12 @@ namespace AlienPAK
                 ArchiveFile.Close();
                 return PAKReturnType.SUCCESS;
             }
-            catch (IOException e) { return PAKReturnType.FAIL_COULD_NOT_ACCESS_FILE; }
-            catch (Exception e) { return PAKReturnType.FAIL_UNKNOWN; }
+            catch (IOException) { return PAKReturnType.FAIL_COULD_NOT_ACCESS_FILE; }
+            catch (Exception) { return PAKReturnType.FAIL_UNKNOWN; }
         }
 
         /* Return a list of filenames for files in the PAK2 archive */
-        public List<string> GetFileNames()
+        public override List<string> GetFileNames()
         {
             List<string> FileNameList = new List<string>();
             foreach (EntryPAK2 ArchiveFile in Pak2Files)
@@ -93,13 +92,13 @@ namespace AlienPAK
         }
 
         /* Get the file size of an archive entry */
-        public int GetFilesize(string FileName)
+        public override int GetFilesize(string FileName)
         {
             return Pak2Files[GetFileIndex(FileName)].Content.Length;
         }
 
         /* Find the a file entry object by name */
-        private int GetFileIndex(string FileName)
+        protected override int GetFileIndex(string FileName)
         {
             for (int i = 0; i < Pak2Files.Count; i++)
             {
@@ -112,7 +111,7 @@ namespace AlienPAK
         }
 
         /* Add a file to the PAK2 */
-        public PAKReturnType AddFile(string PathToNewFile, int TrimFromPath = 0) //TrimFromPath is available to leave some directory trace in the filename
+        public override PAKReturnType AddFile(string PathToNewFile, int TrimFromPath = 0) //TrimFromPath is available to leave some directory trace in the filename
         {
             try
             {
@@ -123,12 +122,12 @@ namespace AlienPAK
                 Pak2Files.Add(NewFile);
                 return PAKReturnType.SUCCESS;
             }
-            catch (IOException e) { return PAKReturnType.FAIL_COULD_NOT_ACCESS_FILE; }
-            catch (Exception e) { return PAKReturnType.FAIL_UNKNOWN; }
+            catch (IOException) { return PAKReturnType.FAIL_COULD_NOT_ACCESS_FILE; }
+            catch (Exception) { return PAKReturnType.FAIL_UNKNOWN; }
         }
 
         /* Delete a file from the PAK2 */
-        public PAKReturnType DeleteFile(string FileName)
+        public override PAKReturnType DeleteFile(string FileName)
         {
             try
             {
@@ -142,44 +141,44 @@ namespace AlienPAK
         }
 
         /* Replace an existing file in the PAK2 archive */
-        public PAKReturnType ReplaceFile(string PathToNewFile, string FileName)
+        public override PAKReturnType ReplaceFile(string PathToNewFile, string FileName)
         {
             try
             {
                 Pak2Files[GetFileIndex(FileName)].Content = File.ReadAllBytes(PathToNewFile);
                 return PAKReturnType.SUCCESS;
             }
-            catch (IOException e) { return PAKReturnType.FAIL_COULD_NOT_ACCESS_FILE; }
-            catch (Exception e) { return PAKReturnType.FAIL_UNKNOWN; }
+            catch (IOException) { return PAKReturnType.FAIL_COULD_NOT_ACCESS_FILE; }
+            catch (Exception) { return PAKReturnType.FAIL_UNKNOWN; }
         }
 
         /* Export an existing file from the PAK2 archive */
-        public PAKReturnType ExportFile(string PathToExport, string FileName)
+        public override PAKReturnType ExportFile(string PathToExport, string FileName)
         {
             try
             {
                 File.WriteAllBytes(PathToExport, Pak2Files[GetFileIndex(FileName)].Content);
                 return PAKReturnType.SUCCESS;
             }
-            catch (IOException e) { return PAKReturnType.FAIL_COULD_NOT_ACCESS_FILE; }
-            catch (Exception e) { return PAKReturnType.FAIL_UNKNOWN; }
+            catch (IOException) { return PAKReturnType.FAIL_COULD_NOT_ACCESS_FILE; }
+            catch (Exception) { return PAKReturnType.FAIL_UNKNOWN; }
         }
 
         /* Save out our PAK2 archive */
-        public PAKReturnType Save()
+        public override PAKReturnType Save()
         {
             try
             {
                 //Open/create PAK2 for writing
                 BinaryWriter ArchiveFileWrite;
-                if (File.Exists(FilePath))
+                if (File.Exists(FilePathPAK))
                 {
-                    ArchiveFileWrite = new BinaryWriter(File.OpenWrite(FilePath));
+                    ArchiveFileWrite = new BinaryWriter(File.OpenWrite(FilePathPAK));
                     ArchiveFileWrite.BaseStream.SetLength(0);
                 }
                 else
                 {
-                    ArchiveFileWrite = new BinaryWriter(File.Create(FilePath));
+                    ArchiveFileWrite = new BinaryWriter(File.Create(FilePathPAK));
                 }
                 ExtraBinaryUtils BinaryUtils = new ExtraBinaryUtils();
 
@@ -229,8 +228,8 @@ namespace AlienPAK
                 ArchiveFileWrite.Close();
                 return PAKReturnType.SUCCESS;
             }
-            catch (IOException e) { return PAKReturnType.FAIL_COULD_NOT_ACCESS_FILE; }
-            catch (Exception e) { return PAKReturnType.FAIL_UNKNOWN; }
+            catch (IOException) { return PAKReturnType.FAIL_COULD_NOT_ACCESS_FILE; }
+            catch (Exception) { return PAKReturnType.FAIL_UNKNOWN; }
         }
     }
 }
