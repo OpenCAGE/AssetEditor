@@ -205,6 +205,10 @@ namespace AlienPAK
                 {
                     BiggestPart = TextureEntry.Texture_V1;
                 }
+                if (BiggestPart.HeaderPos == -1 || !BiggestPart.Saved)
+                {
+                    return PAKReturnType.FAIL_REQUEST_IS_UNSUPPORTED; //Shouldn't reach this.
+                }
 
                 //CATHODE seems to ignore texture header information regarding size, so as default, resize any imported textures to the original size.
                 //An option is provided in the toolkit to write size information to the header (done above) however, so don't resize if that's the case.
@@ -246,7 +250,7 @@ namespace AlienPAK
                 ArchiveFileBinWriter.BaseStream.Position = TextureEntry.HeaderPos;
                 BinaryUtils.WriteString(TextureEntry.Magic, ArchiveFileBinWriter);
                 ArchiveFileBinWriter.Write(BitConverter.GetBytes((int)TextureEntry.Format));
-                ArchiveFileBinWriter.Write(TextureEntry.Texture_V2.Length);
+                ArchiveFileBinWriter.Write((TextureEntry.Texture_V2.Length == -1) ? 0 : TextureEntry.Texture_V2.Length);
                 ArchiveFileBinWriter.Write(TextureEntry.Texture_V1.Length);
                 ArchiveFileBinWriter.Write(TextureEntry.Texture_V1.Width);
                 ArchiveFileBinWriter.Write(TextureEntry.Texture_V1.Height);
