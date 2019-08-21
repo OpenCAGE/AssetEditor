@@ -15,7 +15,7 @@ This PAK Tool is available within the [Alien: Isolation Mod Tools](https://githu
 
 ## Currently supported
 
-- PAK2 (UI.PAK, ANIMATIONS.PAK)
+- [PAK2 (UI.PAK, ANIMATIONS.PAK)](https://github.com/MattFiler/AlienPAK/wiki/PAK2)
   - Open archive
   - Create archive
   - Add files
@@ -23,26 +23,29 @@ This PAK Tool is available within the [Alien: Isolation Mod Tools](https://githu
   - Export files
   - Remove files
   
-- Texture PAK (LEVEL_TEXTURES.ALL.PAK, GLOBAL_TEXTURES.ALL.PAK)
+- [Texture PAK (LEVEL_TEXTURES.ALL.PAK, GLOBAL_TEXTURES.ALL.PAK)](https://github.com/MattFiler/AlienPAK/wiki/PAK-BIN-Format)
   - Open archive
   - Import files [experimental!]
   - Export files
 
-- Models PAK (LEVEL_MODELS.PAK, GLOBAL_MODELS.PAK)
+- [Models PAK (LEVEL_MODELS.PAK, GLOBAL_MODELS.PAK)](https://github.com/MattFiler/AlienPAK/wiki/PAK-BIN-Format)
 	- Open archive
 
-- Scripts PAK (COMMANDS.PAK)
+- [Scripts PAK (COMMANDS.PAK)](https://github.com/MattFiler/AlienPAK/wiki/Cathode-Scripts)
 	- Open archive
 
-- Material Mappings PAK (MATERIAL_MAPPINGS.PAK)
+- [Material Mappings PAK (MATERIAL_MAPPINGS.PAK)](https://github.com/MattFiler/AlienPAK/wiki/Material-Mappings)
 	- Open archive
+    - Replace files
+    - Export files
 
 
 ## Coming soon
 
 Intended functionality for upcoming versions includes: 
 - Ability to batch export files from an archive.
-- Ability to configure material mappings (still looking at how the system works).
+- Ability to view all materials in a level for editing material mappings.
+- Ability to view material data (textures/colours/etc).
 - Ability to export models (potential import support too, will see).
 - Ability to export/import scripts (lots of work still to do).
 - Ability to preview images when selecting them.
