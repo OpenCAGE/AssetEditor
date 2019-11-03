@@ -112,7 +112,7 @@ namespace AlienPAK
                     newStringEntry.StringPart2 = ArchiveFileBin.ReadBytes(4);
 
                     //TEMP: For now I'm just setting the filename to be the index... need to work out how the _BIN relates to the initial .PAK to get names, etc
-                    newStringEntry.FileName = newStringEntry.FileIndex + ".bin";
+                    newStringEntry.FileName = newStringEntry.FileIndex + ".DXBC";
                     //END OF TEMP
 
                     HeaderDump.Add(newStringEntry);
