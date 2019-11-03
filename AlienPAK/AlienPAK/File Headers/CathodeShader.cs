@@ -8,17 +8,17 @@ namespace AlienPAK
 {
     class CathodeShaderHeader
     {
-        public string ShaderType = "";
-    }
+        public string FileName = ""; //The name of the file in the shader archive (unsure how to get this right now with the weird _BIN/PAK way of working)
 
-    //In a manner similar to that used by COMMANDS.PAK, shaders split up their strings to four byte blocks with their own use info to save on storage space (?)
-    class CathodeShaderString
-    {
-        public byte[] HeaderMagic1; //4
-        public byte[] HeaderMagic2; //4
-        public byte[] StringPart1; //4
-        public byte[] StringPart2; //4
-        public int Number1 = 0; //preceeds string1
-        public int Number2 = 0; //proceeds string1
+        public int FileLength = 0; //The length of the file in the archive for this header
+        public int FileLengthWithPadding = 0; //The length of the file in the archive for this header, with any padding at the end of the file included
+
+        public int FileOffset = 0; //Position in archive from end of header list
+        public int FileIndex = 0; //The index of the file
+
+        public byte[] FileContent; //The content for the file
+        
+        public byte[] StringPart1; //4 bytes that look like they're part of a filepath
+        public byte[] StringPart2; //4 bytes that look like they're part of a filepath
     }
 }

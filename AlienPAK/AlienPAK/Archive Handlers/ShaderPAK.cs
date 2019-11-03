@@ -17,14 +17,13 @@ namespace AlienPAK
     */
     class ShaderPAK : AnyPAK
     {
-        List<CathodeShaderString> StringDump = new List<CathodeShaderString>();
         List<CathodeShaderHeader> HeaderDump = new List<CathodeShaderHeader>();
 
         /* Initialise the ShaderPAK class with the intended location (existing or not) */
         public ShaderPAK(string PathToPAK)
         {
             FilePathPAK = PathToPAK;
-            FilePathBIN = Path.GetFileNameWithoutExtension(FilePathPAK) + "_BIN.PAK";
+            FilePathBIN = PathToPAK.Substring(0, PathToPAK.Length - Path.GetFileName(PathToPAK).Length) + Path.GetFileNameWithoutExtension(FilePathPAK) + "_BIN.PAK";
         }
 
         /* Load the contents of an existing ShaderPAK set (massive WIP) */
@@ -37,38 +36,12 @@ namespace AlienPAK
             
             try
             {
+                //The main PAK is unhandled for now, as I can't work out how the main (initial) PAK relates to the _BIN.PAK. Entry counts are different, and no noticeable indexes!
+                /*
                 //Open PAK
                 BinaryReader ArchiveFile = new BinaryReader(File.OpenRead(FilePathPAK));
                 ExtraBinaryUtils BinaryUtils = new ExtraBinaryUtils();
-
-                ArchiveFile.BaseStream.Position = 8; //Skip magic (there seems to be two types, D2 and D3 - are their formats different?)
-
-                int VersionNum = ArchiveFile.ReadInt32(); //Assumed
-                int NumOfStringPairs = ArchiveFile.ReadInt32();
-                int NumOfStringPairs_Alt = ArchiveFile.ReadInt32(); //these dont always match, but this number seemingly means nothing
-                ArchiveFile.BaseStream.Position += 12; //Skip unknown header info (seems to always be the same)
-
-                //Read string block
-                for (int i = 0; i < NumOfStringPairs; i++)
-                {
-                    CathodeShaderString newStringEntry = new CathodeShaderString();
-                    ArchiveFile.BaseStream.Position += 8; //skip blanks
-
-                    //read header magic (todo: use this somehow)
-                    newStringEntry.HeaderMagic1 = ArchiveFile.ReadBytes(4);
-                    newStringEntry.HeaderMagic2 = ArchiveFile.ReadBytes(4);
-                    
-                    //parse useful info
-                    newStringEntry.Number1 = ArchiveFile.ReadInt32(); //some sort of index, potentially actually int16 not 32
-                    ArchiveFile.BaseStream.Position += 8; //skip blanks and indicator that we're approaching string 1 (odd)
-                    newStringEntry.StringPart1 = ArchiveFile.ReadBytes(4);
-                    newStringEntry.Number2 = ArchiveFile.ReadInt32(); //some sort of index, potentially actually int8 or int16 not 32
-                    ArchiveFile.BaseStream.Position += 8; //skip blanks
-                    newStringEntry.StringPart2 = ArchiveFile.ReadBytes(4);
                 
-                    StringDump.Add(newStringEntry);
-                }
-
                 //Read shader headers
                 for (int i = 0; i < NumOfStringPairs; i++)
                 {
@@ -99,9 +72,61 @@ namespace AlienPAK
 
                     HeaderDump.Add(newHeaderEntry);
                 }
-                
+
                 //Done!
                 ArchiveFile.Close();
+                */
+
+                BinaryReader ArchiveFileBin = new BinaryReader(File.OpenRead(FilePathBIN));
+
+                //Validate our header magic (look at _IDX_REMAP as I think this should also be supported)
+                byte[] archiveMagic = ArchiveFileBin.ReadBytes(4);
+                if (!(archiveMagic.SequenceEqual(new byte[] { 0xD3, 0x42, 0x1A, 0x54 }) || archiveMagic.SequenceEqual(new byte[] { 0xD2, 0x42, 0x1A, 0x54 })))
+                    return PAKReturnType.FAIL_ARCHIVE_IS_NOT_EXCPETED_TYPE;
+
+                //Read entry count from header
+                ArchiveFileBin.BaseStream.Position = 12;
+                int EntryCount = ArchiveFileBin.ReadInt32();
+                int EndOfHeaders = 0;
+
+                //Skip rest of the main header
+                ArchiveFileBin.BaseStream.Position = 32;
+
+                //Pull each entry's individual header
+                for (int i = 0; i < EntryCount; i++)
+                {
+                    CathodeShaderHeader newStringEntry = new CathodeShaderHeader();
+                    ArchiveFileBin.BaseStream.Position += 8; //skip blanks
+                    
+                    newStringEntry.FileLength = ArchiveFileBin.ReadInt32();
+                    newStringEntry.FileLengthWithPadding = ArchiveFileBin.ReadInt32();
+                    newStringEntry.FileOffset = ArchiveFileBin.ReadInt32(); 
+
+                    ArchiveFileBin.BaseStream.Position += 8; //skip blanks
+
+                    newStringEntry.StringPart1 = ArchiveFileBin.ReadBytes(4);
+                    newStringEntry.FileIndex = ArchiveFileBin.ReadInt32(); //potentially actually int8 or int16 not 32
+
+                    ArchiveFileBin.BaseStream.Position += 8; //skip blanks
+
+                    newStringEntry.StringPart2 = ArchiveFileBin.ReadBytes(4);
+
+                    //TEMP: For now I'm just setting the filename to be the index... need to work out how the _BIN relates to the initial .PAK to get names, etc
+                    newStringEntry.FileName = newStringEntry.FileIndex + ".bin";
+                    //END OF TEMP
+
+                    HeaderDump.Add(newStringEntry);
+                }
+                EndOfHeaders = (int)ArchiveFileBin.BaseStream.Position;
+
+                //Pull each entry's file content
+                foreach (CathodeShaderHeader shaderEntry in HeaderDump)
+                {
+                    ArchiveFileBin.BaseStream.Position = shaderEntry.FileOffset + EndOfHeaders;
+                    shaderEntry.FileContent = ArchiveFileBin.ReadBytes(shaderEntry.FileLength);
+                }
+
+                ArchiveFileBin.Close();
                 return PAKReturnType.SUCCESS;
             }
             catch (IOException) { return PAKReturnType.FAIL_COULD_NOT_ACCESS_FILE; }
@@ -112,12 +137,9 @@ namespace AlienPAK
         public override List<string> GetFileNames()
         {
             List<string> FileNameList = new List<string>();
-            foreach (CathodeShaderHeader header in HeaderDump)
+            foreach (CathodeShaderHeader shaderEntry in HeaderDump)
             {
-                if (!FileNameList.Contains(header.ShaderType))
-                {
-                    FileNameList.Add(header.ShaderType);
-                }
+                FileNameList.Add(shaderEntry.FileName);
             }
             return FileNameList;
         }
@@ -125,13 +147,32 @@ namespace AlienPAK
         /* Get the size of the requested shader (not yet implemented) */
         public override int GetFilesize(string FileName)
         {
-            return 0;
+            return HeaderDump[GetFileIndex(FileName)].FileLength;
         }
 
         /* Find the shader entry object by name (not yet implemented) */
         protected override int GetFileIndex(string FileName)
         {
-            return 0;
+            for (int i = 0; i < HeaderDump.Count; i++)
+            {
+                if (HeaderDump[i].FileName == FileName)
+                {
+                    return i;
+                }
+            }
+            throw new Exception("Could not find the requested file in ShaderPAK!");
+        }
+
+        /* Export a file from the ShaderPAK */
+        public override PAKReturnType ExportFile(string PathToExport, string FileName)
+        {
+            try
+            {
+                File.WriteAllBytes(PathToExport, HeaderDump[GetFileIndex(FileName)].FileContent);
+                return PAKReturnType.SUCCESS;
+            }
+            catch (IOException) { return PAKReturnType.FAIL_COULD_NOT_ACCESS_FILE; }
+            catch (Exception) { return PAKReturnType.FAIL_UNKNOWN; }
         }
     }
 }
