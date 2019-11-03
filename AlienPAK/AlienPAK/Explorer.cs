@@ -369,7 +369,6 @@ namespace AlienPAK
         /* Create a PAK2 archive from a specified directory */
         private void createPAK2FromDirectoryToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            MessageBox.Show("Please select a folder to convert to PAK2.", "Select folder...", MessageBoxButtons.OK, MessageBoxIcon.Information);
             FolderBrowserDialog FolderToParse = new FolderBrowserDialog();
             if (FolderToParse.ShowDialog() == DialogResult.OK)
             {
@@ -381,17 +380,22 @@ namespace AlienPAK
                 PathToPAK2.Filter = "PAK2 Archive|*.PAK";
                 if (PathToPAK2.ShowDialog() == DialogResult.OK)
                 {
+                    Cursor.Current = Cursors.WaitCursor;
+
                     PAK2 NewArchive = new PAK2(PathToPAK2.FileName);
                     foreach (string FileName in FilesToAdd)
                     {
                         NewArchive.AddFile(FileName, FolderToParse.SelectedPath.Length+1);
                     }
-                    NewArchive.Save();
-                    MessageBox.Show("Archive successfully created!", "Finished...", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                    return;
+                    PAKReturnType ErrorCode = NewArchive.Save();
+
+                    Cursor.Current = Cursors.Default;
+                    if (ErrorCode == PAKReturnType.SUCCESS || ErrorCode == PAKReturnType.SUCCESS_WITH_WARNINGS)
+                        MessageBox.Show("Archive successfully created!", "Finished...", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    else
+                        MessageBox.Show(AlienErrors.ErrorMessageBody(ErrorCode), AlienErrors.ErrorMessageTitle(ErrorCode), MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
             }
-            MessageBox.Show("The PAK2 was not created.", "Process cancelled.", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
         public void ListAllFiles(string ThisDirectory, List<string> FilesInDir)
         {
