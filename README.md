@@ -39,7 +39,7 @@ This PAK Tool is available within the [Alien: Isolation Mod Tools](https://githu
     - Replace files
     - Export files
 
-- [Shaders PAK (MATERIAL_MAPPINGS.PAK)](https://github.com/MattFiler/AlienPAK/wiki/Shaders)
+- [Shaders PAK (*_SHADERS_DX11.PAK)](https://github.com/MattFiler/AlienPAK/wiki/Shaders)
 	- Open archive
     - Export files (without names)
 
