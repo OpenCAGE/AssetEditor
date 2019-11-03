@@ -164,6 +164,8 @@ namespace AlienPAK
                     return "XML (Markup)";
                 case "TXT":
                     return "TXT (Text)";
+                case "DXBC":
+                    return "DXBC (Compiled HLSL)";
                 default:
                     return FileExtension.Substring(1).ToUpper();
             }
@@ -410,12 +412,12 @@ namespace AlienPAK
         private void exportAllFilesToolStripMenuItem_Click(object sender, EventArgs e)
         {
             //Load all file names currently in the UI
-            List<string> AllFiles = AlienPAK.Parse();
-            if (AllFiles == null || AllFiles.Count == 0)
+            if (AlienPAK.Format == PAKType.UNRECOGNISED)
             {
                 MessageBox.Show("No files to export!\nPlease load a PAK archive.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
+            List<string> AllFiles = AlienPAK.Parse();
             Cursor.Current = Cursors.WaitCursor;
 
             //Select the folder to dump to
