@@ -2,7 +2,7 @@
 
 <img src="https://i.imgur.com/CNAPK4r.png" align="right" width="40%">
 
-A tool to preview, export, and re-import files within Alien: Isolation's PAK archives.
+A tool to browse and modify Alien: Isolation's various PAK archives.
 
 The latest stable version can be downloaded [by clicking here](https://github.com/MattFiler/AlienPAK/raw/master/AlienPAK.exe).
 
@@ -46,9 +46,8 @@ This PAK Tool is available within the [Alien: Isolation Mod Tools](https://githu
 
 ## Coming soon
 
-Intended functionality for upcoming versions includes: 
+While development may be slow, intended functionality for upcoming versions includes: 
 - Expanded shader support for importing and understanding of Cathode headers.
-- Functionality to batch export files from any archive type.
 - Ability to view all materials in a level for editing material mappings.
 - A tool to let you view material data (textures/colours/etc).
 - Export options for models (potential import support too, will see).
