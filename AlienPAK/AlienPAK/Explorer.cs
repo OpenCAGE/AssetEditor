@@ -43,12 +43,11 @@ namespace AlienPAK
             AlienPAK.Open(filename);
 
             //Parse the PAK's file list
-            List<string> ParsedFiles = new List<string>();
-            ParsedFiles = AlienPAK.Parse();
-            if (ParsedFiles == null)
+            List<string> ParsedFiles = AlienPAK.Parse();
+            if (ParsedFiles == null || ParsedFiles.Count == 0)
             {
                 Cursor.Current = Cursors.Default;
-                MessageBox.Show("The selected PAK is currently unsupported.", "Unsupported", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("The selected PAK is currently unsupported, or empty.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
 
@@ -410,7 +409,39 @@ namespace AlienPAK
         /* Export all files from the current archive */
         private void exportAllFilesToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            MessageBox.Show("This functionality is coming soon!", "Coming soon...", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+            //Load all file names currently in the UI
+            List<string> AllFiles = AlienPAK.Parse();
+            if (AllFiles == null || AllFiles.Count == 0)
+            {
+                MessageBox.Show("No files to export!\nPlease load a PAK archive.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+            Cursor.Current = Cursors.WaitCursor;
+
+            //Select the folder to dump to
+            FolderBrowserDialog FolderToExportTo = new FolderBrowserDialog();
+            if (FolderToExportTo.ShowDialog() != DialogResult.OK) return;
+
+            //Go through all filenames and request an export
+            int SuccessCount = 0;
+            for (int i = 0; i < AllFiles.Count; i++)
+            {
+                string ExportPath = FolderToExportTo.SelectedPath + "\\" + AllFiles[i];
+                Directory.CreateDirectory(ExportPath.Substring(0, ExportPath.Length - Path.GetFileName(ExportPath).Length));
+                PAKReturnType ErrorCode = AlienPAK.ExportFile(AllFiles[i], ExportPath);
+                if (ErrorCode == PAKReturnType.SUCCESS || ErrorCode == PAKReturnType.SUCCESS_WITH_WARNINGS) SuccessCount++;
+            }
+
+            //Complete!
+            Cursor.Current = Cursors.Default;
+            if (SuccessCount == AllFiles.Count)
+            {
+                MessageBox.Show("Successfully exported all files from this PAK!", "Export complete.", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            else
+            {
+                MessageBox.Show("Export process complete, but " + (AllFiles.Count - SuccessCount) + " files encountered errors.\nPerhaps try a directory with a shorter filepath, or check write access.", "Export complete, with warnings.", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }
         }
     }
 }
