@@ -297,7 +297,7 @@ namespace AlienPAK
         private void Form1_Load(object sender, EventArgs e)
         {
             //For testing purposes
-            //OpenFileAndPopulateGUI(@"E:\Program Files\Steam\steamapps\common\Alien Isolation\DATA\UI.PAK");
+            OpenFileAndPopulateGUI(@"E:\Program Files\Steam\steamapps\common\Alien Isolation\DATA\SHADERS\UBERSHADER\BESPOKESHADERS_DX11.PAK");
         }
 
         /* User requests to open a PAK */

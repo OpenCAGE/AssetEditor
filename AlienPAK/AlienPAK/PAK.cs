@@ -42,6 +42,13 @@ namespace AlienPAK
                     PAKHandler = new CommandPAK(FilePath);
                     Format = PAKType.PAK_SCRIPTS;
                     break;
+                case "BESPOKESHADERS_DX11.PAK":
+                case "DEFERREDSHADERS_DX11.PAK":
+                case "POSTPROCESSINGSHADERS_DX11.PAK":
+                case "REQUIREDSHADERS_DX11.PAK":
+                    PAKHandler = new ShaderPAK(FilePath);
+                    Format = PAKType.PAK_SHADERS;
+                    break;
                 default:
                     PAKHandler = new PAK2(FilePath);
                     Format = PAKType.PAK2;
