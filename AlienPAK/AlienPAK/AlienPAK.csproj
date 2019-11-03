@@ -54,7 +54,9 @@
     <Compile Include="Archive Handlers\MaterialMapPAK.cs" />
     <Compile Include="Archive Handlers\ModelPAK.cs" />
     <Compile Include="Archive Handlers\PAK2.cs" />
+    <Compile Include="Archive Handlers\ShaderPAK.cs" />
     <Compile Include="Archive Handlers\TexturePAK.cs" />
+    <Compile Include="File Headers\CathodeShader.cs" />
     <Compile Include="Utilities\BinaryUtilities.cs" />
     <Compile Include="File Headers\CathodeScript.cs" />
     <Compile Include="File Headers\MaterialMap.cs" />
