@@ -80,8 +80,8 @@ namespace AlienPAK
                 BinaryReader ArchiveFileBin = new BinaryReader(File.OpenRead(FilePathBIN));
 
                 //Validate our header magic (look at _IDX_REMAP as I think this should also be supported)
-                byte[] archiveMagic = ArchiveFileBin.ReadBytes(4);
-                if (!(archiveMagic.SequenceEqual(new byte[] { 0xD3, 0x42, 0x1A, 0x54 }) || archiveMagic.SequenceEqual(new byte[] { 0xD2, 0x42, 0x1A, 0x54 })))
+                ArchiveFileBin.BaseStream.Position = 4;
+                if (!(ArchiveFileBin.ReadInt32() == 14 && ArchiveFileBin.ReadInt32() == 3))
                     return PAKReturnType.FAIL_ARCHIVE_IS_NOT_EXCPETED_TYPE;
 
                 //Read entry count from header

@@ -39,16 +39,21 @@ This PAK Tool is available within the [Alien: Isolation Mod Tools](https://githu
     - Replace files
     - Export files
 
+- [Shaders PAK (MATERIAL_MAPPINGS.PAK)](https://github.com/MattFiler/AlienPAK/wiki/Shaders)
+	- Open archive
+    - Export files (without names)
+
 
 ## Coming soon
 
 Intended functionality for upcoming versions includes: 
-- Ability to batch export files from an archive.
+- Expanded shader support for importing and understanding of Cathode headers.
+- Functionality to batch export files from any archive type.
 - Ability to view all materials in a level for editing material mappings.
-- Ability to view material data (textures/colours/etc).
-- Ability to export models (potential import support too, will see).
+- A tool to let you view material data (textures/colours/etc).
+- Export options for models (potential import support too, will see).
 - Ability to export/import scripts (lots of work still to do).
-- Ability to preview images when selecting them.
+- Preview images in archives when selecting them.
 
 
 ## Recommended tools
