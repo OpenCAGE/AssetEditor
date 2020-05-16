@@ -176,6 +176,15 @@ namespace AlienPAK
             }
         }
 
+        /* Temp function to get a file as a byte array */
+        private byte[] GetFileAsBytes(string FileName)
+        {
+            AlienPAK.ExportFile(FileName, "temp"); //Should really be able to pull from PAK as bytes
+            byte[] ExportedFile = File.ReadAllBytes("temp");
+            File.Delete("temp");
+            return ExportedFile;
+        }
+
         /* Update file preview */
         private void UpdateSelectedFilePreview()
         {
@@ -214,13 +223,10 @@ namespace AlienPAK
                 {
                     try
                     {
-                        //Export the file, load it as memory, delete exported file (TODO: just directly load the memory from PAK)
-                        AlienPAK.ExportFile(FileName, "temp.dds");
-                        byte[] ExportedFile = File.ReadAllBytes("temp.dds");
-                        File.Delete("temp.dds");
+                        byte[] ImageFile = GetFileAsBytes(FileName);
 
                         //Using the DDS, try and convert it to Bitmap and display it
-                        using (ScratchImage img = TexHelper.Instance.LoadFromDDSMemory(Marshal.UnsafeAddrOfPinnedArrayElement(ExportedFile, 0), ExportedFile.Length, DDS_FLAGS.NONE))
+                        using (ScratchImage img = TexHelper.Instance.LoadFromDDSMemory(Marshal.UnsafeAddrOfPinnedArrayElement(ImageFile, 0), ImageFile.Length, DDS_FLAGS.NONE))
                         {
                             ScratchImage imgDecom = img.Decompress(DXGI_FORMAT.UNKNOWN);
                             UnmanagedMemoryStream imgJpg = imgDecom.SaveToWICMemory(0, WIC_FLAGS.NONE, TexHelper.Instance.GetWICCodec(WICCodecs.PNG));
@@ -281,15 +287,50 @@ namespace AlienPAK
                 return;
             }
 
+            //If export file is DDS, check first to see if we can export as JPG/PNG
+            string filter = "Exported File|*" + Path.GetExtension(FileTree.SelectedNode.Text);
+            byte[] ImageFile = new byte[] { };
+            if (Path.GetExtension(FileTree.SelectedNode.Text).ToUpper() == ".DDS")
+            {
+                ImageFile = GetFileAsBytes(((TreeItem)FileTree.SelectedNode.Tag).String_Value);
+                try
+                {
+                    TexHelper.Instance.LoadFromDDSMemory(Marshal.UnsafeAddrOfPinnedArrayElement(ImageFile, 0), ImageFile.Length, DDS_FLAGS.NONE);
+                    filter = "PNG Image|*.png|DDS Image|*.dds"; //Can export as WIC
+                } 
+                catch { }
+            }
+
+            //Remove extension from output filename
+            string filename = Path.GetFileName(FileTree.SelectedNode.Text);
+            filename = filename.Substring(0, filename.Length - Path.GetExtension(filename).Length);
+
             //Let the user decide where to save, then save
             SaveFileDialog FilePicker = new SaveFileDialog();
-            FilePicker.Filter = "Exported File|*" + Path.GetExtension(FileTree.SelectedNode.Text);
-            FilePicker.FileName = Path.GetFileName(FileTree.SelectedNode.Text);
+            FilePicker.Filter = filter;
+            FilePicker.FileName = filename;
             if (FilePicker.ShowDialog() == DialogResult.OK)
             {
                 Cursor.Current = Cursors.WaitCursor;
-                PAKReturnType ResponseCode = AlienPAK.ExportFile(((TreeItem)FileTree.SelectedNode.Tag).String_Value, FilePicker.FileName);
-                MessageBox.Show(AlienErrors.ErrorMessageBody(ResponseCode), AlienErrors.ErrorMessageTitle(ResponseCode), MessageBoxButtons.OK, MessageBoxIcon.Information);
+                if (ImageFile.Length > 0 && Path.GetExtension(FilePicker.FileName).ToUpper() == ".PNG")
+                {
+                    try
+                    {
+                        ScratchImage img = TexHelper.Instance.LoadFromDDSMemory(Marshal.UnsafeAddrOfPinnedArrayElement(ImageFile, 0), ImageFile.Length, DDS_FLAGS.NONE);
+                        ScratchImage imgDecom = img.Decompress(DXGI_FORMAT.UNKNOWN);
+                        imgDecom.SaveToWICFile(0, WIC_FLAGS.NONE, TexHelper.Instance.GetWICCodec(WICCodecs.PNG), FilePicker.FileName);
+                        MessageBox.Show(AlienErrors.ErrorMessageBody(PAKReturnType.SUCCESS), AlienErrors.ErrorMessageTitle(PAKReturnType.SUCCESS), MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    }
+                    catch
+                    {
+                        MessageBox.Show("Failed to export as PNG!\nPlease try again as DDS.", AlienErrors.ErrorMessageTitle(PAKReturnType.FAIL_UNKNOWN), MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    }
+                }
+                else
+                {
+                    PAKReturnType ResponseCode = AlienPAK.ExportFile(((TreeItem)FileTree.SelectedNode.Tag).String_Value, FilePicker.FileName);
+                    MessageBox.Show(AlienErrors.ErrorMessageBody(ResponseCode), AlienErrors.ErrorMessageTitle(ResponseCode), MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
                 Cursor.Current = Cursors.Default;
             }
         }
