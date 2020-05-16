@@ -294,9 +294,9 @@ namespace AlienPAK
                 {
                     try
                     {
-                        ScratchImage img = TexHelper.Instance.LoadFromWICFile(FilePicker.FileName, WIC_FLAGS.NONE);
-                        ScratchImage imgDecom = img.Compress(baseFormat, TEX_COMPRESS_FLAGS.DEFAULT, 0.5f);
-                        imgDecom.SaveToDDSFile(0, DDS_FLAGS.NONE, FilePicker.FileName + ".DDS");
+                        ScratchImage img = TexHelper.Instance.LoadFromWICFile(FilePicker.FileName, WIC_FLAGS.FORCE_RGB).GenerateMipMaps(TEX_FILTER_FLAGS.DEFAULT, 11);
+                        ScratchImage imgDecom = img.Compress(DXGI_FORMAT.BC7_UNORM, TEX_COMPRESS_FLAGS.BC7_QUICK, 0.5f); //TODO use baseFormat
+                        imgDecom.SaveToDDSFile(DDS_FLAGS.FORCE_DX10_EXT, FilePicker.FileName + ".DDS");
                         FilePicker.FileName += ".DDS";
                         ImportingConverted = true;
                     }
