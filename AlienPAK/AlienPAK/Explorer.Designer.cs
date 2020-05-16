@@ -36,12 +36,20 @@
             this.toolStripSeparator2 = new System.Windows.Forms.ToolStripSeparator();
             this.importFileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.exportFileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.toolStripSeparator1 = new System.Windows.Forms.ToolStripSeparator();
+            this.exportAllFilesToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.viewToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.expandAllDirectoriesToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.shrinkAllDirectoriesToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toolsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.optionsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.toolStripSeparator3 = new System.Windows.Forms.ToolStripSeparator();
+            this.createPAK2FromDirectoryToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
+            this.importFile = new System.Windows.Forms.Button();
+            this.exportFile = new System.Windows.Forms.Button();
+            this.removeFile = new System.Windows.Forms.Button();
+            this.addFile = new System.Windows.Forms.Button();
             this.FileTree = new System.Windows.Forms.TreeView();
             this.fileContextMenu = new System.Windows.Forms.ContextMenuStrip(this.components);
             this.importFileContext = new System.Windows.Forms.ToolStripMenuItem();
@@ -57,15 +65,7 @@
             this.label2 = new System.Windows.Forms.Label();
             this.label1 = new System.Windows.Forms.Label();
             this.groupBox3 = new System.Windows.Forms.GroupBox();
-            this.importFile = new System.Windows.Forms.Button();
-            this.exportFile = new System.Windows.Forms.Button();
             this.groupBox4 = new System.Windows.Forms.GroupBox();
-            this.removeFile = new System.Windows.Forms.Button();
-            this.addFile = new System.Windows.Forms.Button();
-            this.toolStripSeparator1 = new System.Windows.Forms.ToolStripSeparator();
-            this.exportAllFilesToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.toolStripSeparator3 = new System.Windows.Forms.ToolStripSeparator();
-            this.createPAK2FromDirectoryToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.menuStrip1.SuspendLayout();
             this.fileContextMenu.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.filePreviewImage)).BeginInit();
@@ -126,6 +126,18 @@
             this.exportFileToolStripMenuItem.Text = "Export Selected File";
             this.exportFileToolStripMenuItem.Click += new System.EventHandler(this.exportFileToolStripMenuItem_Click);
             // 
+            // toolStripSeparator1
+            // 
+            this.toolStripSeparator1.Name = "toolStripSeparator1";
+            this.toolStripSeparator1.Size = new System.Drawing.Size(175, 6);
+            // 
+            // exportAllFilesToolStripMenuItem
+            // 
+            this.exportAllFilesToolStripMenuItem.Name = "exportAllFilesToolStripMenuItem";
+            this.exportAllFilesToolStripMenuItem.Size = new System.Drawing.Size(178, 22);
+            this.exportAllFilesToolStripMenuItem.Text = "Export All Files";
+            this.exportAllFilesToolStripMenuItem.Click += new System.EventHandler(this.exportAllFilesToolStripMenuItem_Click);
+            // 
             // viewToolStripMenuItem
             // 
             this.viewToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
@@ -162,9 +174,68 @@
             // optionsToolStripMenuItem
             // 
             this.optionsToolStripMenuItem.Name = "optionsToolStripMenuItem";
-            this.optionsToolStripMenuItem.Size = new System.Drawing.Size(116, 22);
+            this.optionsToolStripMenuItem.Size = new System.Drawing.Size(220, 22);
             this.optionsToolStripMenuItem.Text = "Options";
             this.optionsToolStripMenuItem.Click += new System.EventHandler(this.optionsToolStripMenuItem_Click);
+            // 
+            // toolStripSeparator3
+            // 
+            this.toolStripSeparator3.Name = "toolStripSeparator3";
+            this.toolStripSeparator3.Size = new System.Drawing.Size(217, 6);
+            // 
+            // createPAK2FromDirectoryToolStripMenuItem
+            // 
+            this.createPAK2FromDirectoryToolStripMenuItem.Name = "createPAK2FromDirectoryToolStripMenuItem";
+            this.createPAK2FromDirectoryToolStripMenuItem.Size = new System.Drawing.Size(220, 22);
+            this.createPAK2FromDirectoryToolStripMenuItem.Text = "Create PAK2 From Directory";
+            this.createPAK2FromDirectoryToolStripMenuItem.Click += new System.EventHandler(this.createPAK2FromDirectoryToolStripMenuItem_Click);
+            // 
+            // importFile
+            // 
+            this.importFile.Enabled = false;
+            this.importFile.Location = new System.Drawing.Point(139, 21);
+            this.importFile.Name = "importFile";
+            this.importFile.Size = new System.Drawing.Size(132, 24);
+            this.importFile.TabIndex = 1;
+            this.importFile.Text = "Replace Selected";
+            this.toolTip1.SetToolTip(this.importFile, "With a file selected, press this button to replace it with a new file.");
+            this.importFile.UseVisualStyleBackColor = true;
+            this.importFile.Click += new System.EventHandler(this.importFile_Click);
+            // 
+            // exportFile
+            // 
+            this.exportFile.Enabled = false;
+            this.exportFile.Location = new System.Drawing.Point(6, 21);
+            this.exportFile.Name = "exportFile";
+            this.exportFile.Size = new System.Drawing.Size(132, 24);
+            this.exportFile.TabIndex = 0;
+            this.exportFile.Text = "Export Selected";
+            this.toolTip1.SetToolTip(this.exportFile, "With a file selected, press this to export it from the archive.");
+            this.exportFile.UseVisualStyleBackColor = true;
+            this.exportFile.Click += new System.EventHandler(this.exportFile_Click);
+            // 
+            // removeFile
+            // 
+            this.removeFile.Enabled = false;
+            this.removeFile.Location = new System.Drawing.Point(6, 47);
+            this.removeFile.Name = "removeFile";
+            this.removeFile.Size = new System.Drawing.Size(265, 24);
+            this.removeFile.TabIndex = 1;
+            this.removeFile.Text = "Delete Selected";
+            this.toolTip1.SetToolTip(this.removeFile, "With a file selected, press this button to delete it from the archive.");
+            this.removeFile.UseVisualStyleBackColor = true;
+            this.removeFile.Click += new System.EventHandler(this.RemoveFileFromArchive_Click);
+            // 
+            // addFile
+            // 
+            this.addFile.Location = new System.Drawing.Point(6, 21);
+            this.addFile.Name = "addFile";
+            this.addFile.Size = new System.Drawing.Size(265, 24);
+            this.addFile.TabIndex = 0;
+            this.addFile.Text = "Import New File";
+            this.toolTip1.SetToolTip(this.addFile, "Add a new file to the current PAK archive.");
+            this.addFile.UseVisualStyleBackColor = true;
+            this.addFile.Click += new System.EventHandler(this.AddFileToArchive_Click);
             // 
             // FileTree
             // 
@@ -207,6 +278,7 @@
             // 
             // filePreviewImage
             // 
+            this.filePreviewImage.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Zoom;
             this.filePreviewImage.Location = new System.Drawing.Point(6, 19);
             this.filePreviewImage.Name = "filePreviewImage";
             this.filePreviewImage.Size = new System.Drawing.Size(265, 242);
@@ -305,30 +377,6 @@
             this.groupBox3.TabStop = false;
             this.groupBox3.Text = "File Utilities";
             // 
-            // importFile
-            // 
-            this.importFile.Enabled = false;
-            this.importFile.Location = new System.Drawing.Point(139, 21);
-            this.importFile.Name = "importFile";
-            this.importFile.Size = new System.Drawing.Size(132, 24);
-            this.importFile.TabIndex = 1;
-            this.importFile.Text = "Replace Selected";
-            this.toolTip1.SetToolTip(this.importFile, "With a file selected, press this button to replace it with a new file.");
-            this.importFile.UseVisualStyleBackColor = true;
-            this.importFile.Click += new System.EventHandler(this.importFile_Click);
-            // 
-            // exportFile
-            // 
-            this.exportFile.Enabled = false;
-            this.exportFile.Location = new System.Drawing.Point(6, 21);
-            this.exportFile.Name = "exportFile";
-            this.exportFile.Size = new System.Drawing.Size(132, 24);
-            this.exportFile.TabIndex = 0;
-            this.exportFile.Text = "Export Selected";
-            this.toolTip1.SetToolTip(this.exportFile, "With a file selected, press this to export it from the archive.");
-            this.exportFile.UseVisualStyleBackColor = true;
-            this.exportFile.Click += new System.EventHandler(this.exportFile_Click);
-            // 
             // groupBox4
             // 
             this.groupBox4.Controls.Add(this.addFile);
@@ -339,53 +387,6 @@
             this.groupBox4.TabStop = false;
             this.groupBox4.Text = "Archive Utilities";
             this.groupBox4.Visible = false;
-            // 
-            // removeFile
-            // 
-            this.removeFile.Enabled = false;
-            this.removeFile.Location = new System.Drawing.Point(6, 47);
-            this.removeFile.Name = "removeFile";
-            this.removeFile.Size = new System.Drawing.Size(265, 24);
-            this.removeFile.TabIndex = 1;
-            this.removeFile.Text = "Delete Selected";
-            this.toolTip1.SetToolTip(this.removeFile, "With a file selected, press this button to delete it from the archive.");
-            this.removeFile.UseVisualStyleBackColor = true;
-            this.removeFile.Click += new System.EventHandler(this.RemoveFileFromArchive_Click);
-            // 
-            // addFile
-            // 
-            this.addFile.Location = new System.Drawing.Point(6, 21);
-            this.addFile.Name = "addFile";
-            this.addFile.Size = new System.Drawing.Size(265, 24);
-            this.addFile.TabIndex = 0;
-            this.addFile.Text = "Import New File";
-            this.toolTip1.SetToolTip(this.addFile, "Add a new file to the current PAK archive.");
-            this.addFile.UseVisualStyleBackColor = true;
-            this.addFile.Click += new System.EventHandler(this.AddFileToArchive_Click);
-            // 
-            // toolStripSeparator1
-            // 
-            this.toolStripSeparator1.Name = "toolStripSeparator1";
-            this.toolStripSeparator1.Size = new System.Drawing.Size(177, 6);
-            // 
-            // exportAllFilesToolStripMenuItem
-            // 
-            this.exportAllFilesToolStripMenuItem.Name = "exportAllFilesToolStripMenuItem";
-            this.exportAllFilesToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
-            this.exportAllFilesToolStripMenuItem.Text = "Export All Files";
-            this.exportAllFilesToolStripMenuItem.Click += new System.EventHandler(this.exportAllFilesToolStripMenuItem_Click);
-            // 
-            // toolStripSeparator3
-            // 
-            this.toolStripSeparator3.Name = "toolStripSeparator3";
-            this.toolStripSeparator3.Size = new System.Drawing.Size(217, 6);
-            // 
-            // createPAK2FromDirectoryToolStripMenuItem
-            // 
-            this.createPAK2FromDirectoryToolStripMenuItem.Name = "createPAK2FromDirectoryToolStripMenuItem";
-            this.createPAK2FromDirectoryToolStripMenuItem.Size = new System.Drawing.Size(220, 22);
-            this.createPAK2FromDirectoryToolStripMenuItem.Text = "Create PAK2 From Directory";
-            this.createPAK2FromDirectoryToolStripMenuItem.Click += new System.EventHandler(this.createPAK2FromDirectoryToolStripMenuItem_Click);
             // 
             // Explorer
             // 

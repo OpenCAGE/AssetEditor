@@ -5,9 +5,11 @@ using System.Data;
 using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using DirectXTexNet;
 
 namespace AlienPAK
 {
@@ -20,6 +22,9 @@ namespace AlienPAK
         public Explorer(string[] args)
         {
             InitializeComponent();
+
+            //Need DLL in directory for image previews to work
+            if (!File.Exists("DirectXTexNet.dll")) File.WriteAllBytes("DirectXTexNet.dll", Properties.Resources.DirectXTexNet);
 
             //Support "open with" from Windows on PAK files
             if (args.Length > 0 && File.Exists(args[0]))
@@ -175,7 +180,8 @@ namespace AlienPAK
         private void UpdateSelectedFilePreview()
         {
             //First, reset the GUI
-            filePreviewImage.Image = null;
+            groupBox1.Visible = false;
+            filePreviewImage.BackgroundImage = null;
             fileNameInfo.Text = "";
             fileSizeInfo.Text = "";
             fileTypeInfo.Text = "";
@@ -203,11 +209,45 @@ namespace AlienPAK
                 if (FileSize == -1) { return; }
                 fileSizeInfo.Text = FileSize.ToString() + " bytes";
 
+                //Show file preview if selected an image
+                if (Path.GetExtension(FileName).ToUpper() == ".DDS") 
+                {
+                    try
+                    {
+                        //Export the file, load it as memory, delete exported file (TODO: just directly load the memory from PAK)
+                        AlienPAK.ExportFile(FileName, "temp.dds");
+                        byte[] ExportedFile = File.ReadAllBytes("temp.dds");
+                        File.Delete("temp.dds");
+
+                        //Using the DDS, try and convert it to Bitmap and display it
+                        using (ScratchImage img = TexHelper.Instance.LoadFromDDSMemory(Marshal.UnsafeAddrOfPinnedArrayElement(ExportedFile, 0), ExportedFile.Length, DDS_FLAGS.NONE))
+                        {
+                            ScratchImage imgDecom = img.Decompress(DXGI_FORMAT.UNKNOWN);
+                            UnmanagedMemoryStream imgJpg = imgDecom.SaveToWICMemory(0, WIC_FLAGS.NONE, TexHelper.Instance.GetWICCodec(WICCodecs.PNG));
+                            ResizeImagePreview((Bitmap)System.Drawing.Image.FromStream(imgJpg));
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        //MessageBox.Show(e.ToString());
+                        if (File.Exists("temp.dds")) File.Delete("temp.dds");
+                    }
+                }
+                groupBox1.Visible = (filePreviewImage.BackgroundImage != null);
+
                 //Enable buttons
                 exportFile.Enabled = true;
                 importFile.Enabled = true;
                 removeFile.Enabled = true;
             }
+        }
+
+        /* Set the image in the preview window and scale appropriately */
+        private void ResizeImagePreview(Bitmap image) 
+        {
+            filePreviewImage.BackgroundImage = image;
+            if (image.Width >= filePreviewImage.Width || image.Height >= filePreviewImage.Height) filePreviewImage.BackgroundImageLayout = ImageLayout.Zoom;
+            else filePreviewImage.BackgroundImageLayout = ImageLayout.None;
         }
 
         /* Import a file to replace the selected PAK entry */
