@@ -10,7 +10,7 @@ On launch, the toolkit will automatically alert you if a new version is availabl
 
 ***
 
-This PAK Tool is available within the [Alien: Isolation Mod Tools](https://github.com/MattFiler/LegendPlugin) as of V0.6.3.0! Future updates will be ported, as development continues on this repo for the extended standalone version.
+A modified version of AlienPAK is available within [OpenCAGE](https://github.com/MattFiler/OpenCAGE)!
 
 
 ## Currently supported
@@ -52,7 +52,6 @@ While development may be slow, intended functionality for upcoming versions incl
 - A tool to let you view material data (textures/colours/etc).
 - Export options for models (potential import support too, will see).
 - Ability to export/import scripts (lots of work still to do).
-- Preview images in archives when selecting them.
 
 
 ## Recommended tools
