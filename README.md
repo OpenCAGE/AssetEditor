@@ -1,6 +1,6 @@
 # Alien: Isolation PAK Tool
 
-<img src="https://i.imgur.com/CNAPK4r.png" align="right" width="40%">
+<img src="https://i.imgur.com/HoVJuSo.png" align="right" width="40%">
 
 A tool to browse and modify Alien: Isolation's various PAK archives.
 

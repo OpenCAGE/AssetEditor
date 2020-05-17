@@ -23,9 +23,6 @@ namespace AlienPAK
         {
             InitializeComponent();
 
-            //Need DLL in directory for image previews to work
-            if (!File.Exists("DirectXTexNet.dll")) File.WriteAllBytes("DirectXTexNet.dll", Properties.Resources.DirectXTexNet);
-
             //Support "open with" from Windows on PAK files
             if (args.Length > 0 && File.Exists(args[0]))
             {
