@@ -291,14 +291,15 @@ namespace AlienPAK
                 {
                     try
                     {
-                        ScratchImage img = TexHelper.Instance.LoadFromWICFile(FilePicker.FileName, WIC_FLAGS.FORCE_RGB).GenerateMipMaps(TEX_FILTER_FLAGS.DEFAULT, 11);
+                        ScratchImage img = TexHelper.Instance.LoadFromWICFile(FilePicker.FileName, WIC_FLAGS.FORCE_RGB).GenerateMipMaps(TEX_FILTER_FLAGS.DEFAULT, 10); /* Was using 11, but gives remainders - going for 10 */
                         ScratchImage imgDecom = img.Compress(DXGI_FORMAT.BC7_UNORM, TEX_COMPRESS_FLAGS.BC7_QUICK, 0.5f); //TODO use baseFormat
                         imgDecom.SaveToDDSFile(DDS_FLAGS.FORCE_DX10_EXT, FilePicker.FileName + ".DDS");
                         FilePicker.FileName += ".DDS";
                         ImportingConverted = true;
                     }
-                    catch
+                    catch (Exception e)
                     {
+                        //MessageBox.Show(e.ToString());
                         ImportOK = false;
                         MessageBox.Show("Failed to import as PNG!\nPlease try again as DDS.", AlienErrors.ErrorMessageTitle(PAKReturnType.FAIL_UNKNOWN), MessageBoxButtons.OK, MessageBoxIcon.Information);
                     }
@@ -337,12 +338,15 @@ namespace AlienPAK
                     TexHelper.Instance.LoadFromDDSMemory(Marshal.UnsafeAddrOfPinnedArrayElement(ImageFile, 0), ImageFile.Length, DDS_FLAGS.NONE);
                     filter = "PNG Image|*.png|DDS Image|*.dds"; //Can export as WIC
                 } 
-                catch { }
+                catch
+                {
+                    ImageFile = new byte[] { };
+                }
             }
 
             //Remove extension from output filename
             string filename = Path.GetFileName(FileTree.SelectedNode.Text);
-            filename = filename.Substring(0, filename.Length - Path.GetExtension(filename).Length);
+            while (Path.GetExtension(filename).Length != 0) filename = filename.Substring(0, filename.Length - Path.GetExtension(filename).Length);
 
             //Let the user decide where to save, then save
             SaveFileDialog FilePicker = new SaveFileDialog();
@@ -352,7 +356,7 @@ namespace AlienPAK
             {
                 Cursor.Current = Cursors.WaitCursor;
                 //Special export for DDS conversion
-                if (ImageFile.Length > 0 && Path.GetExtension(FilePicker.FileName).ToUpper() == ".PNG")
+                if (ImageFile.Length > 0 && FilePicker.FilterIndex == 1) //Index 1 == PNG, if ImageFile hasn't been cleared (we can export as WIC)
                 {
                     try
                     {
