@@ -138,7 +138,6 @@
   <ItemGroup>
     <Content Include="icon.ico" />
     <EmbeddedResource Include="Resources\DirectXTexNetImpl_64.dll" />
-    <EmbeddedResource Include="Resources\DirectXTexNetImpl_86.dll" />
     <EmbeddedResource Include="Resources\DirectXTexNet.dll" />
   </ItemGroup>
   <ItemGroup />

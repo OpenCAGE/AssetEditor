@@ -17,8 +17,6 @@ namespace AlienPAK
         {
             //Need DLLs in directory for image previews to work :(
             if (!File.Exists("DirectXTexNet.dll")) File.WriteAllBytes("DirectXTexNet.dll", Properties.Resources.DirectXTexNet);
-            Directory.CreateDirectory("x86");
-            if (!File.Exists("x86/DirectXTexNetImpl.dll")) File.WriteAllBytes("x86/DirectXTexNetImpl.dll", Properties.Resources.DirectXTexNetImpl_86);
             Directory.CreateDirectory("x64");
             if (!File.Exists("x64/DirectXTexNetImpl.dll")) File.WriteAllBytes("x64/DirectXTexNetImpl.dll", Properties.Resources.DirectXTexNetImpl_64);
 

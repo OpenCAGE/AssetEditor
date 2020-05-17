@@ -79,15 +79,5 @@ namespace AlienPAK.Properties {
                 return ((byte[])(obj));
             }
         }
-        
-        /// <summary>
-        ///   Looks up a localized resource of type System.Byte[].
-        /// </summary>
-        internal static byte[] DirectXTexNetImpl_86 {
-            get {
-                object obj = ResourceManager.GetObject("DirectXTexNetImpl_86", resourceCulture);
-                return ((byte[])(obj));
-            }
-        }
     }
 }
