@@ -85,8 +85,8 @@ namespace AlienPAK
                     {
                         ThisByte = ArchiveFileBin.ReadByte();
                     }
+                    ArchiveFileBin.BaseStream.Position += 23; //This header is 24 bytes
                 }
-                ArchiveFileBin.BaseStream.Position += 23;
 
                 //Read file list info
                 FilenameListEnd = ArchiveFileBin.ReadInt32();
@@ -200,8 +200,6 @@ namespace AlienPAK
         /* Export an existing file from the ModelPAK archive */
         public override PAKReturnType ExportFile(string PathToExport, string FileName)
         {
-            return PAKReturnType.FAIL_FEATURE_IS_COMING_SOON; //Disabling export for main branch
-
             try
             {
                 //Get the selected model's submeshes
@@ -214,6 +212,7 @@ namespace AlienPAK
                     }
                 }
 
+                /*
                 //Extract each submesh into a CS2 folder by material and submesh name
                 Directory.CreateDirectory(PathToExport);
                 BinaryReader ArchiveFile = new BinaryReader(File.OpenRead(FilePathPAK));
@@ -230,6 +229,71 @@ namespace AlienPAK
                     File.WriteAllBytes(ThisExportPath + "/" + Submesh.MaterialName, ArchiveFile.ReadBytes(Submesh.PakSize));
                 }
                 ArchiveFile.Close();
+                */
+
+                BinaryReader ArchiveFile = new BinaryReader(File.OpenRead(FilePathPAK));
+                List<Submesh> submeshData = new List<Submesh>();
+                List<string> objDump = new List<string>();
+                foreach (CS2 submesh in ModelSubmeshes)
+                {
+                    ArchiveFile.BaseStream.Position = HeaderListEnd + submesh.PakOffset;
+
+                    Submesh thisSubmesh = new Submesh();
+                    thisSubmesh.name = submesh.ModelPartName;
+                    objDump.Add("o " + thisSubmesh.name);
+                    objDump.Add("usemtl " + submesh.MaterialName);
+
+                    //int entry_length = (submesh.PakSize - 48 - (submesh.FaceCount * 2) - 4) / submesh.VertCount;
+
+                    MemoryStream submeshEntry = new MemoryStream(ArchiveFile.ReadBytes(submesh.PakSize));
+                    File.WriteAllBytes("test.bin", submeshEntry.ToArray()); //for testing
+                    BinaryReader submeshReader = new BinaryReader(submeshEntry);
+                    submeshReader.BaseStream.Position += 48;
+
+                    List<Vertex> vertices = new List<Vertex>();
+                    for (int i = 0; i < submesh.VertCount; i++)
+                    {
+                        Vertex thisVertex = new Vertex();
+                        thisVertex.position.x = (submeshReader.ReadInt16() / -2048.0f);
+                        thisVertex.position.y = (submeshReader.ReadInt16() / 2048.0f);
+                        thisVertex.position.z = (submeshReader.ReadInt16() / 2048.0f);
+                        //TODO: pull other data like UVs
+                        objDump.Add("v " + thisVertex.position.x + " " + thisVertex.position.y + " " + thisVertex.position.z);
+
+                        int unk1 = submeshReader.ReadInt16();
+
+                        vertices.Add(thisVertex);
+                    }
+                    for (int i = 0; i < submesh.VertCount; i++)
+                    {
+                        //TODO: pull normals
+                    }
+                    for (int i = 0; i < submesh.VertCount; i++)
+                    {
+                        //TODO: there is sometimes another block here
+                    }
+                    for (int i = 0; i < (submesh.FaceCount/3); i++)
+                    {
+                        Face thisFace = new Face();
+
+                        int index_z = submeshReader.ReadInt16();
+                        int index_y = submeshReader.ReadInt16();
+                        int index_x = submeshReader.ReadInt16();
+
+                        objDump.Add("f " + (index_x+1) + "// " + (index_y+1) + "// " + (index_z+1) + "//");
+
+                        thisFace.vertices.Add(vertices[index_x]);
+                        thisFace.vertices.Add(vertices[index_y]);
+                        thisFace.vertices.Add(vertices[index_z]);
+
+                        thisSubmesh.faces.Add(thisFace);
+                    }
+
+                    submeshEntry.Close();
+                    submeshData.Add(thisSubmesh);
+                }
+                ArchiveFile.Close();
+                File.WriteAllLines(PathToExport, objDump);
 
                 //Done!
                 return PAKReturnType.SUCCESS;
