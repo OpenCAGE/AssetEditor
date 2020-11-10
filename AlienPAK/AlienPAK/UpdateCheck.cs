@@ -27,7 +27,7 @@ namespace AlienPAK
                 //Get current Github version
                 WebClient webClient = new WebClient();
                 Random random = new Random();
-                Stream webStream = webClient.OpenRead("https://raw.githubusercontent.com/MattFiler/AlienPAK/master/AlienPAK/AlienPAK/Properties/AssemblyInfo.cs?v=" + ProductVersion + "&r = " + random.Next(5000).ToString());
+                Stream webStream = webClient.OpenRead("https://raw.githubusercontent.com/OpenCAGE/AlienPAK/master/AlienPAK/AlienPAK/Properties/AssemblyInfo.cs?v=" + ProductVersion + "&r = " + random.Next(5000).ToString());
                 StreamReader webRead = new StreamReader(webStream);
 
                 //Check we're updated
@@ -38,7 +38,7 @@ namespace AlienPAK
                     DialogResult TakeToUpdate = MessageBox.Show("An update is available!\nWould you like to download?", "Alien: Isolation PAK Tool Updater", MessageBoxButtons.YesNo, MessageBoxIcon.Information);
                     if (TakeToUpdate == DialogResult.Yes)
                     {
-                        Process.Start("https://github.com/MattFiler/AlienPAK/raw/master/AlienPAK.exe");
+                        Process.Start("https://github.com/OpenCAGE/AlienPAK/raw/master/AlienPAK.exe");
                         Application.Exit();
                     }
                 }
