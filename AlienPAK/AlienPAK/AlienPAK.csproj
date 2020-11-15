@@ -41,6 +41,9 @@
     <ApplicationIcon>icon.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="CathodeLib, Version=0.1.1.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\CathodeLib.0.1.1\lib\netstandard2.0\CathodeLib.dll</HintPath>
+    </Reference>
     <Reference Include="Costura, Version=4.1.0.0, Culture=neutral, PublicKeyToken=9919ef960d84173d, processorArchitecture=MSIL">
       <HintPath>..\packages\Costura.Fody.4.1.0\lib\net40\Costura.dll</HintPath>
     </Reference>
@@ -60,30 +63,12 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Archive Handlers\AnyPAK.cs" />
-    <Compile Include="Archive Handlers\CommandPAK.cs" />
-    <Compile Include="Archive Handlers\MaterialMapPAK.cs" />
-    <Compile Include="Archive Handlers\ModelPAK.cs" />
-    <Compile Include="Archive Handlers\PAK2.cs" />
-    <Compile Include="Archive Handlers\ShaderPAK.cs" />
-    <Compile Include="Archive Handlers\TexturePAK.cs" />
-    <Compile Include="File Headers\CathodeShader.cs" />
-    <Compile Include="Utilities\BinaryUtilities.cs" />
-    <Compile Include="File Headers\CathodeScript.cs" />
-    <Compile Include="File Headers\MaterialMap.cs" />
-    <Compile Include="File Headers\PAK2.cs" />
-    <Compile Include="File Headers\DDS.cs" />
-    <Compile Include="Utilities\DDSReader.cs" />
-    <Compile Include="Utilities\DDSWriter.cs" />
-    <Compile Include="File Headers\CS2.cs" />
-    <Compile Include="File Headers\TEX4.cs" />
     <Compile Include="Explorer.cs">
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="Explorer.Designer.cs">
       <DependentUpon>Explorer.cs</DependentUpon>
     </Compile>
-    <Compile Include="PAK.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ToolOptions.cs">
@@ -100,8 +85,6 @@
     <Compile Include="UpdateCheck.Designer.cs">
       <DependentUpon>UpdateCheck.cs</DependentUpon>
     </Compile>
-    <Compile Include="Utilities\ErrorMessages.cs" />
-    <Compile Include="Utilities\Types.cs" />
     <EmbeddedResource Include="Explorer.resx">
       <DependentUpon>Explorer.cs</DependentUpon>
     </EmbeddedResource>
