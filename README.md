@@ -4,9 +4,7 @@
 
 A tool to browse and modify Alien: Isolation's various asset PAK archives.
 
-The latest stable version can be downloaded [by clicking here](https://github.com/OpenCAGE/AlienPAK/raw/master/AlienPAK.exe).
-
-On launch, the toolkit will automatically alert you if a new version is available.
+The latest stable version can be downloaded [by clicking here](https://github.com/OpenCAGE/AlienPAK/raw/master/Build/AlienPAK.exe).
 
 Check out [CathodeEditorGUI](https://github.com/OpenCAGE/CathodeEditorGUI) to open the COMMANDS.PAK files.
 
