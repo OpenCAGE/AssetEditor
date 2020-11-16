@@ -1,7 +1,5 @@
 # Alien: Isolation Asset PAK Tool
 
-<img src="https://i.imgur.com/HoVJuSo.png" align="right" width="40%">
-
 A tool to browse and modify Alien: Isolation's various asset PAK archives.
 
 The latest stable version can be downloaded [by clicking here](https://github.com/OpenCAGE/AlienPAK/raw/master/Build/AlienPAK.exe).
@@ -10,6 +8,8 @@ Check out [CathodeEditorGUI](https://github.com/OpenCAGE/CathodeEditorGUI) to op
 
 
 ## Currently supported
+
+<img src="https://i.imgur.com/HoVJuSo.png" align="right" width="40%">
 
 - [PAK2 (UI.PAK, ANIMATIONS.PAK)](https://github.com/OpenCAGE/AlienPAK/wiki/PAK2)
   - Open archive
@@ -24,15 +24,17 @@ Check out [CathodeEditorGUI](https://github.com/OpenCAGE/CathodeEditorGUI) to op
   - Import files [experimental!]
   - Export files
 
-- [Models PAK (LEVEL_MODELS.PAK, GLOBAL_MODELS.PAK)](https://github.com/MattFiler/OpenCAGE/wiki/PAK-BIN-Format)
+- [Models PAK (LEVEL_MODELS.PAK, GLOBAL_MODELS.PAK)](https://github.com/MattFiler/OpenCAGE/AlienPAK/wiki/PAK-BIN-Format)
 	- Open archive
+	- Import files [coming soon]
+	- Export files [coming soon]
 
-- [Material Mappings PAK (MATERIAL_MAPPINGS.PAK)](https://github.com/MattFiler/OpenCAGE/wiki/Material-Mappings)
+- [Material Mappings PAK (MATERIAL_MAPPINGS.PAK)](https://github.com/MattFiler/OpenCAGE/AlienPAK/wiki/Material-Mappings)
 	- Open archive
-    - Replace files
-    - Export files
+    - Replace configs
+    - Export configs
 
-- [Shaders PAK (*_SHADERS_DX11.PAK)](https://github.com/MattFiler/OpenCAGE/wiki/Shaders)
+- [Shaders PAK (*_SHADERS_DX11.PAK)](https://github.com/MattFiler/OpenCAGE/AlienPAK/wiki/Shaders)
 	- Open archive
     - Export files (without names)
 
