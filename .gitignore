@@ -329,8 +329,8 @@ ASALocalRun/
 # MFractors (Xamarin productivity tool) working folder 
 .mfractor/
 
-!AlienPAK.exe
-AlienPAK.exe.config
-AlienPAK.conf
-DirectXTexNet.dll
-DirectXTexNet.xml
+!Build/AlienPAK.exe
+Build/AlienPAK.exe.config
+Build/AlienPAK.conf
+Build/DirectXTexNet.dll
+Build/DirectXTexNet.xml
