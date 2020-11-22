@@ -86,7 +86,6 @@
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
     <Compile Include="SharedAssets\Fonts\FontManager.cs" />
-    <Compile Include="SharedAssets\SettingsManager.cs" />
     <Compile Include="ToolOptionsHandler.cs" />
     <Compile Include="TreeUtility.cs" />
     <EmbeddedResource Include="Explorer.resx">
