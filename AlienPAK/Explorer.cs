@@ -1,23 +1,40 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Drawing;
 using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
-using DirectXTexNet;
-using CathodeLib;
 using CATHODE;
+using CathodeLib;
+using DirectXTexNet;
 
 namespace AlienPAK
 {
+    /*
+     * 
+     * This is a modified version of AlienPAK, which can be found on its own repo as a standalone tool:
+     * https://github.com/MattFiler/AlienPAK
+     * 
+     * While all AlienPAK classes are largely a direct port, some minor tweaks have been made, marked with an OPENCAGE comment.
+     * This form is heavily modified from the base AlienPAK implementation.
+     * Major changes:
+     *  - Cannot load a PAK from the form
+     *  - Loading as texture edit mode will load all PAKs
+     *  - texconv is used instead of DirectXTexNet
+     * 
+    */
+
     public partial class Explorer : Form
     {
-        PAK AlienPAK = new PAK();
+        List<PAK> AlienPAKs = new List<PAK>();
         ErrorMessages AlienErrors = new ErrorMessages();
-        ToolOptionsHandler ToolSettings = new ToolOptionsHandler();
+        TreeUtility treeHelper;
 
-        public Explorer(string[] args)
+        public Explorer(string[] args, AlienContentType LaunchAs)
         {
+            LaunchMode = LaunchAs;
             InitializeComponent();
 
             //Support "open with" from Windows on PAK files
@@ -28,6 +45,9 @@ namespace AlienPAK
 
             //Link image list to GUI elements for icons
             FileTree.ImageList = imageList1;
+
+            treeHelper = new TreeUtility(FileTree);
+            AlienModToolsAdditions();
         }
 
         /* Open a PAK and populate the GUI */
@@ -35,95 +55,35 @@ namespace AlienPAK
         {
             //Open PAK
             Cursor.Current = Cursors.WaitCursor;
-            AlienPAK.Open(filename);
+            AlienPAKs.Clear();
+            AlienPAKs.Add(new PAK());
+            AlienPAKs[0].Open(filename);
 
             //Parse the PAK's file list
-            List<string> ParsedFiles = AlienPAK.Parse();
-            if (ParsedFiles == null || ParsedFiles.Count == 0)
+            List<string> ParsedFiles = new List<string>();
+            ParsedFiles = AlienPAKs[0].Parse();
+            if (ParsedFiles == null)
             {
                 Cursor.Current = Cursors.Default;
-                MessageBox.Show("The selected PAK is currently unsupported, or empty.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("The selected PAK is currently unsupported.", "Unsupported", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
 
             //Populate the GUI with the files found within the archive
-            UpdateFileTree(ParsedFiles);
+            treeHelper.UpdateFileTree(ParsedFiles);
+            UpdateSelectedFilePreview();
 
             //Update title
-            this.Text = "Alien: Isolation PAK Tool - " + Path.GetFileName(filename);
+            //this.Text = "Alien: Isolation PAK Tool - " + Path.GetFileName(filename);
             Cursor.Current = Cursors.Default;
 
             //Show/hide extended archive support if appropriate
-            if (AlienPAK.Format == PAKType.PAK2)
+            if (AlienPAKs[0].Format == PAKType.PAK2)
             {
-                groupBox4.Show();
+                groupBox3.Show();
                 return;
             }
-            groupBox4.Hide();
-        }
-
-        /* Update the file tree GUI */
-        private void UpdateFileTree(List<string> FilesToList)
-        {
-            FileTree.Nodes.Clear();
-            foreach (string FileName in FilesToList)
-            {
-                string[] FileNameParts = FileName.Split('/');
-                if (FileNameParts.Length == 1) { FileNameParts = FileName.Split('\\'); }
-                AddFileToTree(FileNameParts, 0, FileTree.Nodes);
-            }
-            UpdateSelectedFilePreview();
-            FileTree.Sort();
-        }
-
-        /* Add a file to the GUI tree structure */
-        private void AddFileToTree(string[] FileNameParts, int index, TreeNodeCollection LoopedNodeCollection)
-        {
-            if (FileNameParts.Length <= index)
-            {
-                return;
-            }
-            
-            bool should = true;
-            foreach (TreeNode ThisFileNode in LoopedNodeCollection)
-            {
-                if (ThisFileNode.Text == FileNameParts[index])
-                {
-                    should = false;
-                    AddFileToTree(FileNameParts, index + 1, ThisFileNode.Nodes);
-                    break;
-                }
-            }
-            if (should)
-            {
-                TreeNode FileNode = new TreeNode(FileNameParts[index]);
-                TreeItem ThisTag = new TreeItem();
-                if (FileNameParts.Length-1 == index)
-                {
-                    //Node is a file
-                    for (int i = 0; i < FileNameParts.Length; i++)
-                    {
-                        ThisTag.String_Value += FileNameParts[i] + "/";
-                    }
-                    ThisTag.String_Value = ThisTag.String_Value.ToString().Substring(0, ThisTag.String_Value.ToString().Length - 1);
-
-                    ThisTag.Item_Type = TreeItemType.EXPORTABLE_FILE;
-                    FileNode.ImageIndex = (int)TreeItemIcon.FILE;
-                    FileNode.SelectedImageIndex = (int)TreeItemIcon.FILE;
-                    FileNode.ContextMenuStrip = fileContextMenu;
-                }
-                else
-                {
-                    //Node is a directory
-                    ThisTag.Item_Type = TreeItemType.DIRECTORY;
-                    FileNode.ImageIndex = (int)TreeItemIcon.FOLDER;
-                    FileNode.SelectedImageIndex = (int)TreeItemIcon.FOLDER;
-                    AddFileToTree(FileNameParts, index + 1, FileNode.Nodes);
-                }
-
-                FileNode.Tag = ThisTag;
-                LoopedNodeCollection.Add(FileNode);
-            }
+            groupBox3.Hide();
         }
 
         /* Get type description based on extension */
@@ -131,10 +91,12 @@ namespace AlienPAK
         {
             if (FileExtension == "")
             {
+                /*
                 if (AlienPAK.Format == PAKType.PAK_SCRIPTS)
                 {
                     return "Cathode Script";
                 }
+                */
                 return "Unknown Type";
             }
             switch (FileExtension.Substring(1).ToUpper())
@@ -169,7 +131,13 @@ namespace AlienPAK
         /* Temp function to get a file as a byte array */
         private byte[] GetFileAsBytes(string FileName)
         {
-            AlienPAK.ExportFile(FileName, "temp"); //Should really be able to pull from PAK as bytes
+            PAKReturnType ResponseCode = PAKReturnType.FAIL_UNKNOWN;
+            foreach (PAK thisPAK in AlienPAKs)
+            {
+                ResponseCode = thisPAK.ExportFile(FileName, "temp"); //Should really be able to pull from PAK as bytes
+                if (ResponseCode == PAKReturnType.SUCCESS || ResponseCode == PAKReturnType.SUCCESS_WITH_WARNINGS) break;
+            }
+            if (!File.Exists("temp")) return new byte[] { };
             byte[] ExportedFile = File.ReadAllBytes("temp");
             File.Delete("temp");
             return ExportedFile;
@@ -190,10 +158,11 @@ namespace AlienPAK
             addFile.Enabled = true; //Eventually move this to only be enabled on directory selection
 
             //Exit early if nothing selected
-            if (FileTree.SelectedNode == null) {
+            if (FileTree.SelectedNode == null)
+            {
                 return;
             }
-            
+
             //Handle file selection
             if (((TreeItem)FileTree.SelectedNode.Tag).Item_Type == TreeItemType.EXPORTABLE_FILE)
             {
@@ -204,12 +173,13 @@ namespace AlienPAK
                 fileTypeInfo.Text = GetFileTypeDescription(Path.GetExtension(FileName));
 
                 //Populate file size info
-                int FileSize = AlienPAK.GetFileSize(FileName);
+                int FileSize = -1;
+                foreach (PAK thisPAK in AlienPAKs) if (FileSize == -1) FileSize = thisPAK.GetFileSize(FileName);
                 if (FileSize == -1) { return; }
                 fileSizeInfo.Text = FileSize.ToString() + " bytes";
 
                 //Show file preview if selected an image
-                if (Path.GetExtension(FileName).ToUpper() == ".DDS") 
+                if (Path.GetExtension(FileName).ToUpper() == ".DDS")
                 {
                     try
                     {
@@ -239,7 +209,7 @@ namespace AlienPAK
         }
 
         /* Set the image in the preview window and scale appropriately */
-        private void ResizeImagePreview(Bitmap image) 
+        private void ResizeImagePreview(Bitmap image)
         {
             filePreviewImage.BackgroundImage = image;
             if (image.Width >= filePreviewImage.Width || image.Height >= filePreviewImage.Height) filePreviewImage.BackgroundImageLayout = ImageLayout.Zoom;
@@ -301,9 +271,9 @@ namespace AlienPAK
                 //Regular import
                 if (ImportOK)
                 {
-                    PAKReturnType ResponseCode = AlienPAK.ImportFile(((TreeItem)FileTree.SelectedNode.Tag).String_Value, FilePicker.FileName);
+                    foreach (PAK thisPAK in AlienPAKs) thisPAK.ImportFile(((TreeItem)FileTree.SelectedNode.Tag).String_Value, FilePicker.FileName);
                     if (ImportingConverted) File.Delete(FilePicker.FileName); //We temp dump out a converted file, which this cleans up
-                    MessageBox.Show(AlienErrors.ErrorMessageBody(ResponseCode), AlienErrors.ErrorMessageTitle(ResponseCode), MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    MessageBox.Show(AlienErrors.ErrorMessageBody(PAKReturnType.SUCCESS), AlienErrors.ErrorMessageTitle(PAKReturnType.SUCCESS), MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }
 
                 Cursor.Current = Cursors.Default;
@@ -330,7 +300,7 @@ namespace AlienPAK
                 {
                     TexHelper.Instance.LoadFromDDSMemory(Marshal.UnsafeAddrOfPinnedArrayElement(ImageFile, 0), ImageFile.Length, DDS_FLAGS.NONE);
                     filter = "PNG Image|*.png|DDS Image|*.dds"; //Can export as WIC
-                } 
+                }
                 catch
                 {
                     ImageFile = new byte[] { };
@@ -366,7 +336,12 @@ namespace AlienPAK
                 //Regular export
                 else
                 {
-                    PAKReturnType ResponseCode = AlienPAK.ExportFile(((TreeItem)FileTree.SelectedNode.Tag).String_Value, FilePicker.FileName);
+                    PAKReturnType ResponseCode = PAKReturnType.FAIL_UNKNOWN;
+                    foreach (PAK thisPAK in AlienPAKs)
+                    {
+                        ResponseCode = thisPAK.ExportFile(filename, FilePicker.FileName);
+                        if (ResponseCode == PAKReturnType.SUCCESS || ResponseCode == PAKReturnType.SUCCESS_WITH_WARNINGS) break;
+                    }
                     MessageBox.Show(AlienErrors.ErrorMessageBody(ResponseCode), AlienErrors.ErrorMessageTitle(ResponseCode), MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }
                 Cursor.Current = Cursors.Default;
@@ -376,24 +351,29 @@ namespace AlienPAK
         /* Add file to the loaded archive */
         private void AddFileToArchive_Click(object sender, EventArgs e)
         {
+            /* This can only happen for UI files, so for OpenCAGE I'm forcing AlienPAKs[0] - might need changing for other PAKs that gain support */
+
             //Let the user decide what file to add, then add it
             OpenFileDialog FilePicker = new OpenFileDialog();
             FilePicker.Filter = "Any File|*.*";
             if (FilePicker.ShowDialog() == DialogResult.OK)
             {
                 Cursor.Current = Cursors.WaitCursor;
-                PAKReturnType ResponseCode = AlienPAK.AddNewFile(FilePicker.FileName);
+                PAKReturnType ResponseCode = AlienPAKs[0].AddNewFile(FilePicker.FileName);
                 MessageBox.Show(AlienErrors.ErrorMessageBody(ResponseCode), AlienErrors.ErrorMessageTitle(ResponseCode), MessageBoxButtons.OK, MessageBoxIcon.Information);
                 Cursor.Current = Cursors.Default;
             }
             //This is an expensive call for any PAK except PAK2, as it uses the new system.
             //We only can call with PAK2 here so it's fine, but worth noting.
-            UpdateFileTree(AlienPAK.Parse());
+            treeHelper.UpdateFileTree(AlienPAKs[0].Parse());
+            UpdateSelectedFilePreview();
         }
 
         /* Remove selected file from the archive */
         private void RemoveFileFromArchive_Click(object sender, EventArgs e)
         {
+            /* This can only happen for UI files, so for OpenCAGE I'm forcing AlienPAKs[0] - might need changing for other PAKs that gain support */
+
             if (FileTree.SelectedNode == null || ((TreeItem)FileTree.SelectedNode.Tag).Item_Type != TreeItemType.EXPORTABLE_FILE)
             {
                 MessageBox.Show("Please select a file from the list.", "No file selected.", MessageBoxButtons.OK, MessageBoxIcon.Error);
@@ -404,20 +384,14 @@ namespace AlienPAK
             if (ConfirmRemoval == DialogResult.Yes)
             {
                 Cursor.Current = Cursors.WaitCursor;
-                PAKReturnType ResponseCode = AlienPAK.RemoveFile(((TreeItem)FileTree.SelectedNode.Tag).String_Value);
+                PAKReturnType ResponseCode = AlienPAKs[0].RemoveFile(((TreeItem)FileTree.SelectedNode.Tag).String_Value);
                 MessageBox.Show(AlienErrors.ErrorMessageBody(ResponseCode), AlienErrors.ErrorMessageTitle(ResponseCode), MessageBoxButtons.OK, MessageBoxIcon.Information);
                 Cursor.Current = Cursors.Default;
             }
             //This is an expensive call for any PAK except PAK2, as it uses the new system.
             //We only can call with PAK2 here so it's fine, but worth noting.
-            UpdateFileTree(AlienPAK.Parse()); 
-        }
-
-        /* Form loads */
-        private void Form1_Load(object sender, EventArgs e)
-        {
-            //For testing purposes
-            //OpenFileAndPopulateGUI(@"E:\Program Files\Steam\steamapps\common\Alien Isolation\DATA\SHADERS\UBERSHADER\DEFERREDSHADERS_DX11.PAK");
+            treeHelper.UpdateFileTree(AlienPAKs[0].Parse());
+            UpdateSelectedFilePreview();
         }
 
         /* User requests to open a PAK */
@@ -478,13 +452,6 @@ namespace AlienPAK
             UpdateSelectedFilePreview();
         }
 
-        /* Open options pane */
-        private void optionsToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            ToolOptions OptionsForm = new ToolOptions();
-            OptionsForm.Show();
-        }
-
         /* Create a PAK2 archive from a specified directory */
         private void createPAK2FromDirectoryToolStripMenuItem_Click(object sender, EventArgs e)
         {
@@ -504,7 +471,7 @@ namespace AlienPAK
                     PAK2 NewArchive = new PAK2(PathToPAK2.FileName);
                     foreach (string FileName in FilesToAdd)
                     {
-                        NewArchive.AddFile(FileName, FolderToParse.SelectedPath.Length+1);
+                        NewArchive.AddFile(FileName, FolderToParse.SelectedPath.Length + 1);
                     }
                     PAKReturnType ErrorCode = NewArchive.Save();
 
@@ -528,19 +495,20 @@ namespace AlienPAK
                 {
                     ListAllFiles(NextDirectory, FilesInDir);
                 }
-            } catch { }
+            }
+            catch { }
         }
 
         /* Export all files from the current archive */
         private void exportAllFilesToolStripMenuItem_Click(object sender, EventArgs e)
         {
             //Load all file names currently in the UI
-            if (AlienPAK.Format == PAKType.UNRECOGNISED)
+            if (AlienPAKs[0].Format == PAKType.UNRECOGNISED)
             {
                 MessageBox.Show("No files to export!\nPlease load a PAK archive.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
-            List<string> AllFiles = AlienPAK.Parse();
+            List<string> AllFiles = AlienPAKs[0].Parse();
             Cursor.Current = Cursors.WaitCursor;
 
             //Select the folder to dump to
@@ -553,7 +521,7 @@ namespace AlienPAK
             {
                 string ExportPath = FolderToExportTo.SelectedPath + "\\" + AllFiles[i];
                 Directory.CreateDirectory(ExportPath.Substring(0, ExportPath.Length - Path.GetFileName(ExportPath).Length));
-                PAKReturnType ErrorCode = AlienPAK.ExportFile(AllFiles[i], ExportPath);
+                PAKReturnType ErrorCode = AlienPAKs[0].ExportFile(AllFiles[i], ExportPath);
                 if (ErrorCode == PAKReturnType.SUCCESS || ErrorCode == PAKReturnType.SUCCESS_WITH_WARNINGS) SuccessCount++;
             }
 
@@ -567,6 +535,78 @@ namespace AlienPAK
             {
                 MessageBox.Show("Export process complete, but " + (AllFiles.Count - SuccessCount) + " files encountered errors.\nPerhaps try a directory with a shorter filepath, or check write access.", "Export complete, with warnings.", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             }
+        }
+
+        /* ADDITIONS FOR OPENCAGE BELOW */
+        AlienContentType LaunchMode;
+
+        //Run on init
+        private void AlienModToolsAdditions()
+        {
+            this.Text = "OpenCAGE Content Editor";
+            if (LaunchMode == AlienContentType.NONE_SPECIFIED) return;
+            openToolStripMenuItem.Enabled = false;
+
+            //Populate the form with the UI.PAK if launched as so, and exit early
+            if (LaunchMode == AlienContentType.UI)
+            {
+                this.Text += " - UI";
+                OpenFileAndPopulateGUI(SharedData.pathToAI + "/DATA/UI.PAK");
+                return;
+            }
+
+            //Populate the form with the ANIMATION.PAK if launched as so, and exit early
+            if (LaunchMode == AlienContentType.ANIMATION)
+            {
+                this.Text += " - Animations";
+                OpenFileAndPopulateGUI(SharedData.pathToAI + "/DATA/GLOBAL/ANIMATION.PAK");
+                return;
+            }
+
+            //Work out what file to use from our launch type
+            string levelFileToUse = "";
+            string globalFileToUse = "";
+            switch (LaunchMode)
+            {
+                case AlienContentType.MODEL:
+                    levelFileToUse = "LEVEL_MODELS.PAK";
+                    globalFileToUse = "GLOBAL_MODELS.PAK";
+                    this.Text += " - Models";
+                    break;
+                case AlienContentType.TEXTURE:
+                    levelFileToUse = "LEVEL_TEXTURES.ALL.PAK";
+                    globalFileToUse = "GLOBAL_TEXTURES.ALL.PAK";
+                    this.Text += " - Textures";
+                    break;
+                case AlienContentType.SCRIPT:
+                    levelFileToUse = "COMMANDS.PAK";
+                    this.Text += " - Scripts";
+                    break;
+            }
+
+            //Load the files for all levels
+            Cursor.Current = Cursors.WaitCursor;
+            List<string> allLevelPAKs = Directory.GetFiles(SharedData.pathToAI + "/DATA/ENV/PRODUCTION/", levelFileToUse, SearchOption.AllDirectories).ToList<string>();
+            if (globalFileToUse != "") allLevelPAKs.Add(SharedData.pathToAI + "/DATA/ENV/GLOBAL/WORLD/" + globalFileToUse);
+            List<string> parsedFiles = new List<string>();
+            foreach (string levelPAK in allLevelPAKs)
+            {
+                PAK thisPAK = new PAK();
+                thisPAK.Open(levelPAK);
+                List<string> theseFiles = thisPAK.Parse();
+                foreach (string thisPAKEntry in theseFiles)
+                {
+                    if (!parsedFiles.Contains(thisPAKEntry)) parsedFiles.Add(thisPAKEntry);
+                }
+                AlienPAKs.Add(thisPAK);
+            }
+            treeHelper.UpdateFileTree(parsedFiles);
+            UpdateSelectedFilePreview();
+            Cursor.Current = Cursors.Default;
+            groupBox3.Hide();
+
+            //If we got here, we are using multiple PAKs, so disable some bits for one only
+            exportAllFilesToolStripMenuItem.Enabled = false;
         }
     }
 }

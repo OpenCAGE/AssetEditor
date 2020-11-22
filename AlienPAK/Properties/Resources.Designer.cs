@@ -61,6 +61,36 @@ namespace AlienPAK.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap ALIEN_DOORWAY_min {
+            get {
+                object obj = ResourceManager.GetObject("ALIEN_DOORWAY_min", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap ANDROID_DOORWAY_min {
+            get {
+                object obj = ResourceManager.GetObject("ANDROID_DOORWAY_min", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap CONNOR_min {
+            get {
+                object obj = ResourceManager.GetObject("CONNOR_min", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized resource of type System.Byte[].
         /// </summary>
         internal static byte[] DirectXTexNet {
@@ -77,6 +107,96 @@ namespace AlienPAK.Properties {
             get {
                 object obj = ResourceManager.GetObject("DirectXTexNetImpl_64", resourceCulture);
                 return ((byte[])(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Byte[].
+        /// </summary>
+        internal static byte[] Isolation_Isolation {
+            get {
+                object obj = ResourceManager.GetObject("Isolation_Isolation", resourceCulture);
+                return ((byte[])(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Byte[].
+        /// </summary>
+        internal static byte[] JixellationBold_Jixellation {
+            get {
+                object obj = ResourceManager.GetObject("JixellationBold_Jixellation", resourceCulture);
+                return ((byte[])(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap KUHLMAN_DEATH_min {
+            get {
+                object obj = ResourceManager.GetObject("KUHLMAN_DEATH_min", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap landing_min {
+            get {
+                object obj = ResourceManager.GetObject("landing_min", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap loading_content {
+            get {
+                object obj = ResourceManager.GetObject("loading_content", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Byte[].
+        /// </summary>
+        internal static byte[] NostromoBoldCond_Nostromo_Cond {
+            get {
+                object obj = ResourceManager.GetObject("NostromoBoldCond_Nostromo_Cond", resourceCulture);
+                return ((byte[])(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap NPC_DOOR_min {
+            get {
+                object obj = ResourceManager.GetObject("NPC_DOOR_min", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap SEEGSON_MAGAZINEMAN_min {
+            get {
+                object obj = ResourceManager.GetObject("SEEGSON_MAGAZINEMAN_min", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap TAYLOR_min {
+            get {
+                object obj = ResourceManager.GetObject("TAYLOR_min", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
             }
         }
     }
