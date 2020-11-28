@@ -5,11 +5,11 @@ using System.Runtime.InteropServices;
 // General Information about an assembly is controlled through the following
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("Alien: Isolation PAK Tool")]
-[assembly: AssemblyDescription("A tool to preview, edit, and export files within Alien: Isolation PAK archives.")]
+[assembly: AssemblyTitle("OpenCAGE - Asset PAK Tool")]
+[assembly: AssemblyDescription("A tool to preview, edit, and export files within Alien: Isolation asset PAK archives.")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Matt Filer")]
-[assembly: AssemblyProduct("Alien: Isolation PAK Tool")]
+[assembly: AssemblyProduct("OpenCAGE - Asset PAK Tool")]
 [assembly: AssemblyCopyright("Copyright © Matt Filer 2020")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
