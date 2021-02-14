@@ -339,7 +339,7 @@ namespace AlienPAK
                     PAKReturnType ResponseCode = PAKReturnType.FAIL_UNKNOWN;
                     foreach (PAK thisPAK in AlienPAKs)
                     {
-                        ResponseCode = thisPAK.ExportFile(filename, FilePicker.FileName);
+                        ResponseCode = thisPAK.ExportFile(((TreeItem)FileTree.SelectedNode.Tag).String_Value, FilePicker.FileName);
                         if (ResponseCode == PAKReturnType.SUCCESS || ResponseCode == PAKReturnType.SUCCESS_WITH_WARNINGS) break;
                     }
                     MessageBox.Show(AlienErrors.ErrorMessageBody(ResponseCode), AlienErrors.ErrorMessageTitle(ResponseCode), MessageBoxButtons.OK, MessageBoxIcon.Information);
