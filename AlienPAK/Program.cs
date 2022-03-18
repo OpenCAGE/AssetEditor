@@ -41,7 +41,7 @@ namespace AlienPAK
 
             //Launch application
             Application.EnableVisualStyles();
-            Application.SetCompatibleTextRenderingDefault(false);
+            Application.SetCompatibleTextRenderingDefault(true);
             if (args.Length != 0 && args[0] == "-opencage") Application.Run(new Landing());
             else Application.Run(new Explorer(args, AlienContentType.NONE_SPECIFIED));
         }
