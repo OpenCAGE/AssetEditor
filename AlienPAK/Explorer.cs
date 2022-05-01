@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
+using System.Drawing.Imaging;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
@@ -181,23 +182,7 @@ namespace AlienPAK
                 //Show file preview if selected an image
                 if (Path.GetExtension(FileName).ToUpper() == ".DDS")
                 {
-                    try
-                    {
-                        byte[] ImageFile = GetFileAsBytes(FileName);
-
-                        //Using the DDS, try and convert it to Bitmap and display it
-                        using (ScratchImage img = TexHelper.Instance.LoadFromDDSMemory(Marshal.UnsafeAddrOfPinnedArrayElement(ImageFile, 0), ImageFile.Length, DDS_FLAGS.NONE))
-                        {
-                            ScratchImage imgDecom = img.Decompress(DXGI_FORMAT.UNKNOWN);
-                            UnmanagedMemoryStream imgJpg = imgDecom.SaveToWICMemory(0, WIC_FLAGS.NONE, TexHelper.Instance.GetWICCodec(WICCodecs.PNG));
-                            ResizeImagePreview((Bitmap)System.Drawing.Image.FromStream(imgJpg));
-                        }
-                    }
-                    catch (Exception e)
-                    {
-                        //MessageBox.Show(e.ToString());
-                        if (File.Exists("temp.dds")) File.Delete("temp.dds");
-                    }
+                    ResizeImagePreview(GetAsBitmap(FileName));
                 }
                 groupBox1.Visible = (filePreviewImage.BackgroundImage != null);
 
@@ -214,6 +199,50 @@ namespace AlienPAK
             filePreviewImage.BackgroundImage = image;
             if (image.Width >= filePreviewImage.Width || image.Height >= filePreviewImage.Height) filePreviewImage.BackgroundImageLayout = ImageLayout.Zoom;
             else filePreviewImage.BackgroundImageLayout = ImageLayout.None;
+        }
+
+        /* Convert a DDS file to System Bitmap */
+        private Bitmap GetAsBitmap(string FileName)
+        {
+            Bitmap toReturn = null;
+            if (Path.GetExtension(FileName).ToUpper() != ".DDS") return toReturn;
+
+            try
+            {
+                MemoryStream imageStream = new MemoryStream(GetFileAsBytes(FileName));
+                using (var image = Pfim.Pfim.FromStream(imageStream))
+                {
+                    PixelFormat format = PixelFormat.DontCare;
+                    switch (image.Format)
+                    {
+                        case Pfim.ImageFormat.Rgba32:
+                            format = PixelFormat.Format32bppArgb;
+                            break;
+                        case Pfim.ImageFormat.Rgb24:
+                            format = PixelFormat.Format24bppRgb;
+                            break;
+                        default:
+                            Console.WriteLine("Unsupported DDS: " + image.Format);
+                            break;
+                    }
+                    if (format != PixelFormat.DontCare)
+                    {
+                        var handle = GCHandle.Alloc(image.Data, GCHandleType.Pinned);
+                        try
+                        {
+                            var data = Marshal.UnsafeAddrOfPinnedArrayElement(image.Data, 0);
+                            toReturn = new Bitmap(image.Width, image.Height, image.Stride, format, data);
+                        }
+                        finally
+                        {
+                            handle.Free();
+                        }
+                    }
+                }
+            }
+            catch { }
+
+            return toReturn;
         }
 
         /* Import a file to replace the selected PAK entry */
@@ -290,22 +319,12 @@ namespace AlienPAK
                 return;
             }
 
-            //If export file is DDS, check first to see if we can export as WIC format
             string filter = "Exported File|*" + Path.GetExtension(FileTree.SelectedNode.Text);
-            byte[] ImageFile = new byte[] { };
-            if (Path.GetExtension(FileTree.SelectedNode.Text).ToUpper() == ".DDS")
-            {
-                ImageFile = GetFileAsBytes(((TreeItem)FileTree.SelectedNode.Tag).String_Value);
-                try
-                {
-                    TexHelper.Instance.LoadFromDDSMemory(Marshal.UnsafeAddrOfPinnedArrayElement(ImageFile, 0), ImageFile.Length, DDS_FLAGS.NONE);
-                    filter = "PNG Image|*.png|DDS Image|*.dds"; //Can export as WIC
-                }
-                catch
-                {
-                    ImageFile = new byte[] { };
-                }
-            }
+
+            //If export file is DDS & we have a preview, then we can export it in a range of formats
+            bool isExportingDDS = Path.GetExtension(FileTree.SelectedNode.Text).ToUpper() == ".DDS";
+            if (Path.GetExtension(FileTree.SelectedNode.Text).ToUpper() == ".DDS" && filePreviewImage.BackgroundImage != null)
+                filter = "PNG Image|*.png|JPG Image|*.jpg|DDS Image|*.dds";
 
             //Remove extension from output filename
             string filename = Path.GetFileName(FileTree.SelectedNode.Text);
@@ -319,18 +338,16 @@ namespace AlienPAK
             {
                 Cursor.Current = Cursors.WaitCursor;
                 //Special export for DDS conversion
-                if (ImageFile.Length > 0 && FilePicker.FilterIndex == 1) //Index 1 == PNG, if ImageFile hasn't been cleared (we can export as WIC)
+                if (isExportingDDS && FilePicker.Filter != "DDS Image")
                 {
                     try
                     {
-                        ScratchImage img = TexHelper.Instance.LoadFromDDSMemory(Marshal.UnsafeAddrOfPinnedArrayElement(ImageFile, 0), ImageFile.Length, DDS_FLAGS.NONE);
-                        ScratchImage imgDecom = img.Decompress(DXGI_FORMAT.UNKNOWN);
-                        imgDecom.SaveToWICFile(0, WIC_FLAGS.NONE, TexHelper.Instance.GetWICCodec(WICCodecs.PNG), FilePicker.FileName);
+                        filePreviewImage.BackgroundImage.Save(FilePicker.FileName);
                         MessageBox.Show(AlienErrors.ErrorMessageBody(PAKReturnType.SUCCESS), AlienErrors.ErrorMessageTitle(PAKReturnType.SUCCESS), MessageBoxButtons.OK, MessageBoxIcon.Information);
                     }
                     catch
                     {
-                        MessageBox.Show("Failed to export as PNG!\nPlease try again as DDS.", AlienErrors.ErrorMessageTitle(PAKReturnType.FAIL_UNKNOWN), MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        MessageBox.Show("Failed to export!\nPlease try again as DDS.", AlienErrors.ErrorMessageTitle(PAKReturnType.FAIL_UNKNOWN), MessageBoxButtons.OK, MessageBoxIcon.Information);
                     }
                 }
                 //Regular export
