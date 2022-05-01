@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
+using System.Drawing.Imaging;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
@@ -181,22 +182,36 @@ namespace AlienPAK
                 //Show file preview if selected an image
                 if (Path.GetExtension(FileName).ToUpper() == ".DDS")
                 {
-                    try
+                    MemoryStream imageStream = new MemoryStream(GetFileAsBytes(FileName));
+                    using (var image = Pfim.Pfim.FromStream(imageStream))
                     {
-                        byte[] ImageFile = GetFileAsBytes(FileName);
-
-                        //Using the DDS, try and convert it to Bitmap and display it
-                        using (ScratchImage img = TexHelper.Instance.LoadFromDDSMemory(Marshal.UnsafeAddrOfPinnedArrayElement(ImageFile, 0), ImageFile.Length, DDS_FLAGS.NONE))
+                        PixelFormat format = PixelFormat.DontCare;
+                        switch (image.Format)
                         {
-                            ScratchImage imgDecom = img.Decompress(DXGI_FORMAT.UNKNOWN);
-                            UnmanagedMemoryStream imgJpg = imgDecom.SaveToWICMemory(0, WIC_FLAGS.NONE, TexHelper.Instance.GetWICCodec(WICCodecs.PNG));
-                            ResizeImagePreview((Bitmap)System.Drawing.Image.FromStream(imgJpg));
+                            case Pfim.ImageFormat.Rgba32:
+                                format = PixelFormat.Format32bppArgb;
+                                break;
+                            case Pfim.ImageFormat.Rgb24:
+                                format = PixelFormat.Format24bppRgb;
+                                break;
+                            default:
+                                Console.WriteLine("Unsupported DDS: " + image.Format);
+                                break;
                         }
-                    }
-                    catch (Exception e)
-                    {
-                        //MessageBox.Show(e.ToString());
-                        if (File.Exists("temp.dds")) File.Delete("temp.dds");
+                        if (format != PixelFormat.DontCare)
+                        {
+                            var handle = GCHandle.Alloc(image.Data, GCHandleType.Pinned);
+                            try
+                            {
+                                var data = Marshal.UnsafeAddrOfPinnedArrayElement(image.Data, 0);
+                                var bitmap = new Bitmap(image.Width, image.Height, image.Stride, format, data);
+                                ResizeImagePreview((Bitmap)bitmap);
+                            }
+                            finally
+                            {
+                                handle.Free();
+                            }
+                        }
                     }
                 }
                 groupBox1.Visible = (filePreviewImage.BackgroundImage != null);
