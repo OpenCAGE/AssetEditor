@@ -207,36 +207,40 @@ namespace AlienPAK
             Bitmap toReturn = null;
             if (Path.GetExtension(FileName).ToUpper() != ".DDS") return toReturn;
 
-            MemoryStream imageStream = new MemoryStream(GetFileAsBytes(FileName));
-            using (var image = Pfim.Pfim.FromStream(imageStream))
+            try
             {
-                PixelFormat format = PixelFormat.DontCare;
-                switch (image.Format)
+                MemoryStream imageStream = new MemoryStream(GetFileAsBytes(FileName));
+                using (var image = Pfim.Pfim.FromStream(imageStream))
                 {
-                    case Pfim.ImageFormat.Rgba32:
-                        format = PixelFormat.Format32bppArgb;
-                        break;
-                    case Pfim.ImageFormat.Rgb24:
-                        format = PixelFormat.Format24bppRgb;
-                        break;
-                    default:
-                        Console.WriteLine("Unsupported DDS: " + image.Format);
-                        break;
-                }
-                if (format != PixelFormat.DontCare)
-                {
-                    var handle = GCHandle.Alloc(image.Data, GCHandleType.Pinned);
-                    try
+                    PixelFormat format = PixelFormat.DontCare;
+                    switch (image.Format)
                     {
-                        var data = Marshal.UnsafeAddrOfPinnedArrayElement(image.Data, 0);
-                        toReturn = new Bitmap(image.Width, image.Height, image.Stride, format, data);
+                        case Pfim.ImageFormat.Rgba32:
+                            format = PixelFormat.Format32bppArgb;
+                            break;
+                        case Pfim.ImageFormat.Rgb24:
+                            format = PixelFormat.Format24bppRgb;
+                            break;
+                        default:
+                            Console.WriteLine("Unsupported DDS: " + image.Format);
+                            break;
                     }
-                    finally
+                    if (format != PixelFormat.DontCare)
                     {
-                        handle.Free();
+                        var handle = GCHandle.Alloc(image.Data, GCHandleType.Pinned);
+                        try
+                        {
+                            var data = Marshal.UnsafeAddrOfPinnedArrayElement(image.Data, 0);
+                            toReturn = new Bitmap(image.Width, image.Height, image.Stride, format, data);
+                        }
+                        finally
+                        {
+                            handle.Free();
+                        }
                     }
                 }
             }
+            catch { }
 
             return toReturn;
         }
