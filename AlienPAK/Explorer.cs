@@ -197,8 +197,10 @@ namespace AlienPAK
         private void ResizeImagePreview(Bitmap image)
         {
             filePreviewImage.BackgroundImage = image;
-            if (image.Width >= filePreviewImage.Width || image.Height >= filePreviewImage.Height) filePreviewImage.BackgroundImageLayout = ImageLayout.Zoom;
-            else filePreviewImage.BackgroundImageLayout = ImageLayout.None;
+            if (image != null && (image.Width >= filePreviewImage.Width || image.Height >= filePreviewImage.Height)) 
+                filePreviewImage.BackgroundImageLayout = ImageLayout.Zoom;
+            else 
+                filePreviewImage.BackgroundImageLayout = ImageLayout.None;
         }
 
         /* Convert a DDS file to System Bitmap */
@@ -338,7 +340,7 @@ namespace AlienPAK
             {
                 Cursor.Current = Cursors.WaitCursor;
                 //Special export for DDS conversion
-                if (isExportingDDS && FilePicker.Filter != "DDS Image")
+                if (isExportingDDS && Path.GetExtension(FilePicker.FileName).ToUpper() != ".DDS")
                 {
                     try
                     {
