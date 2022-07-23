@@ -20,6 +20,7 @@ namespace AlienPAK
             InterfaceTools.Font = FontManager.GetFont(0, 40);
             ModelTools.Font = FontManager.GetFont(0, 40);
             TextureTools.Font = FontManager.GetFont(0, 40);
+            SoundTool.Font = FontManager.GetFont(0, 40);
         }
 
         bool closedManually = false;

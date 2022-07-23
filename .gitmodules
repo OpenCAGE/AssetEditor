@@ -1,3 +1,6 @@
 [submodule "AlienPAK/SharedAssets"]
 	path = AlienPAK/SharedAssets
 	url = https://github.com/OpenCAGE/SharedAssets
+[submodule "CathodeLib"]
+	path = CathodeLib
+	url = https://github.com/OpenCAGE/CathodeLib
