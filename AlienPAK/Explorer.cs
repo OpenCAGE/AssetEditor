@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
@@ -8,6 +8,8 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
 using CATHODE;
+using CATHODE.Assets;
+using CATHODE.Assets.Utilities;
 using CathodeLib;
 using DirectXTexNet;
 
