@@ -27,10 +27,10 @@
                             <TextBlock FontWeight="Bold" Margin="0 0 5 0">Name:</TextBlock>
                         </WrapPanel>
                         <WrapPanel>
-                            <TextBlock FontWeight="Bold" Margin="0 0 5 0">Size:</TextBlock>
+                            <TextBlock x:Name="fileSizeLabel" FontWeight="Bold" Margin="0 0 5 0">Size:</TextBlock>
                         </WrapPanel>
                         <WrapPanel>
-                            <TextBlock FontWeight="Bold" Margin="0 0 5 0">Type:</TextBlock>
+                            <TextBlock x:Name="fileTypeLabel" FontWeight="Bold" Margin="0 0 5 0">Type:</TextBlock>
                         </WrapPanel>
                     </StackPanel>
                     <StackPanel>
@@ -49,15 +49,16 @@
 
             <GroupBox x:Name="fileUtiltiesGroup" Header="File Utilities" Margin="0 0 0 10">
                 <StackPanel Margin="10">
-                    <Button Click="ExportBtn">Export Selected</Button>
-                    <Button Click="ReplaceBtn" Margin="0 5 0 0">Replace Selected</Button>
+                    <Button x:Name="exportBtn" Click="ExportBtn">Export Selected</Button>
+                    <Button x:Name="replaceBtn" Click="ReplaceBtn" Margin="0 5 0 0">Replace Selected</Button>
+                    <Button x:Name="deleteBtn" Click="DeleteBtn" Margin="0 5 0 0">Delete Selected</Button>
                 </StackPanel>
             </GroupBox>
 
             <GroupBox x:Name="archiveUtilitiesGroup" Header="Archive Utilities" Margin="0 0 0 10">
                 <StackPanel Margin="10">
-                    <Button Click="ImportBtn">Import New File</Button>
-                    <Button Click="DeleteBtn" Margin="0 5 0 0">Delete Selected File</Button>
+                    <Button x:Name="importBtn" Click="ImportBtn">Import New File</Button>
+                    <Button x:Name="exportAllBtn" Click="ExportAll" Margin="0 5 0 0">Export All</Button>
                 </StackPanel>
             </GroupBox>
         </StackPanel>

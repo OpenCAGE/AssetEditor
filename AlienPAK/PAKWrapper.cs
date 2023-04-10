@@ -18,6 +18,7 @@ namespace AlienPAK
         PAKType _type = PAKType.NONE_SPECIFIED;
         public PAKType Type { get { return _type; } }
 
+        /* Load a PAK file */
         public List<string> Load(string path)
         {
             Unload();
@@ -84,6 +85,7 @@ namespace AlienPAK
             return files;
         }
 
+        /* Free-up from a loaded PAK */
         public void Unload()
         {
             if (_file == null) return;
@@ -114,22 +116,29 @@ namespace AlienPAK
             _file = null;
         }
 
-        public bool CanImport
+        /* Get a file from the loaded PAK as a byte array */
+        public byte[] GetFileContent(string FileName)
         {
-            get
+            //TODO: model handling
+            switch (_type)
             {
-                switch (_type)
-                {
-                    case PAKType.SCRIPT:
-                    case PAKType.NONE_SPECIFIED:
-                        return false;
-                    default:
-                        return true;
-                }
+                case PAKType.TEXTURE:
+                    Textures.TEX4 texture = ((Textures)_file).Entries.FirstOrDefault(o => o.Name.Replace('\\', '/') == FileName.Replace('\\', '/'));
+                    if (texture != null && texture.tex_HighRes != null)
+                        return texture.tex_HighRes.Content; //new DDSWriter(texture.tex_HighRes.Content, texture.tex_HighRes.Width, texture.tex_HighRes.Height).Save;
+                    if (texture != null && texture.tex_LowRes != null)
+                        return texture.tex_LowRes.Content;
+                    return null;
+                case PAKType.ANIMATION:
+                case PAKType.UI:
+                    return ((PAK2)_file).Entries.FirstOrDefault(o => o.Filename.Replace('\\', '/') == FileName.Replace('\\', '/'))?.Content;
+                default:
+                    return null;
             }
         }
 
-        public bool CanExport
+        /* Functionality provided by the currently loaded PAK */
+        public PAKFunction Function
         {
             get
             {
@@ -137,39 +146,9 @@ namespace AlienPAK
                 {
                     case PAKType.SCRIPT:
                     case PAKType.NONE_SPECIFIED:
-                        return false;
+                        return PAKFunction.NONE;
                     default:
-                        return true;
-                }
-            }
-        }
-
-        public bool CanReplace
-        {
-            get
-            {
-                switch (_type)
-                {
-                    case PAKType.SCRIPT:
-                    case PAKType.NONE_SPECIFIED:
-                        return false;
-                    default:
-                        return true;
-                }
-            }
-        }
-
-        public bool CanDelete
-        {
-            get
-            {
-                switch (_type)
-                {
-                    case PAKType.SCRIPT:
-                    case PAKType.NONE_SPECIFIED:
-                        return false;
-                    default:
-                        return true;
+                        return PAKFunction.CAN_EXPORT_FILES | PAKFunction.CAN_IMPORT_FILES | PAKFunction.CAN_REPLACE_FILES | PAKFunction.CAN_DELETE_FILES;
                 }
             }
         }
@@ -186,4 +165,14 @@ namespace AlienPAK
         SHADER,
         NONE_SPECIFIED
     };
+
+    [Flags]
+    public enum PAKFunction
+    {
+        NONE = 0,
+        CAN_EXPORT_FILES = 1,
+        CAN_IMPORT_FILES = 2,
+        CAN_REPLACE_FILES = 4,
+        CAN_DELETE_FILES = 8,
+    }
 }
