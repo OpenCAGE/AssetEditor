@@ -21,11 +21,11 @@ namespace AlienPAK
 
         private void OpenTextures(object sender, RoutedEventArgs e)
         {
-            LaunchEditor(PAKType.TEXTURE);
+            LaunchEditor(PAKType.TEXTURES);
         }
         private void OpenModels(object sender, RoutedEventArgs e)
         {
-            LaunchEditor(PAKType.MODEL);
+            LaunchEditor(PAKType.MODELS);
         }
         private void OpenMaterials(object sender, RoutedEventArgs e)
         {
@@ -41,7 +41,7 @@ namespace AlienPAK
         }
         private void OpenAnimations(object sender, RoutedEventArgs e)
         {
-            LaunchEditor(PAKType.ANIMATION);
+            LaunchEditor(PAKType.ANIMATIONS);
         }
         private void OpenMaterialMaps(object sender, RoutedEventArgs e)
         {

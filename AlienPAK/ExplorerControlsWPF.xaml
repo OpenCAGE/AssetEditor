@@ -10,10 +10,7 @@
 
         <StackPanel>
             <GroupBox x:Name="levelSelectGroup" Header="Level Selection" Margin="0 0 0 10">
-                <WrapPanel Margin="10">
-                    <ComboBox x:Name="levelSelectDropdown" Width="204" Margin="0,0,11,0" />
-                    <Button Click="SelectLevelBtn">Load</Button>
-                </WrapPanel>
+                <ComboBox x:Name="levelSelectDropdown" DropDownClosed="LevelSelected"  Margin="10" />
             </GroupBox>
             
             <GroupBox x:Name="filePreviewGroup" Header="File Preview" Margin="0 0 0 10">

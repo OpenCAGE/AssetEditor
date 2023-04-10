@@ -21,14 +21,41 @@ namespace AlienPAK
         ExplorerControlsWPF preview;
 
         PAKType LaunchMode;
+        string baseTitle;
 
-        public Explorer(PAKType LaunchAs = PAKType.NONE_SPECIFIED)
+        public Explorer(PAKType LaunchAs = PAKType.NONE)
         {
             LaunchMode = LaunchAs;
             InitializeComponent();
 
             FileTree.ImageList = imageList1;
             treeHelper = new TreeUtility(FileTree);
+
+            baseTitle = "OpenCAGE Asset Editor";
+            if (LaunchMode != PAKType.NONE)
+            {
+                openToolStripMenuItem.Enabled = false;
+
+                switch (LaunchMode)
+                {
+                    case PAKType.ANIMATIONS:
+                        baseTitle += " - Animations";
+                        break;
+                    case PAKType.UI:
+                        baseTitle += " - UI";
+                        break;
+                    case PAKType.MODELS:
+                        baseTitle += " - Models";
+                        break;
+                    case PAKType.TEXTURES:
+                        baseTitle += " - Textures";
+                        break;
+                    case PAKType.COMMANDS:
+                        baseTitle += " - Scripts";
+                        break;
+                }
+            }
+            this.Text = baseTitle;
 
             preview = (ExplorerControlsWPF)elementHost1.Child;
             preview.OnLevelSelected += LoadModePAK;
@@ -37,63 +64,52 @@ namespace AlienPAK
             preview.OnReplaceRequested += ImportSelectedFile;
             preview.OnDeleteRequested += DeleteSelectedFile;
             preview.OnExportAllRequested += ExportAll;
-            preview.ShowLevelSelect(LaunchMode != PAKType.NONE_SPECIFIED && LaunchMode != PAKType.ANIMATION && LaunchMode != PAKType.UI, LaunchMode == PAKType.SCRIPT);
-
-            if (LaunchMode != PAKType.NONE_SPECIFIED)
-            {
-                openToolStripMenuItem.Enabled = false;
-
-                switch (LaunchMode)
-                {
-                    case PAKType.ANIMATION:
-                        this.Text += " - Animations";
-                        break;
-                    case PAKType.UI:
-                        this.Text += " - UI";
-                        break;
-                    case PAKType.MODEL:
-                        this.Text += " - Models";
-                        break;
-                    case PAKType.TEXTURE:
-                        this.Text += " - Textures";
-                        break;
-                    case PAKType.SCRIPT:
-                        this.Text += " - Scripts";
-                        break;
-                }
-            }
+            preview.ShowLevelSelect(LaunchMode != PAKType.NONE && LaunchMode != PAKType.ANIMATIONS && LaunchMode != PAKType.UI, LaunchMode);
         }
 
         /* Load the appropriate PAK for the given launch mode */
-        private void LoadModePAK(string level = "../GLOBAL/")
+        private void LoadModePAK(string level)
         {
-            //TODO: handle GLOBAL
+            string path = SharedData.pathToAI + "/DATA/";
             switch (LaunchMode)
             {
-                case PAKType.ANIMATION:
-                    LoadPAK(SharedData.pathToAI + "/DATA/GLOBAL/ANIMATION.PAK");
+                case PAKType.ANIMATIONS:
+                    path += "GLOBAL/ANIMATION.PAK";
                     break;
                 case PAKType.UI:
-                    LoadPAK(SharedData.pathToAI + "/DATA/GLOBAL/UI.PAK");
+                    path += "GLOBAL/UI.PAK";
                     break;
-                case PAKType.TEXTURE:
-                    LoadPAK(SharedData.pathToAI + "/DATA/ENV/PRODUCTION/" + level + "/RENDERABLE/LEVEL_TEXTURES.ALL.PAK");
+                case PAKType.TEXTURES:
+                    if (level == "GLOBAL")
+                        path += "ENV/GLOBAL/WORLD/GLOBAL_TEXTURES.ALL.PAK";
+                    else
+                        path += "ENV/PRODUCTION/" + level + "/RENDERABLE/LEVEL_TEXTURES.ALL.PAK";
                     break;
-                case PAKType.MODEL:
-                    LoadPAK(SharedData.pathToAI + "/DATA/ENV/PRODUCTION/" + level + "/RENDERABLE/LEVEL_MODELS.PAK");
+                case PAKType.MODELS:
+                    if (level == "GLOBAL")
+                        path += "ENV/GLOBAL/WORLD/GLOBAL_MODELS.PAK";
+                    else
+                        path += "ENV/PRODUCTION/" + level + "/RENDERABLE/LEVEL_MODELS.PAK";
                     break;
-                case PAKType.SCRIPT:
-                    LoadPAK(SharedData.pathToAI + "/DATA/ENV/PRODUCTION/" + level + "/WORLD/COMMANDS.PAK");
+                case PAKType.COMMANDS:
+                    path += "ENV/PRODUCTION/" + level + "/WORLD/COMMANDS.PAK";
                     break;
                 case PAKType.MATERIAL_MAPPINGS:
-                    LoadPAK(SharedData.pathToAI + "/DATA/ENV/PRODUCTION/" + level + "/WORLD/MATERIAL_MAPPINGS.PAK");
+                    path += "ENV/PRODUCTION/" + level + "/WORLD/MATERIAL_MAPPINGS.PAK";
                     break;
+                default:
+                    return;
             }
+            this.Text = baseTitle + ((level == "") ? "" : " - " + level);
+            LoadPAK(path);
         }
 
         /* Open a PAK and populate the GUI */
-        private void LoadPAK(string filename)
+        private void LoadPAK(string filename, bool allowReload = false)
         {
+            if (!allowReload && pak.File != null && pak.File.Filepath == filename)
+                return;
+
             Cursor.Current = Cursors.WaitCursor;
             List<string> files = pak.Load(filename);
             treeHelper.UpdateFileTree(files);
@@ -198,7 +214,7 @@ namespace AlienPAK
         /* Update file preview */
         private void UpdateSelectedFilePreview()
         {
-            preview.ShowFunctionButtons(pak.Function);
+            preview.ShowFunctionButtons(pak.Functionality);
             if (FileTree.SelectedNode == null) return;
 
             TreeItemType nodeType = ((TreeItem)FileTree.SelectedNode.Tag).Item_Type;

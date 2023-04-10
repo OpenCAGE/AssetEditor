@@ -55,7 +55,7 @@ namespace AlienPAK
         }
 
         /* Show the level selection dropdown if requested */
-        public void ShowLevelSelect(bool show, bool isCommands)
+        public void ShowLevelSelect(bool show, PAKType type)
         {
             levelSelectGroup.Visibility = show ? Visibility.Visible : Visibility.Collapsed;
 
@@ -63,12 +63,14 @@ namespace AlienPAK
             {
                 levelSelectDropdown.Items.Clear();
                 List<string> mapList = Directory.GetFiles(SharedData.pathToAI + "/DATA/ENV/PRODUCTION/", "COMMANDS.PAK", SearchOption.AllDirectories).ToList<string>();
+                if (type == PAKType.TEXTURES/* || type == PAKType.MODELS*/)
+                    levelSelectDropdown.Items.Add("GLOBAL");
                 for (int i = 0; i < mapList.Count; i++)
                 {
                     string[] fileSplit = mapList[i].Split(new[] { "PRODUCTION" }, StringSplitOptions.None);
                     levelSelectDropdown.Items.Add(fileSplit[fileSplit.Length - 1].Substring(1, fileSplit[fileSplit.Length - 1].Length - 20));
                 }
-                if (isCommands)
+                if (type == PAKType.COMMANDS || type == PAKType.MATERIAL_MAPPINGS)
                 {
                     levelSelectDropdown.Items.Remove("DLC\\BSPNOSTROMO_RIPLEY");
                     levelSelectDropdown.Items.Remove("DLC\\BSPNOSTROMO_TWOTEAMS");
@@ -83,7 +85,7 @@ namespace AlienPAK
 
             // We auto-forward through to a button click when visibility is set here, to trigger a load.
             // NOTE: This is desired behaviour in OpenCAGE mode, but not in regular standalone mode.
-            SelectLevelBtn(null, null);
+            LevelSelected(null, null);
         }
 
         /* Toggle available buttons given the functionality of the current PAK */
@@ -107,10 +109,6 @@ namespace AlienPAK
         }
 
         /* Button event triggers */
-        private void SelectLevelBtn(object sender, RoutedEventArgs e)
-        {
-            OnLevelSelected?.Invoke(levelSelectDropdown.Text);
-        }
         private void ImportBtn(object sender, RoutedEventArgs e)
         {
             OnImportRequested?.Invoke();
@@ -130,6 +128,10 @@ namespace AlienPAK
         private void ExportAll(object sender, RoutedEventArgs e)
         {
             OnExportAllRequested?.Invoke();
+        }
+        private void LevelSelected(object sender, EventArgs e)
+        {
+            OnLevelSelected?.Invoke(levelSelectDropdown.Text);
         }
 
         /* Get a nicely formatted string for the type of a file */
