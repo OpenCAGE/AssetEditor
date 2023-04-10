@@ -21,11 +21,11 @@ namespace AlienPAK
 
         private void OpenTextures(object sender, RoutedEventArgs e)
         {
-            LaunchEditor(AlienContentType.TEXTURE);
+            LaunchEditor(PAKType.TEXTURE);
         }
         private void OpenModels(object sender, RoutedEventArgs e)
         {
-            LaunchEditor(AlienContentType.MODEL);
+            LaunchEditor(PAKType.MODEL);
         }
         private void OpenMaterials(object sender, RoutedEventArgs e)
         {
@@ -37,18 +37,18 @@ namespace AlienPAK
         }
         private void OpenUI(object sender, RoutedEventArgs e)
         {
-            LaunchEditor(AlienContentType.UI);
+            LaunchEditor(PAKType.UI);
         }
         private void OpenAnimations(object sender, RoutedEventArgs e)
         {
-            LaunchEditor(AlienContentType.ANIMATION);
+            LaunchEditor(PAKType.ANIMATION);
         }
         private void OpenMaterialMaps(object sender, RoutedEventArgs e)
         {
-            LaunchEditor(AlienContentType.MATERIAL_MAPPINGS);
+            LaunchEditor(PAKType.MATERIAL_MAPPINGS);
         }
 
-        private void LaunchEditor(AlienContentType type)
+        private void LaunchEditor(PAKType type)
         {
             Explorer interfaceTool = new Explorer(type);
             interfaceTool.Show();

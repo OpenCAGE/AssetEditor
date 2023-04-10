@@ -11,17 +11,6 @@ namespace AlienPAK
     {
         public static string pathToAI = "";
     }
-    public enum AlienContentType 
-    { 
-        TEXTURE, 
-        MODEL,
-        UI,
-        SCRIPT, 
-        ANIMATION,
-        MATERIAL_MAPPINGS,
-        SHADER,
-        NONE_SPECIFIED 
-    };
 
     static class Program
     {
@@ -48,7 +37,7 @@ namespace AlienPAK
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(true);
             if (args.Length != 0 && args[0] == "-opencage") Application.Run(new Landing());
-            else Application.Run(new Explorer(AlienContentType.NONE_SPECIFIED));
+            else Application.Run(new Explorer());
         }
     }
 }

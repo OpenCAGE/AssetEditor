@@ -18,39 +18,87 @@ namespace AlienPAK
     /// </summary>
     public partial class ExplorerControlsWPF : UserControl
     {
+        public Action<string> OnLevelSelected;
+
+        public Action OnImportRequested;
+        public Action OnExportRequested;
+        public Action OnDeleteRequested;
+        public Action OnReplaceRequested;
+
         public ExplorerControlsWPF()
         {
             InitializeComponent();
-
-            //Populate available maps
-            levelSelectDropdown.Items.Clear();
-            List<string> mapList = Directory.GetFiles(SharedData.pathToAI + "/DATA/ENV/PRODUCTION/", "COMMANDS.PAK", SearchOption.AllDirectories).ToList<string>();
-            for (int i = 0; i < mapList.Count; i++)
-            {
-                string[] fileSplit = mapList[i].Split(new[] { "PRODUCTION" }, StringSplitOptions.None);
-                string mapName = fileSplit[fileSplit.Length - 1].Substring(1, fileSplit[fileSplit.Length - 1].Length - 20);
-                mapList[i] = (mapName);
-            }
-            mapList.Remove("DLC\\BSPNOSTROMO_RIPLEY"); mapList.Remove("DLC\\BSPNOSTROMO_TWOTEAMS");
-            for (int i = 0; i < mapList.Count;i++)
-                levelSelectDropdown.Items.Add(mapList[i]);
-            if (levelSelectDropdown.Items.Contains("FRONTEND")) 
-                levelSelectDropdown.SelectedItem = "FRONTEND";
-            else 
-                levelSelectDropdown.SelectedIndex = 0;
         }
 
         public void SetFileInfo(string name, string size)
         {
             fileNameText.Text = name;
-            fileSizeText.Text = size;
+            fileSizeText.Text = size + " bytes";
             fileTypeText.Text = GetFileType(name);
         }
 
         public void SetImagePreview(Bitmap image)
         {
+            filePreviewGroup.Visibility = image == null ? Visibility.Collapsed : Visibility.Visible;
             if (image == null) return;
             filePreviewImage.Source = ImageSourceFromBitmap(image);
+        }
+
+        public void ShowLevelSelect(bool show, bool isCommands)
+        {
+            levelSelectGroup.Visibility = show ? Visibility.Visible : Visibility.Collapsed;
+
+            if (show)
+            {
+                levelSelectDropdown.Items.Clear();
+                List<string> mapList = Directory.GetFiles(SharedData.pathToAI + "/DATA/ENV/PRODUCTION/", "COMMANDS.PAK", SearchOption.AllDirectories).ToList<string>();
+                for (int i = 0; i < mapList.Count; i++)
+                {
+                    string[] fileSplit = mapList[i].Split(new[] { "PRODUCTION" }, StringSplitOptions.None);
+                    levelSelectDropdown.Items.Add(fileSplit[fileSplit.Length - 1].Substring(1, fileSplit[fileSplit.Length - 1].Length - 20));
+                }
+                if (isCommands)
+                {
+                    levelSelectDropdown.Items.Remove("DLC\\BSPNOSTROMO_RIPLEY");
+                    levelSelectDropdown.Items.Remove("DLC\\BSPNOSTROMO_TWOTEAMS");
+                }
+                else
+                {
+                    levelSelectDropdown.Items.Remove("DLC\\BSPNOSTROMO_RIPLEY_PATCH");
+                    levelSelectDropdown.Items.Remove("DLC\\BSPNOSTROMO_TWOTEAMS_PATCH");
+                }
+                levelSelectDropdown.SelectedIndex = 0;
+                SelectLevelBtn(null, null);
+            }
+        }
+
+        public void ShowComponents(bool preview, bool fileInfo, bool fileUtils, bool archiveUtils)
+        {
+            filePreviewGroup.Visibility = preview ? Visibility.Visible : Visibility.Collapsed;
+            fileInfoGroup.Visibility = fileInfo ? Visibility.Visible : Visibility.Collapsed;
+            fileUtiltiesGroup.Visibility = fileUtils ? Visibility.Visible : Visibility.Collapsed;
+            archiveUtilitiesGroup.Visibility = archiveUtils ? Visibility.Visible : Visibility.Collapsed;
+        }
+
+        private void SelectLevelBtn(object sender, RoutedEventArgs e)
+        {
+            OnLevelSelected?.Invoke(levelSelectDropdown.Text);
+        }
+        private void ImportBtn(object sender, RoutedEventArgs e)
+        {
+            OnImportRequested?.Invoke();
+        }
+        private void ExportBtn(object sender, RoutedEventArgs e)
+        {
+            OnExportRequested?.Invoke();
+        }
+        private void DeleteBtn(object sender, RoutedEventArgs e)
+        {
+            OnDeleteRequested?.Invoke();
+        }
+        private void ReplaceBtn(object sender, RoutedEventArgs e)
+        {
+            OnReplaceRequested?.Invoke();
         }
 
         private string GetFileType(string path)

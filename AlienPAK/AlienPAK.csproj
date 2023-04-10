@@ -87,6 +87,7 @@
     <Reference Include="WindowsFormsIntegration" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="DDSWriter.cs" />
     <Compile Include="Explorer.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -105,6 +106,7 @@
     <Compile Include="LandingWPF.xaml.cs">
       <DependentUpon>LandingWPF.xaml</DependentUpon>
     </Compile>
+    <Compile Include="PAKWrapper.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Properties\Resources.Designer.cs">
