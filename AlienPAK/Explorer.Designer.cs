@@ -44,13 +44,18 @@
             this.toolsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.createPAK2FromDirectoryToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
+            this.addFile = new System.Windows.Forms.Button();
+            this.removeFile = new System.Windows.Forms.Button();
+            this.importFile = new System.Windows.Forms.Button();
+            this.exportFile = new System.Windows.Forms.Button();
+            this.button1 = new System.Windows.Forms.Button();
             this.FileTree = new System.Windows.Forms.TreeView();
             this.fileContextMenu = new System.Windows.Forms.ContextMenuStrip(this.components);
             this.importFileContext = new System.Windows.Forms.ToolStripMenuItem();
             this.exportFileContext = new System.Windows.Forms.ToolStripMenuItem();
             this.imageList1 = new System.Windows.Forms.ImageList(this.components);
             this.filePreviewImage = new System.Windows.Forms.PictureBox();
-            this.groupBox1 = new System.Windows.Forms.GroupBox();
+            this.filePreviewGroup = new System.Windows.Forms.GroupBox();
             this.groupBox2 = new System.Windows.Forms.GroupBox();
             this.fileTypeInfo = new System.Windows.Forms.Label();
             this.fileSizeInfo = new System.Windows.Forms.Label();
@@ -59,18 +64,19 @@
             this.label2 = new System.Windows.Forms.Label();
             this.label1 = new System.Windows.Forms.Label();
             this.groupBox3 = new System.Windows.Forms.GroupBox();
-            this.removeFile = new System.Windows.Forms.Button();
-            this.addFile = new System.Windows.Forms.Button();
             this.groupBox5 = new System.Windows.Forms.GroupBox();
-            this.importFile = new System.Windows.Forms.Button();
-            this.exportFile = new System.Windows.Forms.Button();
+            this.groupBox4 = new System.Windows.Forms.GroupBox();
+            this.env_list = new System.Windows.Forms.ComboBox();
+            this.elementHost1 = new System.Windows.Forms.Integration.ElementHost();
+            this.explorerControlsWPF1 = new AlienPAK.ExplorerControlsWPF();
             this.menuStrip1.SuspendLayout();
             this.fileContextMenu.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.filePreviewImage)).BeginInit();
-            this.groupBox1.SuspendLayout();
+            this.filePreviewGroup.SuspendLayout();
             this.groupBox2.SuspendLayout();
             this.groupBox3.SuspendLayout();
             this.groupBox5.SuspendLayout();
+            this.groupBox4.SuspendLayout();
             this.SuspendLayout();
             // 
             // menuStrip1
@@ -81,7 +87,7 @@
             this.toolsToolStripMenuItem});
             this.menuStrip1.Location = new System.Drawing.Point(0, 0);
             this.menuStrip1.Name = "menuStrip1";
-            this.menuStrip1.Size = new System.Drawing.Size(789, 24);
+            this.menuStrip1.Size = new System.Drawing.Size(1079, 24);
             this.menuStrip1.TabIndex = 1;
             this.menuStrip1.Text = "menuStrip1";
             // 
@@ -174,6 +180,64 @@
             this.createPAK2FromDirectoryToolStripMenuItem.Text = "Create PAK2 From Directory";
             this.createPAK2FromDirectoryToolStripMenuItem.Click += new System.EventHandler(this.createPAK2FromDirectoryToolStripMenuItem_Click);
             // 
+            // addFile
+            // 
+            this.addFile.Location = new System.Drawing.Point(6, 21);
+            this.addFile.Name = "addFile";
+            this.addFile.Size = new System.Drawing.Size(265, 24);
+            this.addFile.TabIndex = 0;
+            this.addFile.Text = "Import New File";
+            this.toolTip1.SetToolTip(this.addFile, "Add a new file to the current PAK archive.");
+            this.addFile.UseVisualStyleBackColor = true;
+            this.addFile.Click += new System.EventHandler(this.AddFileToArchive_Click);
+            // 
+            // removeFile
+            // 
+            this.removeFile.Enabled = false;
+            this.removeFile.Location = new System.Drawing.Point(6, 51);
+            this.removeFile.Name = "removeFile";
+            this.removeFile.Size = new System.Drawing.Size(265, 24);
+            this.removeFile.TabIndex = 1;
+            this.removeFile.Text = "Delete Selected File";
+            this.toolTip1.SetToolTip(this.removeFile, "With a file selected, press this button to delete it from the archive.");
+            this.removeFile.UseVisualStyleBackColor = true;
+            this.removeFile.Click += new System.EventHandler(this.RemoveFileFromArchive_Click);
+            // 
+            // importFile
+            // 
+            this.importFile.Enabled = false;
+            this.importFile.Location = new System.Drawing.Point(139, 21);
+            this.importFile.Name = "importFile";
+            this.importFile.Size = new System.Drawing.Size(132, 24);
+            this.importFile.TabIndex = 1;
+            this.importFile.Text = "Replace Selected";
+            this.toolTip1.SetToolTip(this.importFile, "With a file selected, press this button to replace it with a new file.");
+            this.importFile.UseVisualStyleBackColor = true;
+            this.importFile.Click += new System.EventHandler(this.importFile_Click);
+            // 
+            // exportFile
+            // 
+            this.exportFile.Enabled = false;
+            this.exportFile.Location = new System.Drawing.Point(6, 21);
+            this.exportFile.Name = "exportFile";
+            this.exportFile.Size = new System.Drawing.Size(132, 24);
+            this.exportFile.TabIndex = 0;
+            this.exportFile.Text = "Export Selected";
+            this.toolTip1.SetToolTip(this.exportFile, "With a file selected, press this to export it from the archive.");
+            this.exportFile.UseVisualStyleBackColor = true;
+            this.exportFile.Click += new System.EventHandler(this.exportFile_Click);
+            // 
+            // button1
+            // 
+            this.button1.Enabled = false;
+            this.button1.Location = new System.Drawing.Point(218, 19);
+            this.button1.Name = "button1";
+            this.button1.Size = new System.Drawing.Size(53, 24);
+            this.button1.TabIndex = 2;
+            this.button1.Text = "Load";
+            this.toolTip1.SetToolTip(this.button1, "With a file selected, press this button to delete it from the archive.");
+            this.button1.UseVisualStyleBackColor = true;
+            // 
             // FileTree
             // 
             this.FileTree.BorderStyle = System.Windows.Forms.BorderStyle.None;
@@ -222,16 +286,16 @@
             this.filePreviewImage.TabIndex = 7;
             this.filePreviewImage.TabStop = false;
             // 
-            // groupBox1
+            // filePreviewGroup
             // 
-            this.groupBox1.Controls.Add(this.filePreviewImage);
-            this.groupBox1.Location = new System.Drawing.Point(505, 27);
-            this.groupBox1.Name = "groupBox1";
-            this.groupBox1.Size = new System.Drawing.Size(277, 267);
-            this.groupBox1.TabIndex = 8;
-            this.groupBox1.TabStop = false;
-            this.groupBox1.Text = "File Preview";
-            this.groupBox1.Visible = false;
+            this.filePreviewGroup.Controls.Add(this.filePreviewImage);
+            this.filePreviewGroup.Location = new System.Drawing.Point(505, 27);
+            this.filePreviewGroup.Name = "filePreviewGroup";
+            this.filePreviewGroup.Size = new System.Drawing.Size(277, 267);
+            this.filePreviewGroup.TabIndex = 8;
+            this.filePreviewGroup.TabStop = false;
+            this.filePreviewGroup.Text = "File Preview";
+            this.filePreviewGroup.Visible = false;
             // 
             // groupBox2
             // 
@@ -325,62 +389,47 @@
             this.groupBox5.TabStop = false;
             this.groupBox5.Text = "File Utilities";
             // 
-            // addFile
+            // groupBox4
             // 
-            this.addFile.Location = new System.Drawing.Point(6, 21);
-            this.addFile.Name = "addFile";
-            this.addFile.Size = new System.Drawing.Size(265, 24);
-            this.addFile.TabIndex = 0;
-            this.addFile.Text = "Import New File";
-            this.toolTip1.SetToolTip(this.addFile, "Add a new file to the current PAK archive.");
-            this.addFile.UseVisualStyleBackColor = true;
-            this.addFile.Click += new System.EventHandler(this.AddFileToArchive_Click);
+            this.groupBox4.Controls.Add(this.env_list);
+            this.groupBox4.Controls.Add(this.button1);
+            this.groupBox4.Location = new System.Drawing.Point(505, 550);
+            this.groupBox4.Name = "groupBox4";
+            this.groupBox4.Size = new System.Drawing.Size(277, 51);
+            this.groupBox4.TabIndex = 16;
+            this.groupBox4.TabStop = false;
+            this.groupBox4.Text = "Level";
+            this.groupBox4.Visible = false;
             // 
-            // removeFile
+            // env_list
             // 
-            this.removeFile.Enabled = false;
-            this.removeFile.Location = new System.Drawing.Point(6, 51);
-            this.removeFile.Name = "removeFile";
-            this.removeFile.Size = new System.Drawing.Size(265, 24);
-            this.removeFile.TabIndex = 1;
-            this.removeFile.Text = "Delete Selected File";
-            this.toolTip1.SetToolTip(this.removeFile, "With a file selected, press this button to delete it from the archive.");
-            this.removeFile.UseVisualStyleBackColor = true;
-            this.removeFile.Click += new System.EventHandler(this.RemoveFileFromArchive_Click);
+            this.env_list.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.env_list.FormattingEnabled = true;
+            this.env_list.Location = new System.Drawing.Point(6, 20);
+            this.env_list.Name = "env_list";
+            this.env_list.Size = new System.Drawing.Size(206, 21);
+            this.env_list.TabIndex = 174;
             // 
-            // importFile
+            // elementHost1
             // 
-            this.importFile.Enabled = false;
-            this.importFile.Location = new System.Drawing.Point(139, 21);
-            this.importFile.Name = "importFile";
-            this.importFile.Size = new System.Drawing.Size(132, 24);
-            this.importFile.TabIndex = 1;
-            this.importFile.Text = "Replace Selected";
-            this.toolTip1.SetToolTip(this.importFile, "With a file selected, press this button to replace it with a new file.");
-            this.importFile.UseVisualStyleBackColor = true;
-            this.importFile.Click += new System.EventHandler(this.importFile_Click);
-            // 
-            // exportFile
-            // 
-            this.exportFile.Enabled = false;
-            this.exportFile.Location = new System.Drawing.Point(6, 21);
-            this.exportFile.Name = "exportFile";
-            this.exportFile.Size = new System.Drawing.Size(132, 24);
-            this.exportFile.TabIndex = 0;
-            this.exportFile.Text = "Export Selected";
-            this.toolTip1.SetToolTip(this.exportFile, "With a file selected, press this to export it from the archive.");
-            this.exportFile.UseVisualStyleBackColor = true;
-            this.exportFile.Click += new System.EventHandler(this.exportFile_Click);
+            this.elementHost1.Location = new System.Drawing.Point(788, 27);
+            this.elementHost1.Name = "elementHost1";
+            this.elementHost1.Size = new System.Drawing.Size(277, 676);
+            this.elementHost1.TabIndex = 17;
+            this.elementHost1.Text = "elementHost1";
+            this.elementHost1.Child = this.explorerControlsWPF1;
             // 
             // Explorer
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(789, 703);
+            this.ClientSize = new System.Drawing.Size(1079, 703);
+            this.Controls.Add(this.elementHost1);
+            this.Controls.Add(this.groupBox4);
             this.Controls.Add(this.groupBox3);
             this.Controls.Add(this.groupBox5);
             this.Controls.Add(this.groupBox2);
-            this.Controls.Add(this.groupBox1);
+            this.Controls.Add(this.filePreviewGroup);
             this.Controls.Add(this.FileTree);
             this.Controls.Add(this.menuStrip1);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedToolWindow;
@@ -394,11 +443,12 @@
             this.menuStrip1.PerformLayout();
             this.fileContextMenu.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.filePreviewImage)).EndInit();
-            this.groupBox1.ResumeLayout(false);
+            this.filePreviewGroup.ResumeLayout(false);
             this.groupBox2.ResumeLayout(false);
             this.groupBox2.PerformLayout();
             this.groupBox3.ResumeLayout(false);
             this.groupBox5.ResumeLayout(false);
+            this.groupBox4.ResumeLayout(false);
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -422,7 +472,7 @@
         private System.Windows.Forms.ToolStripMenuItem importFileContext;
         private System.Windows.Forms.ImageList imageList1;
         private System.Windows.Forms.PictureBox filePreviewImage;
-        private System.Windows.Forms.GroupBox groupBox1;
+        private System.Windows.Forms.GroupBox filePreviewGroup;
         private System.Windows.Forms.GroupBox groupBox2;
         private System.Windows.Forms.Label fileTypeInfo;
         private System.Windows.Forms.Label fileSizeInfo;
@@ -440,6 +490,11 @@
         private System.Windows.Forms.GroupBox groupBox5;
         private System.Windows.Forms.Button importFile;
         private System.Windows.Forms.Button exportFile;
+        private System.Windows.Forms.GroupBox groupBox4;
+        private System.Windows.Forms.ComboBox env_list;
+        private System.Windows.Forms.Button button1;
+        private System.Windows.Forms.Integration.ElementHost elementHost1;
+        private ExplorerControlsWPF explorerControlsWPF1;
     }
 }
 

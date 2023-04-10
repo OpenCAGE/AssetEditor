@@ -10,12 +10,6 @@ namespace AlienPAK
     /// </summary>
     public partial class LandingWPF : UserControl
     {
-        public Action<Process> OnToolOpened;
-        public Action<Process> OnToolClosed;
-
-        public Action OnUpdateRequest;
-        public Action OnSettingsRequest;
-
         public LandingWPF()
         {
             InitializeComponent();
@@ -33,6 +27,10 @@ namespace AlienPAK
         {
             LaunchEditor(AlienContentType.MODEL);
         }
+        private void OpenMaterials(object sender, RoutedEventArgs e)
+        {
+
+        }
         private void OpenSounds(object sender, RoutedEventArgs e)
         {
             
@@ -45,10 +43,14 @@ namespace AlienPAK
         {
             LaunchEditor(AlienContentType.ANIMATION);
         }
+        private void OpenMaterialMaps(object sender, RoutedEventArgs e)
+        {
+            LaunchEditor(AlienContentType.MATERIAL_MAPPINGS);
+        }
 
         private void LaunchEditor(AlienContentType type)
         {
-            Explorer interfaceTool = new Explorer(new string[] { }, type);
+            Explorer interfaceTool = new Explorer(type);
             interfaceTool.Show();
         }
     }

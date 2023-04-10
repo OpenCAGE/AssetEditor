@@ -93,6 +93,9 @@
     <Compile Include="Explorer.Designer.cs">
       <DependentUpon>Explorer.cs</DependentUpon>
     </Compile>
+    <Compile Include="ExplorerControlsWPF.xaml.cs">
+      <DependentUpon>ExplorerControlsWPF.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Landing.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -145,6 +148,10 @@
     <EmbeddedResource Include="Resources\DirectXTexNet.dll" />
   </ItemGroup>
   <ItemGroup>
+    <Page Include="ExplorerControlsWPF.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="LandingWPF.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>

@@ -19,22 +19,18 @@ namespace AlienPAK
         AlienContentType pakType = AlienContentType.NONE_SPECIFIED;
 
         TreeUtility treeHelper;
+        ExplorerControlsWPF preview;
 
-        public Explorer(string[] args, AlienContentType LaunchAs)
+        public Explorer(AlienContentType LaunchAs)
         {
             LaunchMode = LaunchAs;
             InitializeComponent();
-
-            //Support "open with" from Windows on PAK files
-            if (args.Length > 0 && File.Exists(args[0]))
-            {
-                OpenFileAndPopulateGUI(args[0]);
-            }
 
             //Link image list to GUI elements for icons
             FileTree.ImageList = imageList1;
 
             treeHelper = new TreeUtility(FileTree);
+            preview = (ExplorerControlsWPF)elementHost1.Child;
             AlienModToolsAdditions();
         }
 
@@ -121,71 +117,35 @@ namespace AlienPAK
             //groupBox3.Hide();
         }
 
-        /* Get type description based on extension */
-        private string GetFileTypeDescription(string FileExtension)
+        private void UpdateUI()
         {
-            if (FileExtension == "")
+            filePreviewGroup.Hide();
+            switch (pakType)
             {
-                /*
-                if (AlienPAK.Format == PAKType.PAK_SCRIPTS)
-                {
-                    return "Cathode Script";
-                }
-                */
-                return "Unknown Type";
-            }
-            switch (FileExtension.Substring(1).ToUpper())
-            {
-                case "DDS":
-                    return "DDS (Image)";
-                case "TGA":
-                    return "TGA (Image)";
-                case "PNG":
-                    return "PNG (Image)";
-                case "JPG":
-                    return "JPG (Image)";
-                case "GFX":
-                    return "GFX (Adobe Flash)";
-                case "CS2":
-                    return "CS2 (Model)";
-                case "BIN":
-                    return "BIN (Binary File)";
-                case "BML":
-                    return "BML (Binary XML)";
-                case "XML":
-                    return "XML (Markup)";
-                case "TXT":
-                    return "TXT (Text)";
-                case "DXBC":
-                    return "DXBC (Compiled HLSL)";
-                default:
-                    return FileExtension.Substring(1).ToUpper();
+                case AlienContentType.TEXTURE:
+                    filePreviewGroup.Show();
+                    break;
             }
         }
 
         /* Temp function to get a file as a byte array */
         private byte[] GetFileAsBytes(string FileName)
         {
-            /*
-            PAKReturnType ResponseCode = PAKReturnType.FAIL_UNKNOWN;
-            foreach (PAK thisPAK in AlienPAKs)
+            switch (pakType)
             {
-                ResponseCode = thisPAK.ExportFile(FileName, "temp"); //Should really be able to pull from PAK as bytes
-                if (ResponseCode == PAKReturnType.SUCCESS || ResponseCode == PAKReturnType.SUCCESS_WITH_WARNINGS) break;
+                case AlienContentType.ANIMATION:
+                case AlienContentType.UI:
+                    return ((PAK2)AlienPAKs).Entries.FirstOrDefault(o => o.Filename == FileName)?.Content;
+                default:
+                    return null;
             }
-            if (!File.Exists("temp")) return new byte[] { };
-            byte[] ExportedFile = File.ReadAllBytes("temp");
-            File.Delete("temp");
-            return ExportedFile;
-            */
-            return null;
         }
 
         /* Update file preview */
         private void UpdateSelectedFilePreview()
         {
             //First, reset the GUI
-            groupBox1.Visible = false;
+            filePreviewGroup.Visible = false;
             filePreviewImage.BackgroundImage = null;
             fileNameInfo.Text = "";
             fileSizeInfo.Text = "";
@@ -206,22 +166,14 @@ namespace AlienPAK
             {
                 string FileName = ((TreeItem)FileTree.SelectedNode.Tag).String_Value;
 
-                //Populate filename/type info
-                fileNameInfo.Text = Path.GetFileName(FileName);
-                fileTypeInfo.Text = GetFileTypeDescription(Path.GetExtension(FileName));
-
-                //Populate file size info
-                int FileSize = -1;
-                //foreach (PAK thisPAK in AlienPAKs) if (FileSize == -1) FileSize = thisPAK.GetFileSize(FileName);
-                if (FileSize == -1) { return; }
-                fileSizeInfo.Text = FileSize.ToString() + " bytes";
+                preview.SetFileInfo(Path.GetFileName(FileName), "0");
 
                 //Show file preview if selected an image
                 if (Path.GetExtension(FileName).ToUpper() == ".DDS")
                 {
-                    ResizeImagePreview(GetAsBitmap(FileName));
+                    preview.SetImagePreview(GetAsBitmap(FileName));
                 }
-                groupBox1.Visible = (filePreviewImage.BackgroundImage != null);
+                filePreviewGroup.Visible = (filePreviewImage.BackgroundImage != null);
 
                 //Enable buttons
                 exportFile.Enabled = true;

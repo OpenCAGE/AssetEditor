@@ -59,6 +59,9 @@
             <Button Style="{StaticResource TextButton}" Click="OpenModels">
                 Models
             </Button>
+            <Button Style="{StaticResource TextButton}" Click="OpenMaterials" Visibility="Collapsed">
+                Materials
+            </Button>
             <Button Style="{StaticResource TextButton}" Click="OpenSounds" Visibility="Collapsed">
                 Sounds
             </Button>
@@ -67,6 +70,9 @@
             </Button>
             <Button Style="{StaticResource TextButton}" Click="OpenAnimations">
                 Animations
+            </Button>
+            <Button Style="{StaticResource TextButton}" Click="OpenMaterialMaps" Visibility="Collapsed">
+                Material Mappings
             </Button>
         </StackPanel>
 
