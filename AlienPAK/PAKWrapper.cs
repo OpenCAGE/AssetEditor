@@ -1,5 +1,6 @@
 ﻿using CATHODE;
 using CathodeLib;
+using DirectXTex;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -139,29 +140,39 @@ namespace AlienPAK
                     Textures.TEX4 texture = ((Textures)_file).Entries.FirstOrDefault(o => o.Name.Replace('\\', '/') == FileName.Replace('\\', '/'));
                     Textures.TEX4_Part part = texture?.tex_HighRes?.Content != null ? texture.tex_HighRes : texture?.tex_LowRes?.Content != null ? texture.tex_LowRes : null;
                     if (part == null) return null;
-                    DDSWriter _writer;
-                    bool _crude = false;
+                    DirectXTexUtility.DXGIFormat format;
                     switch (texture.Format)
                     {
                         case Textures.TextureFormat.DXGI_FORMAT_BC5_UNORM:
-                            _writer = new DDSWriter(part.Content, part.Width, part.Height, 32, 0, TextureType.ATI2N);
+                            format = DirectXTexUtility.DXGIFormat.BC5UNORM;
                             break;
                         case Textures.TextureFormat.DXGI_FORMAT_BC1_UNORM:
-                            _writer = new DDSWriter(part.Content, part.Width, part.Height, 32, 0, TextureType.Dxt1);
+                            format = DirectXTexUtility.DXGIFormat.BC1UNORM;
                             break;
                         case Textures.TextureFormat.DXGI_FORMAT_BC3_UNORM:
-                            _writer = new DDSWriter(part.Content, part.Width, part.Height, 32, 0, TextureType.Dxt5);
+                            format = DirectXTexUtility.DXGIFormat.BC3UNORM;
                             break;
                         case Textures.TextureFormat.DXGI_FORMAT_B8G8R8A8_UNORM:
-                            _writer = new DDSWriter(part.Content, part.Width, part.Height, 32, 0, TextureType.UNCOMPRESSED_GENERAL);
+                            format = DirectXTexUtility.DXGIFormat.B8G8R8A8UNORM;
                             break;
-                        case Textures.TextureFormat.DXGI_FORMAT_BC7_UNORM:
                         default:
-                            _writer = new DDSWriter(part.Content, part.Width, part.Height);
-                            _crude = true;
+                            format = DirectXTexUtility.DXGIFormat.BC7UNORM;
                             break;
                     }
-                    return _crude ? _writer.ToBytesCrude() : _writer.ToBytes();
+                    DirectXTexUtility.GenerateDDSHeader(
+                        //new DirectXTexUtility.TexMetadata(
+                        //    part.Width, part.Height, part.Depth, part.Content.Length, part.MipLevels, 
+                        //    texture.Type == Textures.AlienTextureType.ENVIRONMENT_MAP ? DirectXTexUtility.TexMiscFlags.TEXTURECUBE : 0x00, 0x00, format, DirectXTexUtility.TexDimension.TEXTURE2D
+                        //),
+                        DirectXTexUtility.GenerateMataData(part.Width, part.Height, part.MipLevels, format, texture.Type == Textures.AlienTextureType.ENVIRONMENT_MAP), //TODO: env map property here doesn't seem to be working
+                        DirectXTexUtility.DDSFlags.FORCEDX10EXT, out DirectXTexUtility.DDSHeader ddsHeader, out DirectXTexUtility.DX10Header dx10Header);
+                    MemoryStream ms = new MemoryStream();
+                    using (BinaryWriter bw = new BinaryWriter(ms))
+                    {
+                        bw.Write(DirectXTexUtility.EncodeDDSHeader(ddsHeader, dx10Header));
+                        bw.Write(part.Content);
+                    }
+                    return ms.ToArray();
                 case PAKType.MATERIAL_MAPPINGS:
                     //TODO!
                     MaterialMappings.Mapping map = ((MaterialMappings)_file).Entries.FirstOrDefault(o => o.MapFilename.Replace('\\', '/') == FileName.Replace('\\', '/'));

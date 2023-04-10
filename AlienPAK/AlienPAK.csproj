@@ -87,7 +87,7 @@
     <Reference Include="WindowsFormsIntegration" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="DDSWriter.cs" />
+    <Compile Include="DirectXTexUtility.cs" />
     <Compile Include="Explorer.cs">
       <SubType>Form</SubType>
     </Compile>
