@@ -222,6 +222,7 @@
             this.menuStrip1.ResumeLayout(false);
             this.menuStrip1.PerformLayout();
             this.fileContextMenu.ResumeLayout(false);
+            this.FormClosed += Explorer_FormClosed;
             this.ResumeLayout(false);
             this.PerformLayout();
 

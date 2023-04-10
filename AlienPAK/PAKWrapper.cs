@@ -20,6 +20,8 @@ namespace AlienPAK
 
         public List<string> Load(string path)
         {
+            Unload();
+            
             List<string> files = new List<string>();
             switch (Path.GetFileName(path).ToUpper())
             {
@@ -80,6 +82,36 @@ namespace AlienPAK
                     break;
             }
             return files;
+        }
+
+        public void Unload()
+        {
+            if (_file == null) return;
+            switch (_type)
+            {
+                case PAKType.TEXTURE:
+                    ((Textures)_file).Entries.Clear();
+                    break;
+                case PAKType.MODEL:
+                    ((Models)_file).Entries.Clear();
+                    break;
+                case PAKType.MATERIAL_MAPPINGS:
+                    ((MaterialMappings)_file).Entries.Clear();
+                    break;
+                case PAKType.SCRIPT:
+                    ((Commands)_file).Entries.Clear();
+                    break;
+                /*
+                case PAKType.SHADER:
+                    ((Shaders)_file).Entries.Clear();
+                    break;
+                */
+                case PAKType.ANIMATION:
+                case PAKType.UI:
+                    ((PAK2)_file).Entries.Clear();
+                    break;
+            }
+            _file = null;
         }
 
         public bool CanImport

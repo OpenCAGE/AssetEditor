@@ -111,6 +111,15 @@ namespace AlienPAK
             UpdateSelectedFilePreview();
         }
 
+        private void Explorer_FormClosed(object sender, FormClosedEventArgs e)
+        {
+            pak?.Unload();
+            treeHelper.UpdateFileTree(new List<string>());
+            treeHelper = null;
+            pak = null;
+            preview = null;
+        }
+
         /* Open a PAK and populate the GUI */
         private void LoadPAK(string filename)
         {
