@@ -41,13 +41,13 @@ namespace AlienPAK
             FileTree.SuspendLayout();
             FileTree.BeginUpdate();
             FileTree.Nodes.Clear();
+            FilesToList.Sort();
             foreach (string FileName in FilesToList)
             {
                 string[] FileNameParts = FileName.Split('/');
                 if (FileNameParts.Length == 1) { FileNameParts = FileName.Split('\\'); }
                 AddFileToTree(FileNameParts, 0, FileTree.Nodes, contextMenu);
             }
-            FileTree.Sort();
             FileTree.EndUpdate();
             FileTree.ResumeLayout();
         }

@@ -44,11 +44,6 @@ namespace AlienPAK
             //Verify location
             if (args.Length != 0 && args[0] == "-opencage" && !File.Exists(SharedData.pathToAI + "/AI.exe")) throw new Exception("This tool was launched incorrectly, or was not placed within the Alien: Isolation directory.");
 
-            //Add font resources for use
-            FontManager.AddFont(Properties.Resources.Isolation_Isolation);
-            FontManager.AddFont(Properties.Resources.JixellationBold_Jixellation);
-            FontManager.AddFont(Properties.Resources.NostromoBoldCond_Nostromo_Cond);
-
             //Launch application
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(true);
