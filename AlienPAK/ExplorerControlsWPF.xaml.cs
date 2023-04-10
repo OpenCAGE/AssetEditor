@@ -25,6 +25,20 @@ namespace AlienPAK
         public Action OnReplaceRequested;
         public Action OnExportAllRequested;
 
+        public bool FilePreviewVisible
+        {
+            get
+            {
+                return filePreviewGroup.Visibility == Visibility.Visible;
+            }
+        }
+
+        private Bitmap _filePreviewBitmap = null;
+        public Bitmap FilePreviewBitmap
+        {
+            get { return _filePreviewBitmap; }
+        }
+
         public ExplorerControlsWPF()
         {
             InitializeComponent();
@@ -48,10 +62,10 @@ namespace AlienPAK
         /* Show the image preview for the selected file in UI if possible */
         public void SetImagePreview(byte[] content)
         {
-            Bitmap bitmap = GetAsBitmap(content);
-            filePreviewGroup.Visibility = bitmap == null ? Visibility.Collapsed : Visibility.Visible;
-            if (bitmap == null) return;
-            filePreviewImage.Source = ImageSourceFromBitmap(bitmap);
+            _filePreviewBitmap = GetAsBitmap(content);
+            filePreviewGroup.Visibility = _filePreviewBitmap == null ? Visibility.Collapsed : Visibility.Visible;
+            if (_filePreviewBitmap == null) return;
+            filePreviewImage.Source = ImageSourceFromBitmap(_filePreviewBitmap);
         }
 
         /* Show the level selection dropdown if requested */
@@ -83,8 +97,6 @@ namespace AlienPAK
                 levelSelectDropdown.SelectedIndex = 0;
             }
 
-            // We auto-forward through to a button click when visibility is set here, to trigger a load.
-            // NOTE: This is desired behaviour in OpenCAGE mode, but not in regular standalone mode.
             LevelSelected(null, null);
         }
 

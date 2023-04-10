@@ -14,7 +14,7 @@
             </GroupBox>
             
             <GroupBox x:Name="filePreviewGroup" Header="File Preview" Margin="0 0 0 10">
-                <Image x:Name="filePreviewImage" Source="Images/axel-bg.jpg" Stretch="UniformToFill" Margin="10" />
+                <Image x:Name="filePreviewImage" Source="Images/axel-bg.jpg" Stretch="Uniform" Margin="10" MaxHeight="250" />
             </GroupBox>
 
             <GroupBox x:Name="fileInfoGroup" Header="File Info" Margin="0 0 0 10">

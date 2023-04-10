@@ -64,6 +64,7 @@ namespace AlienPAK
             preview.OnReplaceRequested += ImportSelectedFile;
             preview.OnDeleteRequested += DeleteSelectedFile;
             preview.OnExportAllRequested += ExportAll;
+            preview.ShowFunctionButtons(PAKFunction.NONE);
             preview.ShowLevelSelect(LaunchMode != PAKType.NONE && LaunchMode != PAKType.ANIMATIONS && LaunchMode != PAKType.UI, LaunchMode);
         }
 
@@ -166,68 +167,23 @@ namespace AlienPAK
         /* Export all files in the PAK */
         private void ExportAll()
         {
-            //Load all file names currently in the UI
-            //if (AlienPAKs[0].Format == PAKType.UNRECOGNISED)
-            {
-                MessageBox.Show("No files to export!\nPlease load a PAK archive.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                return;
-            }
-            //List<string> AllFiles = AlienPAKs[0].Parse();
+            //TODO: perhaps give a "convert to usable formats" checkbox on this export which converts to OBJ and PNG or something?
             Cursor.Current = Cursors.WaitCursor;
-
-            //Select the folder to dump to
             FolderBrowserDialog FolderToExportTo = new FolderBrowserDialog();
-            if (FolderToExportTo.ShowDialog() != DialogResult.OK) return;
-
-            //Go through all filenames and request an export
-            int SuccessCount = 0;
-            //for (int i = 0; i < AllFiles.Count; i++)
-            //{
-            //    string ExportPath = FolderToExportTo.SelectedPath + "\\" + AllFiles[i];
-            //    Directory.CreateDirectory(ExportPath.Substring(0, ExportPath.Length - Path.GetFileName(ExportPath).Length));
-            //    PAKReturnType ErrorCode = AlienPAKs[0].ExportFile(AllFiles[i], ExportPath);
-            //    if (ErrorCode == PAKReturnType.SUCCESS || ErrorCode == PAKReturnType.SUCCESS_WITH_WARNINGS) SuccessCount++;
-            //}
-
-            //Complete!
+            if (FolderToExportTo.ShowDialog() == DialogResult.OK)
+            {
+                int exportCount = 0;
+                for (int i = 0; i < pak.Contents.Count; i++)
+                {
+                    byte[] content = pak.GetFileContent(pak.Contents[i]);
+                    if (content == null) continue;
+                    Directory.CreateDirectory(FolderToExportTo.SelectedPath + "/" + pak.Contents[i].Substring(0, pak.Contents[i].Length - Path.GetFileName(pak.Contents[i]).Length));
+                    File.WriteAllBytes(FolderToExportTo.SelectedPath + "/" + pak.Contents[i], content);
+                    exportCount++;
+                }
+                Process.Start(FolderToExportTo.SelectedPath);
+            }
             Cursor.Current = Cursors.Default;
-            //if (SuccessCount == AllFiles.Count)
-            {
-                MessageBox.Show("Successfully exported all files from this PAK!", "Export complete.", MessageBoxButtons.OK, MessageBoxIcon.Information);
-            }
-            //else
-            {
-                //    MessageBox.Show("Export process complete, but " + (AllFiles.Count - SuccessCount) + " files encountered errors.\nPerhaps try a directory with a shorter filepath, or check write access.", "Export complete, with warnings.", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-            }
-        }
-
-        /* Try free-up when closing */
-        private void Explorer_FormClosed(object sender, FormClosedEventArgs e)
-        {
-            pak?.Unload();
-            treeHelper.UpdateFileTree(new List<string>());
-            treeHelper = null;
-            pak = null;
-            preview = null;
-        }
-
-        /* Update file preview */
-        private void UpdateSelectedFilePreview()
-        {
-            preview.ShowFunctionButtons(pak.Functionality);
-            if (FileTree.SelectedNode == null) return;
-
-            TreeItemType nodeType = ((TreeItem)FileTree.SelectedNode.Tag).Item_Type;
-            string nodeVal = ((TreeItem)FileTree.SelectedNode.Tag).String_Value;
-
-            switch (nodeType)
-            {
-                case TreeItemType.EXPORTABLE_FILE:
-                    byte[] content = pak.GetFileContent(nodeVal);
-                    preview.SetFileInfo(Path.GetFileName(nodeVal), content?.Length.ToString());
-                    preview.SetImagePreview(content);
-                    break;
-            }
         }
 
         /* Import a file to replace the selected PAK entry */
@@ -307,11 +263,11 @@ namespace AlienPAK
             string filter = "Exported File|*" + Path.GetExtension(FileTree.SelectedNode.Text);
 
             //If export file is DDS & we have a preview, then we can export it in a range of formats
-            bool isExportingDDS = Path.GetExtension(FileTree.SelectedNode.Text).ToUpper() == ".DDS";
-            //if (Path.GetExtension(FileTree.SelectedNode.Text).ToUpper() == ".DDS" && filePreviewImage.BackgroundImage != null)
-            //    filter = "PNG Image|*.png|JPG Image|*.jpg|DDS Image|*.dds";
+            if (preview.FilePreviewVisible && preview.FilePreviewBitmap != null)
+                filter = "PNG Image|*.png|JPG Image|*.jpg|DDS Image|*.dds";
 
             //Remove extension from output filename
+            string filepath = ((TreeItem)FileTree.SelectedNode.Tag).String_Value;
             string filename = Path.GetFileName(FileTree.SelectedNode.Text);
             while (Path.GetExtension(filename).Length != 0) filename = filename.Substring(0, filename.Length - Path.GetExtension(filename).Length);
 
@@ -323,30 +279,64 @@ namespace AlienPAK
             {
                 Cursor.Current = Cursors.WaitCursor;
                 //Special export for DDS conversion
-                if (isExportingDDS && Path.GetExtension(FilePicker.FileName).ToUpper() != ".DDS")
+                if (preview.FilePreviewVisible && preview.FilePreviewBitmap != null &&
+                    Path.GetExtension(FilePicker.FileName).ToUpper() != ".DDS")
                 {
                     try
                     {
-                        //filePreviewImage.BackgroundImage.Save(FilePicker.FileName);
-                        //MessageBox.Show(AlienErrors.ErrorMessageBody(PAKReturnType.SUCCESS), AlienErrors.ErrorMessageTitle(PAKReturnType.SUCCESS), MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        preview.FilePreviewBitmap.Save(FilePicker.FileName);
+                        MessageBox.Show("Successfully exported image!", "Export complete", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     }
-                    catch
+                    catch (Exception ex)
                     {
-                        //MessageBox.Show("Failed to export!\nPlease try again as DDS.", AlienErrors.ErrorMessageTitle(PAKReturnType.FAIL_UNKNOWN), MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        MessageBox.Show(ex.ToString(), "Export failed", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     }
                 }
                 //Regular export
                 else
                 {
-                    //PAKReturnType ResponseCode = PAKReturnType.FAIL_UNKNOWN;
-                    //foreach (PAK thisPAK in AlienPAKs)
-                    //{
-                    //    ResponseCode = thisPAK.ExportFile(((TreeItem)FileTree.SelectedNode.Tag).String_Value, FilePicker.FileName);
-                    //   if (ResponseCode == PAKReturnType.SUCCESS || ResponseCode == PAKReturnType.SUCCESS_WITH_WARNINGS) break;
-                    //}
-                    //MessageBox.Show(AlienErrors.ErrorMessageBody(ResponseCode), AlienErrors.ErrorMessageTitle(ResponseCode), MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    //TODO: handle DDS header conversion for texture pak
+                    //TODO: handle model format for model pak
+                    try
+                    {
+                        File.WriteAllBytes(FilePicker.FileName, pak.GetFileContent(filepath));
+                        MessageBox.Show("Successfully exported file!", "Export complete", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show(ex.ToString(), "Export failed", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
                 }
                 Cursor.Current = Cursors.Default;
+            }
+        }
+
+        /* Try free-up when closing */
+        private void Explorer_FormClosed(object sender, FormClosedEventArgs e)
+        {
+            pak?.Unload();
+            treeHelper.UpdateFileTree(new List<string>());
+            treeHelper = null;
+            pak = null;
+            preview = null;
+        }
+
+        /* Update file preview */
+        private void UpdateSelectedFilePreview()
+        {
+            preview.ShowFunctionButtons(pak.Functionality);
+            if (FileTree.SelectedNode == null) return;
+
+            TreeItemType nodeType = ((TreeItem)FileTree.SelectedNode.Tag).Item_Type;
+            string nodeVal = ((TreeItem)FileTree.SelectedNode.Tag).String_Value;
+
+            switch (nodeType)
+            {
+                case TreeItemType.EXPORTABLE_FILE:
+                    byte[] content = pak.GetFileContent(nodeVal);
+                    preview.SetFileInfo(Path.GetFileName(nodeVal), content?.Length.ToString());
+                    preview.SetImagePreview(content);
+                    break;
             }
         }
 

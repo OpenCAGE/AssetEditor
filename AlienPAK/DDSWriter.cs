@@ -400,49 +400,106 @@ namespace AlienPAK
             return ThisEndian;
         }
 
+        public byte[] ToBytes()
+        {
+            MemoryStream ms = new MemoryStream();
+            using (BinaryWriter bw = new BinaryWriter(ms))
+            {
+                //Write Header first
+                bw.Write(FlipEndian(BitConverter.GetBytes((int)DDS_HEADER.DDS_MAGIC)));
+                bw.Write(FlipEndian(BitConverter.GetBytes((int)DDS_HEADER.dwSize)));
+                bw.Write(DDS_HEADER.dwFlags);
+                bw.Write(DDS_HEADER.dwHeight);
+                bw.Write(DDS_HEADER.dwWidth);
+                bw.Write(DDS_HEADER.dwPitchOrLinearSize);
+                bw.Write(DDS_HEADER.dwDepth);
+                bw.Write(DDS_HEADER.dwMipMapCount);
+
+                foreach (UInt32 value in DDS_HEADER.dwReserved1)
+                {
+                    bw.Write(value);
+                }
+
+                bw.Write(DDS_HEADER.pfSize);
+                bw.Write(DDS_HEADER.pfFlags);
+                bw.Write(DDS_HEADER.pfFourCC);
+
+                bw.Write(DDS_HEADER.pfRGBBitCount);
+                bw.Write(DDS_HEADER.pfRBitMask);
+                bw.Write(DDS_HEADER.pfGBitMask);
+                bw.Write(DDS_HEADER.pfBBitMask);
+                bw.Write(DDS_HEADER.pfABitMask);
+
+                bw.Write(DDS_HEADER.dwCaps1);
+                bw.Write(DDS_HEADER.dwCaps2);
+                bw.Write(DDS_HEADER.dwCaps3);
+                bw.Write(DDS_HEADER.dwCaps4);
+
+                bw.Write(DDS_HEADER.dwReserved2);
+
+                //Write chunk
+                bw.Write(DDS_CHUNK);
+            }
+            return ms.ToArray();
+        }
+
+        public byte[] ToBytesCrude()
+        {
+            MemoryStream ms = new MemoryStream();
+            using (BinaryWriter bw = new BinaryWriter(ms))
+            {
+                //Failed to come up with a suitable header, try a best guess...
+                bw.Write(542327876);
+                bw.Write(124);
+                bw.Write(659463);
+                bw.Write(DDS_HEADER.dwHeight);
+                bw.Write(DDS_HEADER.dwWidth);
+                bw.Write(CalculatePitch((int)this.DDS_HEADER.dwWidth, (int)this.DDS_HEADER.dwHeight, 32, 3));
+                bw.Write(1);
+                bw.Write(8);
+
+                foreach (UInt32 value in DDS_HEADER.dwReserved1)
+                {
+                    bw.Write(value);
+                }
+
+                bw.Write(32);
+                bw.Write(4);
+                bw.Write(808540228);
+
+                bw.Write(DDS_HEADER.pfRGBBitCount);
+                bw.Write((uint)0xFF0000);
+                bw.Write((uint)0xFF00);
+                bw.Write((uint)0xFF);
+                bw.Write((uint)0xFF000000);
+
+                bw.Write(4198408);
+                bw.Write(DDS_HEADER.dwCaps2);
+                bw.Write(DDS_HEADER.dwCaps3);
+                bw.Write(DDS_HEADER.dwCaps4);
+
+                bw.Write(DDS_HEADER.dwReserved2);
+
+                bw.Write(98);
+                bw.Write(3);
+                bw.Write(0);
+                bw.Write(1);
+
+                bw.Write(0);
+
+                //Write chunk
+                bw.Write(DDS_CHUNK);
+            }
+            return ms.ToArray();
+        }
+
         /* Save the final file */
         public void Save(string path_File2write)
         {
             //Save out the DDS file
             FileStream outputStream = new FileStream(path_File2write, FileMode.Create);
             BinaryWriter bw = new BinaryWriter(outputStream);
-
-            //Write Header first
-            bw.Write(FlipEndian(BitConverter.GetBytes((int)DDS_HEADER.DDS_MAGIC)));
-            bw.Write(FlipEndian(BitConverter.GetBytes((int)DDS_HEADER.dwSize)));
-            bw.Write(DDS_HEADER.dwFlags);
-            bw.Write(DDS_HEADER.dwHeight);
-            bw.Write(DDS_HEADER.dwWidth);
-            bw.Write(DDS_HEADER.dwPitchOrLinearSize);
-            bw.Write(DDS_HEADER.dwDepth);
-            bw.Write(DDS_HEADER.dwMipMapCount);
-
-            foreach (UInt32 value in DDS_HEADER.dwReserved1)
-            {
-                bw.Write(value);
-            }
-
-            bw.Write(DDS_HEADER.pfSize);
-            bw.Write(DDS_HEADER.pfFlags);
-            bw.Write(DDS_HEADER.pfFourCC);
-
-            bw.Write(DDS_HEADER.pfRGBBitCount);
-            bw.Write(DDS_HEADER.pfRBitMask);
-            bw.Write(DDS_HEADER.pfGBitMask);
-            bw.Write(DDS_HEADER.pfBBitMask);
-            bw.Write(DDS_HEADER.pfABitMask);
-
-            bw.Write(DDS_HEADER.dwCaps1);
-            bw.Write(DDS_HEADER.dwCaps2);
-            bw.Write(DDS_HEADER.dwCaps3);
-            bw.Write(DDS_HEADER.dwCaps4);
-
-            bw.Write(DDS_HEADER.dwReserved2);
-
-            //Write chunk
-            bw.Write(DDS_CHUNK);
-
-            //Finished!
+            bw.Write(ToBytes());
             outputStream.Close();
             bw.Close();
         }
@@ -450,53 +507,9 @@ namespace AlienPAK
         /* Save the final file with a guess at the header */
         public void SaveCrude(string path_File2write)
         {
-            //Save out the DDS file
             FileStream outputStream = new FileStream(path_File2write, FileMode.Create);
             BinaryWriter bw = new BinaryWriter(outputStream);
-
-            //Failed to come up with a suitable header, try a best guess...
-            bw.Write(542327876);
-            bw.Write(124);
-            bw.Write(659463);
-            bw.Write(DDS_HEADER.dwHeight);
-            bw.Write(DDS_HEADER.dwWidth);
-            bw.Write(CalculatePitch((int)this.DDS_HEADER.dwWidth, (int)this.DDS_HEADER.dwHeight, 32, 3));
-            bw.Write(1);
-            bw.Write(8);
-
-            foreach (UInt32 value in DDS_HEADER.dwReserved1)
-            {
-                bw.Write(value);
-            }
-
-            bw.Write(32);
-            bw.Write(4);
-            bw.Write(808540228);
-
-            bw.Write(DDS_HEADER.pfRGBBitCount);
-            bw.Write((uint)0xFF0000);
-            bw.Write((uint)0xFF00);
-            bw.Write((uint)0xFF);
-            bw.Write((uint)0xFF000000);
-
-            bw.Write(4198408);
-            bw.Write(DDS_HEADER.dwCaps2);
-            bw.Write(DDS_HEADER.dwCaps3);
-            bw.Write(DDS_HEADER.dwCaps4);
-
-            bw.Write(DDS_HEADER.dwReserved2);
-
-            bw.Write(98);
-            bw.Write(3);
-            bw.Write(0);
-            bw.Write(1);
-
-            bw.Write(0);
-
-            //Write chunk
-            bw.Write(DDS_CHUNK);
-
-            //Once we have written to the file close the stream and writter
+            bw.Write(ToBytesCrude());
             outputStream.Close();
             bw.Close();
         }
