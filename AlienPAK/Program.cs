@@ -11,7 +11,17 @@ namespace AlienPAK
     {
         public static string pathToAI = "";
     }
-    public enum AlienContentType { TEXTURE, MODEL, UI, SCRIPT, ANIMATION, NONE_SPECIFIED };
+    public enum AlienContentType 
+    { 
+        TEXTURE, 
+        MODEL,
+        UI,
+        SCRIPT, 
+        ANIMATION,
+        MATERIAL_MAPPINGS,
+        SHADER,
+        NONE_SPECIFIED 
+    };
 
     static class Program
     {

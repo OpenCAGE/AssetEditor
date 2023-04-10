@@ -38,6 +38,8 @@ namespace AlienPAK
         /* Update the file tree GUI */
         public void UpdateFileTree(List<string> FilesToList, ContextMenuStrip contextMenu = null)
         {
+            FileTree.SuspendLayout();
+            FileTree.BeginUpdate();
             FileTree.Nodes.Clear();
             foreach (string FileName in FilesToList)
             {
@@ -46,6 +48,8 @@ namespace AlienPAK
                 AddFileToTree(FileNameParts, 0, FileTree.Nodes, contextMenu);
             }
             FileTree.Sort();
+            FileTree.EndUpdate();
+            FileTree.ResumeLayout();
         }
 
         /* Add a file to the GUI tree structure */
