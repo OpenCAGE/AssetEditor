@@ -9,6 +9,8 @@ using System.Runtime.InteropServices;
 using System.Windows.Interop;
 using System.Windows;
 using System.Drawing.Imaging;
+using CATHODE;
+using System.Windows.Media.Media3D;
 
 namespace AlienPAK
 {
@@ -29,7 +31,15 @@ namespace AlienPAK
         {
             get
             {
-                return filePreviewGroup.Visibility == Visibility.Visible;
+                return imagePreviewGroup.Visibility == Visibility.Visible;
+            }
+        }
+
+        public bool ModelPreviewVisible
+        {
+            get
+            {
+                return modelPreviewGroup.Visibility == Visibility.Visible;
             }
         }
 
@@ -63,9 +73,19 @@ namespace AlienPAK
         public void SetImagePreview(byte[] content)
         {
             _filePreviewBitmap = GetAsBitmap(content);
-            filePreviewGroup.Visibility = _filePreviewBitmap == null ? Visibility.Collapsed : Visibility.Visible;
+            imagePreviewGroup.Visibility = _filePreviewBitmap == null ? Visibility.Collapsed : Visibility.Visible;
+            modelPreviewGroup.Visibility = Visibility.Collapsed;
             if (_filePreviewBitmap == null) return;
             filePreviewImage.Source = ImageSourceFromBitmap(_filePreviewBitmap);
+        }
+
+        /* Show the model preview for the selected file in UI */
+        public void SetModelPreview(Model3DGroup content)
+        {
+            modelPreviewGroup.Visibility = Visibility.Visible;
+            imagePreviewGroup.Visibility = Visibility.Collapsed;
+            filePreviewModel.Content = content;
+            filePreviewModelContainer.ZoomExtents();
         }
 
         /* Show the level selection dropdown if requested */
@@ -103,7 +123,8 @@ namespace AlienPAK
         /* Toggle available buttons given the functionality of the current PAK */
         public void ShowFunctionButtons(PAKFunction function)
         {
-            filePreviewGroup.Visibility = Visibility.Collapsed;
+            imagePreviewGroup.Visibility = Visibility.Collapsed;
+            modelPreviewGroup.Visibility = Visibility.Collapsed;
             fileInfoGroup.Visibility = Visibility.Collapsed;
 
             exportBtn.Visibility = FlagToVisibility(function, PAKFunction.CAN_EXPORT_FILES);

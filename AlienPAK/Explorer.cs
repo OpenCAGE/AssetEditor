@@ -6,7 +6,9 @@ using System.Drawing.Imaging;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.ComTypes;
 using System.Windows.Forms;
+using System.Windows.Media.Media3D;
 using CATHODE;
 using CathodeLib;
 using DirectXTexNet;
@@ -333,9 +335,29 @@ namespace AlienPAK
             switch (nodeType)
             {
                 case TreeItemType.EXPORTABLE_FILE:
-                    byte[] content = pak.GetFileContent(nodeVal);
-                    preview.SetFileInfo(Path.GetFileName(nodeVal), content?.Length.ToString());
-                    preview.SetImagePreview(content);
+                    switch (pak.Type)
+                    {
+                        case PAKType.UI:
+                        case PAKType.TEXTURES:
+                            byte[] content = pak.GetFileContent(nodeVal);
+                            preview.SetFileInfo(Path.GetFileName(nodeVal), content?.Length.ToString());
+                            preview.SetImagePreview(content);
+                            break;
+                        case PAKType.MODELS:
+                            Models modelPAK = ((Models)pak.File);
+                            Models.CS2 cs2 = modelPAK.Entries.FirstOrDefault(o => o.Name.Replace('\\', '/') == nodeVal.Replace('\\', '/'));
+                            Model3DGroup model = new Model3DGroup();
+                            foreach (Models.CS2.LOD lod in cs2.LODs)
+                            {
+                                foreach (Models.CS2.LOD.Submesh submesh in lod.Submeshes)
+                                {
+                                    //TODO: are there some offsets/scaling we should be accounting for here?
+                                    model.Children.Add(modelPAK.GetMesh(submesh));
+                                }
+                            }
+                            preview.SetModelPreview(model);
+                            break;
+                    }
                     break;
             }
         }

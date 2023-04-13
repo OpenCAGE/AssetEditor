@@ -160,11 +160,7 @@ namespace AlienPAK
                             break;
                     }
                     DirectXTexUtility.GenerateDDSHeader(
-                        //new DirectXTexUtility.TexMetadata(
-                        //    part.Width, part.Height, part.Depth, part.Content.Length, part.MipLevels, 
-                        //    texture.Type == Textures.AlienTextureType.ENVIRONMENT_MAP ? DirectXTexUtility.TexMiscFlags.TEXTURECUBE : 0x00, 0x00, format, DirectXTexUtility.TexDimension.TEXTURE2D
-                        //),
-                        DirectXTexUtility.GenerateMataData(part.Width, part.Height, part.MipLevels, format, texture.Type == Textures.AlienTextureType.ENVIRONMENT_MAP), //TODO: env map property here doesn't seem to be working
+                        DirectXTexUtility.GenerateMataData(part.Width, part.Height, part.MipLevels, format, texture.Type == Textures.AlienTextureType.ENVIRONMENT_MAP),
                         DirectXTexUtility.DDSFlags.FORCEDX10EXT, out DirectXTexUtility.DDSHeader ddsHeader, out DirectXTexUtility.DX10Header dx10Header);
                     MemoryStream ms = new MemoryStream();
                     using (BinaryWriter bw = new BinaryWriter(ms))
@@ -177,11 +173,8 @@ namespace AlienPAK
                     //TODO!
                     MaterialMappings.Mapping map = ((MaterialMappings)_file).Entries.FirstOrDefault(o => o.MapFilename.Replace('\\', '/') == FileName.Replace('\\', '/'));
                     return null;
-                    break;
                 case PAKType.MODELS:
-                    //TODO!!
                     return null;
-                    break;
                 case PAKType.ANIMATIONS:
                 case PAKType.UI:
                     return ((PAK2)_file).Entries.FirstOrDefault(o => o.Filename.Replace('\\', '/') == FileName.Replace('\\', '/'))?.Content;

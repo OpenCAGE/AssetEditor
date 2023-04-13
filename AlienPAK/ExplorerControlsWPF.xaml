@@ -3,6 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:HelixToolkit="clr-namespace:HelixToolkit.Wpf;assembly=HelixToolkit.Wpf"
              xmlns:local="clr-namespace:AlienPAK"
              mc:Ignorable="d" 
              d:DesignHeight="676" d:DesignWidth="277">
@@ -13,8 +14,16 @@
                 <ComboBox x:Name="levelSelectDropdown" DropDownClosed="LevelSelected"  Margin="10" />
             </GroupBox>
             
-            <GroupBox x:Name="filePreviewGroup" Header="File Preview" Margin="0 0 0 10">
+            <GroupBox x:Name="imagePreviewGroup" Header="File Preview" Margin="0 0 0 10">
                 <Image x:Name="filePreviewImage" Source="Images/axel-bg.jpg" Stretch="Uniform" Margin="10" MaxHeight="250" />
+            </GroupBox>
+
+            <GroupBox x:Name="modelPreviewGroup" Header="File Preview" Margin="0 0 0 10">
+                <HelixToolkit:HelixViewport3D x:Name="filePreviewModelContainer" Height="300" ZoomExtentsWhenLoaded="True" ShowViewCube="True" ViewCubeVerticalPosition="Top">
+                    <HelixToolkit:SunLight/>
+                    <ModelVisual3D x:Name="filePreviewModel" />
+                    <!--<HelixToolkit:GridLinesVisual3D Width="8" Length="8" MinorDistance="1" MajorDistance="1" Thickness="0.01"/>-->
+                </HelixToolkit:HelixViewport3D>
             </GroupBox>
 
             <GroupBox x:Name="fileInfoGroup" Header="File Info" Margin="0 0 0 10">
