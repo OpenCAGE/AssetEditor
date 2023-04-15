@@ -138,7 +138,7 @@ namespace AlienPAK
             {
                 case PAKType.TEXTURES:
                     Textures.TEX4 texture = ((Textures)_file).Entries.FirstOrDefault(o => o.Name.Replace('\\', '/') == FileName.Replace('\\', '/'));
-                    Textures.TEX4_Part part = texture?.tex_HighRes?.Content != null ? texture.tex_HighRes : texture?.tex_LowRes?.Content != null ? texture.tex_LowRes : null;
+                    Textures.TEX4.Part part = texture?.tex_HighRes?.Content != null ? texture.tex_HighRes : texture?.tex_LowRes?.Content != null ? texture.tex_LowRes : null;
                     if (part == null) return null;
                     DirectXTexUtility.DXGIFormat format;
                     switch (texture.Format)

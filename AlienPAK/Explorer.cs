@@ -338,19 +338,23 @@ namespace AlienPAK
                     switch (pak.Type)
                     {
                         case PAKType.UI:
+                            PAK2.File file = ((PAK2)pak.File).Entries.FirstOrDefault(o => o.Filename.Replace('\\', '/') == nodeVal.Replace('\\', '/'));
+                            preview.SetFileInfo(Path.GetFileName(nodeVal), file?.Content.Length.ToString());
+                            preview.SetImagePreview(file.Content);
+                            break;
                         case PAKType.TEXTURES:
-                            byte[] content = pak.GetFileContent(nodeVal);
+                            Textures.TEX4 texture = ((Textures)pak.File).Entries.FirstOrDefault(o => o.Name.Replace('\\', '/') == nodeVal.Replace('\\', '/'));
+                            byte[] content = texture?.ToDDS();
                             preview.SetFileInfo(Path.GetFileName(nodeVal), content?.Length.ToString());
                             preview.SetImagePreview(content);
                             break;
                         case PAKType.MODELS:
-                            Models modelPAK = ((Models)pak.File);
-                            Models.CS2 cs2 = modelPAK.Entries.FirstOrDefault(o => o.Name.Replace('\\', '/') == nodeVal.Replace('\\', '/'));
+                            Models.CS2 cs2 = ((Models)pak.File).Entries.FirstOrDefault(o => o.Name.Replace('\\', '/') == nodeVal.Replace('\\', '/'));
                             Model3DGroup model = new Model3DGroup();
                             foreach (Models.CS2.Component component in cs2.Components)
                                 foreach (Models.CS2.Component.LOD lod in component.LODs)
                                     foreach (Models.CS2.Component.LOD.Submesh submesh in lod.Submeshes)
-                                        model.Children.Add(modelPAK.GetMesh(submesh)); //TODO: are there some offsets/scaling we should be accounting for here?
+                                        model.Children.Add(submesh.ToModel3DGroup()); //TODO: are there some offsets/scaling we should be accounting for here?
                             preview.SetModelPreview(model); //TODO: perhaps we should just pass the CS2 object to the model previewer and let that pick what to render
                             break;
                     }
