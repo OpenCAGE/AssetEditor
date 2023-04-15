@@ -9,6 +9,7 @@ using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.ComTypes;
 using System.Windows.Forms;
 using System.Windows.Media.Media3D;
+using Assimp;
 using CATHODE;
 using CathodeLib;
 using DirectXTexNet;
@@ -267,6 +268,8 @@ namespace AlienPAK
             //If export file is DDS & we have a preview, then we can export it in a range of formats
             if (preview.FilePreviewVisible && preview.FilePreviewBitmap != null)
                 filter = "PNG Image|*.png|JPG Image|*.jpg|DDS Image|*.dds";
+            if (preview.ModelPreviewVisible)
+                filter = "OBJ Model|*.obj|FBX Model|*.fbx|GLTF Model|*.gltf"; //TODO: we can support loads here with assimp (importer.GetSupportedExportFormats())
 
             //Remove extension from output filename
             string filepath = ((TreeItem)FileTree.SelectedNode.Tag).String_Value;
@@ -294,7 +297,40 @@ namespace AlienPAK
                         MessageBox.Show(ex.ToString(), "Export failed", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     }
                 }
-                //Regular export
+                //Export for model
+                if (preview.ModelPreviewVisible)
+                {
+                    Scene scene = new Scene();
+                    scene.Materials.Add(new Assimp.Material());
+                    Models.CS2 cs2 = ((Models)pak.File).Entries.FirstOrDefault(o => o.Name.Replace('\\', '/') == ((TreeItem)FileTree.SelectedNode.Tag).String_Value.Replace('\\', '/'));
+                    scene.RootNode = new Node(cs2.Name);
+                    for (int i = 0; i < cs2.Components.Count; i++)
+                    {
+                        Node componentNode = new Node(i.ToString());
+                        scene.RootNode.Children.Add(componentNode);
+                        for (int x = 0; x < cs2.Components[i].LODs.Count; x++)
+                        {
+                            Node lodNode = new Node(cs2.Components[i].LODs[x].Name);
+                            componentNode.Children.Add(lodNode);
+                            for (int y = 0; y < cs2.Components[i].LODs[x].Submeshes.Count; y++)
+                            {
+                                Node submeshNode = new Node(y.ToString());
+                                lodNode.Children.Add(submeshNode);
+
+                                Mesh mesh = cs2.Components[i].LODs[x].Submeshes[y].ToMesh();
+                                mesh.Name = cs2.Name + " [" + x + "] -> " + lodNode.Name + " [" + i + "]";
+                                scene.Meshes.Add(mesh);
+                                submeshNode.MeshIndices.Add(scene.Meshes.Count - 1);
+                            }
+                        }
+                    }
+
+                    AssimpContext importer = new AssimpContext();
+                    importer.ExportFile(scene, FilePicker.FileName, Path.GetExtension(FilePicker.FileName).Replace(".", ""));
+                    importer.Dispose();
+                    MessageBox.Show("Successfully exported model!", "Export complete", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+                //Dump out
                 else
                 {
                     //TODO: handle DDS header conversion for texture pak
@@ -354,7 +390,7 @@ namespace AlienPAK
                             foreach (Models.CS2.Component component in cs2.Components)
                                 foreach (Models.CS2.Component.LOD lod in component.LODs)
                                     foreach (Models.CS2.Component.LOD.Submesh submesh in lod.Submeshes)
-                                        model.Children.Add(submesh.ToModel3DGroup()); //TODO: are there some offsets/scaling we should be accounting for here?
+                                        model.Children.Add(submesh.ToGeometryModel3D()); //TODO: are there some offsets/scaling we should be accounting for here?
                             preview.SetModelPreview(model); //TODO: perhaps we should just pass the CS2 object to the model previewer and let that pick what to render
                             break;
                     }

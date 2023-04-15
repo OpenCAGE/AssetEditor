@@ -1,4 +1,6 @@
-﻿using CATHODE;
+﻿using Assimp.Configs;
+using Assimp;
+using CATHODE;
 using CathodeLib;
 using DirectXTex;
 using System;
@@ -12,6 +14,8 @@ using System.Windows.Media;
 using System.Windows.Media.Media3D;
 using static CATHODE.Materials.Material;
 using static CATHODE.Models;
+using System.Reflection;
+using Vector3D = System.Windows.Media.Media3D.Vector3D;
 
 namespace AlienPAK
 {
@@ -52,10 +56,8 @@ namespace AlienPAK
             return ms.ToArray();
         }
 
-        public static Model3DGroup ToModel3DGroup(this CS2.Component.LOD.Submesh submesh)
+        public static GeometryModel3D ToGeometryModel3D(this CS2.Component.LOD.Submesh submesh)
         {
-            Model3DGroup mesh = new Model3DGroup();
-
             Int32Collection indices = new Int32Collection();
             Point3DCollection vertices = new Point3DCollection();
             Vector3DCollection normals = new Vector3DCollection();
@@ -71,7 +73,7 @@ namespace AlienPAK
             List<Vector4> boneWeight = new List<Vector4>(); //The weights for each bone
 
             if (submesh.content.Length == 0)
-                return mesh;
+                return new GeometryModel3D();
 
             using (BinaryReader reader = new BinaryReader(new MemoryStream(submesh.content)))
             {
@@ -211,9 +213,9 @@ namespace AlienPAK
                 }
             }
 
-            if (vertices.Count == 0) return mesh;
+            if (vertices.Count == 0) return new GeometryModel3D();
 
-            mesh.Children.Add(new GeometryModel3D
+            return new GeometryModel3D
             {
                 Geometry = new MeshGeometry3D
                 {
@@ -224,8 +226,35 @@ namespace AlienPAK
                 },
                 Material = new DiffuseMaterial(new SolidColorBrush(Color.FromRgb(255, 255, 0))),
                 BackMaterial = new DiffuseMaterial(new SolidColorBrush(Color.FromRgb(255, 255, 0)))
-            });
+            };
+        }
+
+        public static Mesh ToMesh(this CS2.Component.LOD.Submesh submesh)
+        {
+            //TODO: we should just make a generic "to usable data" extension that spits out the verts etc, rather than relying on this - but doing it for testing for now
+            MeshGeometry3D model = (MeshGeometry3D)submesh.ToGeometryModel3D().Geometry;
+            Mesh mesh = new Mesh();
+            mesh.MaterialIndex = 0; //todo
+            for (int i = 0; i < model.Positions.Count; i++)
+                mesh.Vertices.Add(new Assimp.Vector3D((float)model.Positions[i].X, (float)model.Positions[i].Y, (float)model.Positions[i].Z));
+            mesh.HasTextureCoords(0);
+            for (int i = 0; i < model.TextureCoordinates.Count; i++)
+                mesh.TextureCoordinateChannels[0].Add(new Assimp.Vector3D((float)model.TextureCoordinates[i].X, (float)model.Positions[i].Y, 0));
+            for (int i = 0; i < model.Normals.Count; i++)
+                mesh.Normals.Add(new Assimp.Vector3D((float)model.Normals[i].X, (float)model.Normals[i].Y, (float)model.Normals[i].Z));
+            bool worked = mesh.SetIndices(model.TriangleIndices.ToArray(), 3);
+            if (!worked) throw new Exception("oops");
             return mesh;
+        }
+
+        public static CS2.Component.LOD.Submesh ToSubmesh(this Scene model_)
+        {
+            AssimpContext importer = new AssimpContext();
+            Scene model = importer.ImportFile("C:\\Users\\mattf\\Documents\\CUBE.fbx", PostProcessPreset.TargetRealTimeMaximumQuality);
+            importer.Dispose();
+
+
+            return null;
         }
     }
 }
