@@ -257,95 +257,85 @@ namespace AlienPAK
         /* Export the selected PAK entry as a standalone file */
         private void ExportSelectedFile()
         {
-            if (FileTree.SelectedNode == null || ((TreeItem)FileTree.SelectedNode.Tag).Item_Type != TreeItemType.EXPORTABLE_FILE)
+            if (FileTree.SelectedNode == null) return;
+            TreeItemType nodeType = ((TreeItem)FileTree.SelectedNode.Tag).Item_Type;
+            string nodeVal = ((TreeItem)FileTree.SelectedNode.Tag).String_Value;
+
+            switch (nodeType)
             {
-                MessageBox.Show("Please select a file from the list.", "No file selected.", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                return;
-            }
+                case TreeItemType.EXPORTABLE_FILE:
+                    string filter = "Exported File|*" + Path.GetExtension(FileTree.SelectedNode.Text);
+                    if (preview.FilePreviewVisible && preview.FilePreviewBitmap != null) filter = "PNG Image|*.png|JPG Image|*.jpg|DDS Image|*.dds";
+                    if (preview.ModelPreviewVisible) filter = "FBX Model|*.fbx|GLTF Model|*.gltf|OBJ Model|*.obj"; //TODO: we can support loads here with assimp (importer.GetSupportedExportFormats())
 
-            string filter = "Exported File|*" + Path.GetExtension(FileTree.SelectedNode.Text);
+                    string fileName = Path.GetFileName(FileTree.SelectedNode.Text);
+                    while (Path.GetExtension(fileName).Length != 0) fileName = fileName.Substring(0, fileName.Length - Path.GetExtension(fileName).Length); //Remove extensions from output filename
 
-            //If export file is DDS & we have a preview, then we can export it in a range of formats
-            if (preview.FilePreviewVisible && preview.FilePreviewBitmap != null)
-                filter = "PNG Image|*.png|JPG Image|*.jpg|DDS Image|*.dds";
-            if (preview.ModelPreviewVisible)
-                filter = "OBJ Model|*.obj|FBX Model|*.fbx|GLTF Model|*.gltf"; //TODO: we can support loads here with assimp (importer.GetSupportedExportFormats())
-
-            //Remove extension from output filename
-            string filepath = ((TreeItem)FileTree.SelectedNode.Tag).String_Value;
-            string filename = Path.GetFileName(FileTree.SelectedNode.Text);
-            while (Path.GetExtension(filename).Length != 0) filename = filename.Substring(0, filename.Length - Path.GetExtension(filename).Length);
-
-            //Let the user decide where to save, then save
-            SaveFileDialog FilePicker = new SaveFileDialog();
-            FilePicker.Filter = filter;
-            FilePicker.FileName = filename;
-            if (FilePicker.ShowDialog() == DialogResult.OK)
-            {
-                Cursor.Current = Cursors.WaitCursor;
-                //Special export for DDS conversion
-                if (preview.FilePreviewVisible && preview.FilePreviewBitmap != null &&
-                    Path.GetExtension(FilePicker.FileName).ToUpper() != ".DDS")
-                {
-                    try
+                    SaveFileDialog FilePicker = new SaveFileDialog();
+                    FilePicker.Filter = filter;
+                    FilePicker.FileName = fileName;
+                    if (FilePicker.ShowDialog() == DialogResult.OK)
                     {
-                        preview.FilePreviewBitmap.Save(FilePicker.FileName);
-                        MessageBox.Show("Successfully exported image!", "Export complete", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                    }
-                    catch (Exception ex)
-                    {
-                        MessageBox.Show(ex.ToString(), "Export failed", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    }
-                }
-                //Export for model
-                if (preview.ModelPreviewVisible)
-                {
-                    Scene scene = new Scene();
-                    scene.Materials.Add(new Assimp.Material());
-                    Models.CS2 cs2 = ((Models)pak.File).Entries.FirstOrDefault(o => o.Name.Replace('\\', '/') == ((TreeItem)FileTree.SelectedNode.Tag).String_Value.Replace('\\', '/'));
-                    scene.RootNode = new Node(cs2.Name);
-                    for (int i = 0; i < cs2.Components.Count; i++)
-                    {
-                        Node componentNode = new Node(i.ToString());
-                        scene.RootNode.Children.Add(componentNode);
-                        for (int x = 0; x < cs2.Components[i].LODs.Count; x++)
+                        Cursor.Current = Cursors.WaitCursor;
+                        try
                         {
-                            Node lodNode = new Node(cs2.Components[i].LODs[x].Name);
-                            componentNode.Children.Add(lodNode);
-                            for (int y = 0; y < cs2.Components[i].LODs[x].Submeshes.Count; y++)
+                            switch (pak.Type)
                             {
-                                Node submeshNode = new Node(y.ToString());
-                                lodNode.Children.Add(submeshNode);
+                                case PAKType.UI:
+                                    File.WriteAllBytes(FilePicker.FileName, pak.GetFileContent(nodeVal));
+                                    break;
+                                case PAKType.TEXTURES:
+                                    Textures.TEX4 texture = ((Textures)pak.File).Entries.FirstOrDefault(o => o.Name.Replace('\\', '/') == nodeVal.Replace('\\', '/'));
+                                    byte[] content = texture?.ToDDS();
+                                    if (Path.GetExtension(FilePicker.FileName).ToUpper() == ".DDS")
+                                    {
+                                        File.WriteAllBytes(FilePicker.FileName, content);
+                                        break;
+                                    }
+                                    preview.FilePreviewBitmap.Save(FilePicker.FileName); //TODO: this is a temp hacky workflow that should be avoided - need to move the bitmap conversion to the extension methods
+                                    break;
+                                case PAKType.MODELS:
+                                    Scene scene = new Scene();
+                                    scene.Materials.Add(new Assimp.Material());
+                                    Models.CS2 cs2 = ((Models)pak.File).Entries.FirstOrDefault(o => o.Name.Replace('\\', '/') == nodeVal.Replace('\\', '/'));
+                                    scene.RootNode = new Node(cs2.Name);
+                                    for (int i = 0; i < cs2.Components.Count; i++)
+                                    {
+                                        Node componentNode = new Node(i.ToString());
+                                        scene.RootNode.Children.Add(componentNode);
+                                        for (int x = 0; x < cs2.Components[i].LODs.Count; x++)
+                                        {
+                                            Node lodNode = new Node(cs2.Components[i].LODs[x].Name);
+                                            componentNode.Children.Add(lodNode);
+                                            for (int y = 0; y < cs2.Components[i].LODs[x].Submeshes.Count; y++)
+                                            {
+                                                Node submeshNode = new Node(y.ToString());
+                                                lodNode.Children.Add(submeshNode);
 
-                                Mesh mesh = cs2.Components[i].LODs[x].Submeshes[y].ToMesh();
-                                mesh.Name = cs2.Name + " [" + x + "] -> " + lodNode.Name + " [" + i + "]";
-                                scene.Meshes.Add(mesh);
-                                submeshNode.MeshIndices.Add(scene.Meshes.Count - 1);
+                                                Mesh mesh = cs2.Components[i].LODs[x].Submeshes[y].ToMesh();
+                                                mesh.Name = cs2.Name + " [" + x + "] -> " + lodNode.Name + " [" + i + "]";
+                                                scene.Meshes.Add(mesh);
+                                                submeshNode.MeshIndices.Add(scene.Meshes.Count - 1);
+                                            }
+                                        }
+                                    }
+                                    AssimpContext importer = new AssimpContext();
+                                    importer.ExportFile(scene, FilePicker.FileName, Path.GetExtension(FilePicker.FileName).Replace(".", ""));
+                                    importer.Dispose();
+                                    break;
+                                default:
+                                    MessageBox.Show("This PAK type does not support file exporting!", "Export failed", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                    return;
                             }
+                            MessageBox.Show("Successfully exported file!", "Export complete", MessageBoxButtons.OK, MessageBoxIcon.Information);
                         }
+                        catch (Exception ex)
+                        {
+                            MessageBox.Show(ex.ToString(), "Export failed", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        }
+                        Cursor.Current = Cursors.Default;
                     }
-
-                    AssimpContext importer = new AssimpContext();
-                    importer.ExportFile(scene, FilePicker.FileName, Path.GetExtension(FilePicker.FileName).Replace(".", ""));
-                    importer.Dispose();
-                    MessageBox.Show("Successfully exported model!", "Export complete", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                }
-                //Dump out
-                else
-                {
-                    //TODO: handle DDS header conversion for texture pak
-                    //TODO: handle model format for model pak
-                    try
-                    {
-                        File.WriteAllBytes(FilePicker.FileName, pak.GetFileContent(filepath));
-                        MessageBox.Show("Successfully exported file!", "Export complete", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                    }
-                    catch (Exception ex)
-                    {
-                        MessageBox.Show(ex.ToString(), "Export failed", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    }
-                }
-                Cursor.Current = Cursors.Default;
+                    break;
             }
         }
 
@@ -364,7 +354,6 @@ namespace AlienPAK
         {
             preview.ShowFunctionButtons(pak.Functionality);
             if (FileTree.SelectedNode == null) return;
-
             TreeItemType nodeType = ((TreeItem)FileTree.SelectedNode.Tag).Item_Type;
             string nodeVal = ((TreeItem)FileTree.SelectedNode.Tag).String_Value;
 
