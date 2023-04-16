@@ -69,6 +69,39 @@ namespace AlienPAK
             preview.OnExportAllRequested += ExportAll;
             preview.ShowFunctionButtons(PAKFunction.NONE);
             preview.ShowLevelSelect(LaunchMode != PAKType.NONE && LaunchMode != PAKType.ANIMATIONS && LaunchMode != PAKType.UI, LaunchMode);
+
+            LoadModePAK("SOLACE");
+
+            RenderableElements RenderableElements = new RenderableElements("G:\\SteamLibrary\\steamapps\\common\\Alien Isolation\\DATA\\ENV\\PRODUCTION\\SOLACE/WORLD/REDS.BIN");
+            List<Models.CS2.Component.LOD.Submesh> redsModels = new List<Models.CS2.Component.LOD.Submesh>();
+            //List<Materials.Material> redsMaterials = new List<Materials.Material>();
+            for (int i = 0; i < RenderableElements.Entries.Count; i++)
+            {
+                redsModels.Add(((Models)pak.File).GetAtWriteIndex(RenderableElements.Entries[i].ModelIndex));
+                //redsMaterials.Add(Materials.GetAtWriteIndex(RenderableElements.Entries[i].MaterialIndex));
+            }
+
+            Models.CS2 cs2 = ((Models)pak.File).Entries.FirstOrDefault(o => o.Name == "AYZ\\SCIENCE\\FEATURE_MED\\AMBULANCEDOCK_AIRLOCK\\AMBULANCEDOCK_AIRLOCK_DISPLAY.cs2");
+            Models.CS2.Component.LOD.Submesh s = CathodeLibExtensions.ToSubmesh(null);
+            cs2.Components[0].LODs[0].Submeshes[0].content = s.content;
+            cs2.Components[0].LODs[0].Submeshes[0].IndexCount = s.IndexCount;
+            cs2.Components[0].LODs[0].Submeshes[0].VertexCount = s.VertexCount;
+            cs2.Components[0].LODs[0].Submeshes[0].VertexFormat = s.VertexFormat;
+            cs2.Components[0].LODs[0].Submeshes[0].VertexFormatLowDetail = s.VertexFormatLowDetail;
+            pak.File.Save();
+
+            for (int i = 0; i < RenderableElements.Entries.Count; i++)
+            {
+                if (RenderableElements.Entries[i].ModelIndex != -1)
+                    RenderableElements.Entries[i].ModelIndex = ((Models)pak.File).GetWriteIndex(redsModels[i]);
+                RenderableElements.Entries[i].ModelLODIndex = -1;
+                RenderableElements.Entries[i].ModelLODPrimitiveCount = 0;
+                //if (RenderableElements.Entries[i].MaterialIndex != -1)
+                //   RenderableElements.Entries[i].MaterialIndex = Materials.GetWriteIndex(redsMaterials[i]);
+            }
+            RenderableElements.Save();
+
+            string gsfdfsdf = "";
         }
 
         /* Load the appropriate PAK for the given launch mode */
@@ -124,6 +157,8 @@ namespace AlienPAK
         /* Import a new file to the PAK */
         private void ImportFile()
         {
+            return;
+
             /* This can only happen for UI files, so for OpenCAGE I'm forcing AlienPAKs[0] - might need changing for other PAKs that gain support */
 
             //Let the user decide what file to add, then add it
@@ -145,6 +180,8 @@ namespace AlienPAK
         /* Delete the selected file in the PAK */
         private void DeleteSelectedFile()
         {
+            return;
+
             /* This can only happen for UI files, so for OpenCAGE I'm forcing AlienPAKs[0] - might need changing for other PAKs that gain support */
 
             if (FileTree.SelectedNode == null || ((TreeItem)FileTree.SelectedNode.Tag).Item_Type != TreeItemType.EXPORTABLE_FILE)
@@ -170,6 +207,8 @@ namespace AlienPAK
         /* Export all files in the PAK */
         private void ExportAll()
         {
+            return;
+
             //TODO: perhaps give a "convert to usable formats" checkbox on this export which converts to OBJ and PNG or something?
             Cursor.Current = Cursors.WaitCursor;
             FolderBrowserDialog FolderToExportTo = new FolderBrowserDialog();
@@ -192,6 +231,8 @@ namespace AlienPAK
         /* Import a file to replace the selected PAK entry */
         private void ImportSelectedFile()
         {
+            return;
+
             if (FileTree.SelectedNode == null || ((TreeItem)FileTree.SelectedNode.Tag).Item_Type != TreeItemType.EXPORTABLE_FILE)
             {
                 MessageBox.Show("Please select a file from the list.", "No file selected.", MessageBoxButtons.OK, MessageBoxIcon.Error);
@@ -281,6 +322,7 @@ namespace AlienPAK
                         {
                             switch (pak.Type)
                             {
+                                case PAKType.ANIMATIONS:
                                 case PAKType.UI:
                                     File.WriteAllBytes(FilePicker.FileName, pak.GetFileContent(nodeVal));
                                     break;
@@ -362,6 +404,7 @@ namespace AlienPAK
                 case TreeItemType.EXPORTABLE_FILE:
                     switch (pak.Type)
                     {
+                        //case PAKType.ANIMATIONS:
                         case PAKType.UI:
                             PAK2.File file = ((PAK2)pak.File).Entries.FirstOrDefault(o => o.Filename.Replace('\\', '/') == nodeVal.Replace('\\', '/'));
                             preview.SetFileInfo(Path.GetFileName(nodeVal), file?.Content.Length.ToString());
