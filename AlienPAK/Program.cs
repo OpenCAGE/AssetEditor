@@ -1,4 +1,5 @@
-﻿using System;
+using Assimp;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -20,6 +21,13 @@ namespace AlienPAK
         [STAThread]
         static void Main(string[] args)
         {
+#if DEBUG
+            LogStream logstream = new LogStream(delegate (String msg, String userData) {
+                Console.WriteLine(msg);
+            });
+            logstream.Attach();
+#endif
+
             //Need DLLs in directory for image previews to work :(
             if (!File.Exists(AppDomain.CurrentDomain.BaseDirectory + "DirectXTexNet.dll")) File.WriteAllBytes(AppDomain.CurrentDomain.BaseDirectory + "DirectXTexNet.dll", Properties.Resources.DirectXTexNet);
             Directory.CreateDirectory(AppDomain.CurrentDomain.BaseDirectory + "x64");

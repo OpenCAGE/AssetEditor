@@ -250,7 +250,16 @@ namespace AlienPAK
         {
             CS2.Component.LOD.Submesh submesh = new CS2.Component.LOD.Submesh();
             submesh.VertexCount = mesh.VertexCount;
-            submesh.IndexCount = mesh.GetIndices().Length;
+            int[] indices = mesh.GetIndices();
+            submesh.IndexCount = indices.Length;
+
+            foreach (Face face in mesh.Faces)
+            {
+                if (face.Indices.Count != 3)
+                {
+                    string dfsfsd = "";
+                }
+            }
 
             //Example vertex format with vertices, UVs, normals, and a colour
             //submesh.VertexFormat.Elements.Add(new List<AlienVBF.Element>() { new AlienVBF.Element(VBFE_InputType.VECTOR4_INT16_DIVMAX, VBFE_InputSlot.VERTEX), new AlienVBF.Element(VBFE_InputType.VECTOR2_INT16_DIV2048, VBFE_InputSlot.UV), new AlienVBF.Element(VBFE_InputType.INT32, VBFE_InputSlot.COLOUR) });
@@ -262,7 +271,7 @@ namespace AlienPAK
             //submesh.VertexFormat.Elements.Add(new List<AlienVBF.Element>() { new AlienVBF.Element(VBFE_InputType.AlienVertexInputType_u16) });
 
             submesh.VertexFormat = new AlienVBF();
-            submesh.VertexFormat.Elements.Add(new List<AlienVBF.Element>() { new AlienVBF.Element(VBFE_InputType.VECTOR4_INT16_DIVMAX, VBFE_InputSlot.VERTEX) }); //VECTOR4_INT16_DIVMAX -> will cathode accept VECTOR3?
+            submesh.VertexFormat.Elements.Add(new List<AlienVBF.Element>() { new AlienVBF.Element(VBFE_InputType.VECTOR4_INT16_DIVMAX, VBFE_InputSlot.VERTEX), new AlienVBF.Element(VBFE_InputType.VECTOR2_INT16_DIV2048, VBFE_InputSlot.UV) { Offset = 8 } });
             submesh.VertexFormat.Elements.Add(new List<AlienVBF.Element>() { new AlienVBF.Element(VBFE_InputType.INDICIES_U16) }); //todo: this is always last, and we should enforce that too - b/c otherwise OUR parser breaks
 
             submesh.VertexFormatLowDetail = submesh.VertexFormat;
@@ -274,8 +283,8 @@ namespace AlienPAK
                 {
                     if (i == submesh.VertexFormat.Elements.Count - 1)
                     {
-                        for (int x = 0; x < mesh.GetIndices().Length; x++)
-                            reader.Write((UInt16)mesh.GetIndices()[x]);
+                        for (int x = 0; x < indices.Length; x++)
+                            reader.Write((UInt16)indices[x]);
 
                         Utilities.Align(reader, 16);
                         continue;
@@ -343,26 +352,20 @@ namespace AlienPAK
                                         }
                                         break;
                                     }
+                                */
                                 case VBFE_InputType.VECTOR2_INT16_DIV2048:
                                     {
-                                        System.Windows.Point v = new System.Windows.Point(reader.ReadInt16() / 2048.0f, reader.ReadInt16() / 2048.0f);
                                         switch (format.ShaderSlot)
                                         {
                                             case VBFE_InputSlot.UV:
-                                                if (format.VariantIndex == 0) uv0.Add(v);
-                                                else if (format.VariantIndex == 1)
-                                                {
-                                                    // TODO: We can figure this out based on AlienVBFE.
-                                                    //Material->Material.Flags |= Material_HasTexCoord1;
-                                                    uv1.Add(v);
-                                                }
-                                                else if (format.VariantIndex == 2) uv2.Add(v);
-                                                else if (format.VariantIndex == 3) uv3.Add(v);
-                                                else if (format.VariantIndex == 7) uv7.Add(v);
+                                                Vector2 v = new Vector2(mesh.TextureCoordinateChannels[format.VariantIndex][x].X, mesh.TextureCoordinateChannels[format.VariantIndex][x].Y);
+                                                v *= (float)Int16.MaxValue;
+                                                reader.Write((Int16)v.X);
+                                                reader.Write((Int16)v.Y);
                                                 break;
                                         }
                                         break;
-                                    }*/
+                                    }
                                 case VBFE_InputType.VECTOR4_INT16_DIVMAX:
                                     {
                                         switch (format.ShaderSlot)
@@ -373,7 +376,7 @@ namespace AlienPAK
                                                 reader.Write((Int16)v.X);
                                                 reader.Write((Int16)v.Y);
                                                 reader.Write((Int16)v.Z);
-                                                reader.Write((Int16)0); //-1,0,1
+                                                reader.Write((Int16)v.W); //-1,0,1
                                                 break;
                                         }
                                         break;

@@ -83,17 +83,27 @@ namespace AlienPAK
             //"C:\\Users\\mattf\\Downloads\\40-low-poly-cars-free_blender\\Low Poly Cars (Free)_blender\\LowPolyCars.obj"
             //"C:\\Users\\mattf\\Downloads\\de_dust2-cs-map\\source\\de_dust2\\de_dust2.obj"
             //"G:\\SteamLibrary\\steamapps\\common\\Alien Isolation\\DATA\\ENV\\PRODUCTION\\BSP_TORRENS\\WORLD\\ACID_DECAL_DISPLAY.fbx"
-            Scene model = importer.ImportFile("C:\\Users\\mattf\\Downloads\\40-low-poly-cars-free_blender\\Low Poly Cars (Free)_blender\\LowPolyCars_body.obj", PostProcessPreset.TargetRealTimeFast);
+            //"C:\\Users\\mattf\\Downloads\\low-poly-dog\\source\\0eb7870dd86a4cfca6bbbce1d8afd42a.fbx.fbx"
+            Scene model = importer.ImportFile("C:\\Users\\mattf\\Downloads\\realistic-young-girl-head-lowpoly-basemesh\\source\\monkey.fbx", PostProcessSteps.Triangulate | PostProcessSteps.FindDegenerates);
             importer.Dispose();
             Models.CS2.Component.LOD.Submesh car = model.Meshes[0].ToSubmesh();
 
-            Models.CS2 cs2 = lvl.Models.Entries.FirstOrDefault(o => o.Name == "AYZ\\SCIENCE\\FEATURE_MED\\AMBULANCEDOCK_AIRLOCK\\AMBULANCEDOCK_AIRLOCK_DISPLAY.cs2");
+            //"AYZ\\SCIENCE\\FEATURE_MED\\AMBULANCEDOCK_AIRLOCK\\AMBULANCEDOCK_AIRLOCK_DISPLAY.cs2"
+            //"AYZ\\_PROPS_\\PHYSICS\\CARDBOARD_BOX_TEMPLATE\\CARDBOARD_BOX_TEMPLATE_DISPLAY.cs2"
+            Models.CS2 cs2 = lvl.Models.Entries.FirstOrDefault(o => o.Name == "..\\CHARACTERS\\MARLOW_GP\\model0.cs2");
             cs2.Components[0].LODs[0].Submeshes[0].content = car.content;
             cs2.Components[0].LODs[0].Submeshes[0].IndexCount = car.IndexCount;
             cs2.Components[0].LODs[0].Submeshes[0].VertexCount = car.VertexCount;
             cs2.Components[0].LODs[0].Submeshes[0].VertexFormat = car.VertexFormat;
             cs2.Components[0].LODs[0].Submeshes[0].VertexFormatLowDetail = car.VertexFormatLowDetail;
             cs2.Components[0].LODs[0].Submeshes[0].ScaleFactor = 1;
+            cs2.Components[0].LODs[0].Submeshes[0].MaterialLibraryIndex = 244/*lvl.Materials.Entries.IndexOf(lvl.Materials.Entries.FirstOrDefault(o => o.Name == "DEBUG_REPLACE_ME"))*/;
+            for (int i = 1; i < cs2.Components.Count; i++)
+            {
+                cs2.Components[i].LODs[0].Submeshes[0].IndexCount = 0;
+                cs2.Components[i].LODs[0].Submeshes[0].VertexCount = 0 ;
+            }
+            cs2.Name = "new";
 
             lvl.Save();
 
