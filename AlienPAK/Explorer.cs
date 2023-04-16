@@ -13,6 +13,7 @@ using Assimp;
 using CATHODE;
 using CathodeLib;
 using DirectXTexNet;
+using Newtonsoft.Json;
 
 namespace AlienPAK
 {
@@ -61,7 +62,7 @@ namespace AlienPAK
             this.Text = baseTitle;
 
             preview = (ExplorerControlsWPF)elementHost1.Child;
-            preview.OnLevelSelected += LoadModePAK;
+            //preview.OnLevelSelected += LoadModePAK;
             preview.OnImportRequested += ImportFile;
             preview.OnExportRequested += ExportSelectedFile;
             preview.OnReplaceRequested += ImportSelectedFile;
@@ -70,38 +71,38 @@ namespace AlienPAK
             preview.ShowFunctionButtons(PAKFunction.NONE);
             preview.ShowLevelSelect(LaunchMode != PAKType.NONE && LaunchMode != PAKType.ANIMATIONS && LaunchMode != PAKType.UI, LaunchMode);
 
+            string lvlPath = "G:\\SteamLibrary\\steamapps\\common\\Alien Isolation\\DATA\\ENV\\PRODUCTION\\SOLACE";
+            File.Copy(lvlPath + "\\RENDERABLE\\orig\\LEVEL_MODELS.PAK", lvlPath + "\\RENDERABLE\\LEVEL_MODELS.PAK", true);
+            File.Copy(lvlPath + "\\RENDERABLE\\orig\\MODELS_LEVEL.BIN", lvlPath + "\\RENDERABLE\\MODELS_LEVEL.BIN", true);
+            File.Copy(lvlPath + "\\RENDERABLE\\orig\\REDS.BIN", lvlPath + "\\RENDERABLE\\REDS.BIN", true);
+            File.Copy(lvlPath + "\\RENDERABLE\\orig\\REDS.BIN", lvlPath + "\\WORLD\\REDS.BIN", true);
+            Level lvl = new Level(lvlPath);
+
+            AssimpContext importer = new AssimpContext();
+            //"C:\\Users\\mattf\\Documents\\CUBE.fbx"
+            //"C:\\Users\\mattf\\Downloads\\40-low-poly-cars-free_blender\\Low Poly Cars (Free)_blender\\LowPolyCars.obj"
+            //"C:\\Users\\mattf\\Downloads\\de_dust2-cs-map\\source\\de_dust2\\de_dust2.obj"
+            //"G:\\SteamLibrary\\steamapps\\common\\Alien Isolation\\DATA\\ENV\\PRODUCTION\\BSP_TORRENS\\WORLD\\ACID_DECAL_DISPLAY.fbx"
+            Scene model = importer.ImportFile("C:\\Users\\mattf\\Downloads\\40-low-poly-cars-free_blender\\Low Poly Cars (Free)_blender\\LowPolyCars_body.obj", PostProcessPreset.TargetRealTimeFast);
+            importer.Dispose();
+            Models.CS2.Component.LOD.Submesh car = model.Meshes[0].ToSubmesh();
+
+            Models.CS2 cs2 = lvl.Models.Entries.FirstOrDefault(o => o.Name == "AYZ\\SCIENCE\\FEATURE_MED\\AMBULANCEDOCK_AIRLOCK\\AMBULANCEDOCK_AIRLOCK_DISPLAY.cs2");
+            cs2.Components[0].LODs[0].Submeshes[0].content = car.content;
+            cs2.Components[0].LODs[0].Submeshes[0].IndexCount = car.IndexCount;
+            cs2.Components[0].LODs[0].Submeshes[0].VertexCount = car.VertexCount;
+            cs2.Components[0].LODs[0].Submeshes[0].VertexFormat = car.VertexFormat;
+            cs2.Components[0].LODs[0].Submeshes[0].VertexFormatLowDetail = car.VertexFormatLowDetail;
+            cs2.Components[0].LODs[0].Submeshes[0].ScaleFactor = 1;
+
+            lvl.Save();
+
+            //ProcessStartInfo alienProcess = new ProcessStartInfo();
+            //alienProcess.WorkingDirectory = "G:\\SteamLibrary\\steamapps\\common\\Alien Isolation";
+            //alienProcess.FileName = "G:\\SteamLibrary\\steamapps\\common\\Alien Isolation/AI.exe";
+            //Process.Start(alienProcess);
+
             LoadModePAK("SOLACE");
-
-            RenderableElements RenderableElements = new RenderableElements("G:\\SteamLibrary\\steamapps\\common\\Alien Isolation\\DATA\\ENV\\PRODUCTION\\SOLACE/WORLD/REDS.BIN");
-            List<Models.CS2.Component.LOD.Submesh> redsModels = new List<Models.CS2.Component.LOD.Submesh>();
-            //List<Materials.Material> redsMaterials = new List<Materials.Material>();
-            for (int i = 0; i < RenderableElements.Entries.Count; i++)
-            {
-                redsModels.Add(((Models)pak.File).GetAtWriteIndex(RenderableElements.Entries[i].ModelIndex));
-                //redsMaterials.Add(Materials.GetAtWriteIndex(RenderableElements.Entries[i].MaterialIndex));
-            }
-
-            Models.CS2 cs2 = ((Models)pak.File).Entries.FirstOrDefault(o => o.Name == "AYZ\\SCIENCE\\FEATURE_MED\\AMBULANCEDOCK_AIRLOCK\\AMBULANCEDOCK_AIRLOCK_DISPLAY.cs2");
-            Models.CS2.Component.LOD.Submesh s = CathodeLibExtensions.ToSubmesh(null);
-            cs2.Components[0].LODs[0].Submeshes[0].content = s.content;
-            cs2.Components[0].LODs[0].Submeshes[0].IndexCount = s.IndexCount;
-            cs2.Components[0].LODs[0].Submeshes[0].VertexCount = s.VertexCount;
-            cs2.Components[0].LODs[0].Submeshes[0].VertexFormat = s.VertexFormat;
-            cs2.Components[0].LODs[0].Submeshes[0].VertexFormatLowDetail = s.VertexFormatLowDetail;
-            pak.File.Save();
-
-            for (int i = 0; i < RenderableElements.Entries.Count; i++)
-            {
-                if (RenderableElements.Entries[i].ModelIndex != -1)
-                    RenderableElements.Entries[i].ModelIndex = ((Models)pak.File).GetWriteIndex(redsModels[i]);
-                RenderableElements.Entries[i].ModelLODIndex = -1;
-                RenderableElements.Entries[i].ModelLODPrimitiveCount = 0;
-                //if (RenderableElements.Entries[i].MaterialIndex != -1)
-                //   RenderableElements.Entries[i].MaterialIndex = Materials.GetWriteIndex(redsMaterials[i]);
-            }
-            RenderableElements.Save();
-
-            string gsfdfsdf = "";
         }
 
         /* Load the appropriate PAK for the given launch mode */
@@ -417,6 +418,12 @@ namespace AlienPAK
                             preview.SetImagePreview(content);
                             break;
                         case PAKType.MODELS:
+                            /*
+                            Model3DGroup model1 = new Model3DGroup();
+                            Models.CS2.Component.LOD.Submesh submesh1 = CathodeLibExtensions.ToSubmesh(null);
+                            model1.Children.Add(submesh1.ToGeometryModel3D());
+                            preview.SetModelPreview(model1);
+                            break;*/
                             Models.CS2 cs2 = ((Models)pak.File).Entries.FirstOrDefault(o => o.Name.Replace('\\', '/') == nodeVal.Replace('\\', '/'));
                             Model3DGroup model = new Model3DGroup();
                             foreach (Models.CS2.Component component in cs2.Components)

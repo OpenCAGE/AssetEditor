@@ -178,6 +178,7 @@ namespace AlienPAK
                                     {
                                         Vector4 v = new Vector4(reader.ReadInt16(), reader.ReadInt16(), reader.ReadInt16(), reader.ReadInt16());
                                         v /= (float)Int16.MaxValue;
+                                        if (v.W != 0 && v.W != -1 && v.W != 1) throw new Exception("Unexpected vert W");
                                         switch (format.ShaderSlot)
                                         {
                                             case VBFE_InputSlot.VERTEX:
@@ -247,16 +248,6 @@ namespace AlienPAK
 
         public static CS2.Component.LOD.Submesh ToSubmesh(this Mesh mesh)
         {
-            //for testing purposes...
-            AssimpContext importer = new AssimpContext();
-            //"C:\\Users\\mattf\\Documents\\CUBE.fbx"
-            //"C:\\Users\\mattf\\Downloads\\40-low-poly-cars-free_blender\\Low Poly Cars (Free)_blender\\LowPolyCars.obj"
-            //"C:\\Users\\mattf\\Downloads\\de_dust2-cs-map\\source\\de_dust2\\de_dust2.obj"
-            Scene model = importer.ImportFile("C:\\Users\\mattf\\Downloads\\40-low-poly-cars-free_blender\\Low Poly Cars (Free)_blender\\LowPolyCars.obj", PostProcessPreset.TargetRealTimeMaximumQuality);
-            importer.Dispose();
-            mesh = model.Meshes[0];
-            //--
-
             CS2.Component.LOD.Submesh submesh = new CS2.Component.LOD.Submesh();
             submesh.VertexCount = mesh.VertexCount;
             submesh.IndexCount = mesh.GetIndices().Length;
@@ -286,6 +277,7 @@ namespace AlienPAK
                         for (int x = 0; x < mesh.GetIndices().Length; x++)
                             reader.Write((UInt16)mesh.GetIndices()[x]);
 
+                        Utilities.Align(reader, 16);
                         continue;
                     }
 
@@ -381,7 +373,7 @@ namespace AlienPAK
                                                 reader.Write((Int16)v.X);
                                                 reader.Write((Int16)v.Y);
                                                 reader.Write((Int16)v.Z);
-                                                reader.Write((Int16)0);
+                                                reader.Write((Int16)0); //-1,0,1
                                                 break;
                                         }
                                         break;
