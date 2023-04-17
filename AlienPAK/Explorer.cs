@@ -6,6 +6,7 @@ using System.Linq;
 using System.Windows.Forms;
 using System.Windows.Media.Media3D;
 using Assimp;
+using Assimp.Unmanaged;
 using CATHODE;
 using CathodeLib;
 
@@ -258,8 +259,10 @@ namespace AlienPAK
                     if (FilePicker.ShowDialog() != DialogResult.OK) break;
 
                     Cursor.Current = Cursors.WaitCursor;
+#if !DEBUG
                     try
                     {
+#endif
                         switch (pak.Type)
                         {
                             case PAKType.ANIMATIONS:
@@ -275,7 +278,7 @@ namespace AlienPAK
                                 //TODO: We'll want a UI to select the submeshes to replace
                                 Models modelsPAK = ((Models)pak.File);
                                 AssimpContext importer = new AssimpContext();
-                                Scene model = importer.ImportFile(FilePicker.FileName, PostProcessSteps.Triangulate | PostProcessSteps.FindDegenerates);
+                                Scene model = importer.ImportFile(FilePicker.FileName, PostProcessSteps.Triangulate | PostProcessSteps.FindDegenerates | PostProcessSteps.LimitBoneWeights);
                                 importer.Dispose();
                                 Models.CS2.Component.LOD.Submesh car = model.Meshes[0].ToSubmesh();
                                 Models.CS2 cs2 = ((Models)pak.File).Entries.FirstOrDefault(o => o.Name.Replace('\\', '/') == nodeVal.Replace('\\', '/'));
@@ -300,11 +303,13 @@ namespace AlienPAK
                                 return;
                         }
                         MessageBox.Show("Successfully imported file!", "Import complete", MessageBoxButtons.OK, MessageBoxIcon.Information);
+#if !DEBUG
                     }
                     catch (Exception ex)
                     {
                         MessageBox.Show(ex.ToString(), "Import failed", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     }
+#endif
                     Cursor.Current = Cursors.Default;
                     UpdateSelectedFilePreview();
                     break;
