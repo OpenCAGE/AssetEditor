@@ -9,6 +9,7 @@ using Assimp;
 using Assimp.Unmanaged;
 using CATHODE;
 using CathodeLib;
+using ObjLoader.Loader.Loaders;
 
 namespace AlienPAK
 {
@@ -259,10 +260,8 @@ namespace AlienPAK
                     if (FilePicker.ShowDialog() != DialogResult.OK) break;
 
                     Cursor.Current = Cursors.WaitCursor;
-#if !DEBUG
                     try
                     {
-#endif
                         switch (pak.Type)
                         {
                             case PAKType.ANIMATIONS:
@@ -277,15 +276,33 @@ namespace AlienPAK
                             case PAKType.MODELS:
                                 //TODO: We'll want a UI to select the submeshes to replace
                                 Models modelsPAK = ((Models)pak.File);
-                                AssimpContext importer = new AssimpContext();
-                                Scene model = importer.ImportFile(FilePicker.FileName, PostProcessSteps.Triangulate | PostProcessSteps.FindDegenerates | PostProcessSteps.LimitBoneWeights);
-                                importer.Dispose();
-                                Models.CS2.Component.LOD.Submesh car = model.Meshes[0].ToSubmesh();
                                 Models.CS2 cs2 = ((Models)pak.File).Entries.FirstOrDefault(o => o.Name.Replace('\\', '/') == nodeVal.Replace('\\', '/'));
-                                cs2.Components[0].LODs[0].Submeshes[0].content = car.content;
-                                cs2.Components[0].LODs[0].Submeshes[0].IndexCount = car.IndexCount;
-                                cs2.Components[0].LODs[0].Submeshes[0].VertexCount = car.VertexCount;
-                                cs2.Components[0].LODs[0].Submeshes[0].VertexFormat = car.VertexFormat;
+                                Models.CS2.Component.LOD.Submesh submesh = null;
+                                string b = Path.GetExtension(FilePicker.FileName).ToLower();
+                                switch (Path.GetExtension(FilePicker.FileName).ToLower())
+                                {
+                                    case ".obj":
+                                        ObjLoaderFactory objLoaderFactory = new ObjLoaderFactory();
+                                        IObjLoader objLoader = objLoaderFactory.Create();
+                                        using (FileStream fileStream = new FileStream(FilePicker.FileName, FileMode.Open))
+                                        {
+                                            submesh = objLoader.Load(fileStream).ToSubmesh();
+                                            //TODO: correctly handle MTLs
+                                        }
+                                        break;
+                                    default:
+                                        //TODO: this doesn't seem to be working properly...
+                                        using (AssimpContext importer = new AssimpContext())
+                                        {
+                                            Scene model = importer.ImportFile(FilePicker.FileName, PostProcessSteps.Triangulate | PostProcessSteps.FindDegenerates | PostProcessSteps.LimitBoneWeights);
+                                            submesh = model.Meshes[0].ToSubmesh();
+                                        }
+                                        break;
+                                }
+                                cs2.Components[0].LODs[0].Submeshes[0].content = submesh.content;
+                                cs2.Components[0].LODs[0].Submeshes[0].IndexCount = submesh.IndexCount;
+                                cs2.Components[0].LODs[0].Submeshes[0].VertexCount = submesh.VertexCount;
+                                cs2.Components[0].LODs[0].Submeshes[0].VertexFormat = submesh.VertexFormat;
 
                                 List<Models.CS2.Component.LOD.Submesh> redsModels = new List<Models.CS2.Component.LOD.Submesh>();
                                 for (int i = 0; i < reds.Entries.Count; i++) redsModels.Add(modelsPAK.GetAtWriteIndex(reds.Entries[i].ModelIndex));
@@ -303,13 +320,11 @@ namespace AlienPAK
                                 return;
                         }
                         MessageBox.Show("Successfully imported file!", "Import complete", MessageBoxButtons.OK, MessageBoxIcon.Information);
-#if !DEBUG
                     }
                     catch (Exception ex)
                     {
                         MessageBox.Show(ex.ToString(), "Import failed", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     }
-#endif
                     Cursor.Current = Cursors.Default;
                     UpdateSelectedFilePreview();
                     break;
