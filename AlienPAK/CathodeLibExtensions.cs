@@ -17,8 +17,6 @@ using static CATHODE.Models;
 using System.Reflection;
 using Vector3D = System.Windows.Media.Media3D.Vector3D;
 using System.Windows;
-using ObjLoader.Loader.Loaders;
-using ObjLoader.Loader.Data.Elements;
 
 namespace AlienPAK
 {
@@ -249,94 +247,6 @@ namespace AlienPAK
             bool worked = mesh.SetIndices(model.TriangleIndices.ToArray(), 3);
             if (!worked) throw new Exception("oops");
             return mesh;
-        }
-
-        public static CS2.Component.LOD.Submesh ToSubmesh(this LoadResult mesh)
-        {
-            CS2.Component.LOD.Submesh submesh = new CS2.Component.LOD.Submesh();
-            submesh.VertexCount = mesh.Vertices.Count;
-
-            List<int> list = new List<int>();
-            foreach (Group group in mesh.Groups)
-            {
-                foreach (ObjLoader.Loader.Data.Elements.Face face in group.Faces)
-                {
-                    if (face.Count != 3) throw new Exception("Not triangulated"); //todo: handle
-                    for (int i = 0; i < face.Count; i++)
-                    {
-                        list.Add(face[i].VertexIndex - 1);
-                    }
-                }
-            }
-            int[] indices = list.ToArray();
-            submesh.IndexCount = indices.Length;
-
-            submesh.VertexFormat = new AlienVBF();
-            submesh.VertexFormat.Elements.Add(new List<AlienVBF.Element>() { new AlienVBF.Element(VBFE_InputType.VECTOR4_INT16_DIVMAX, VBFE_InputSlot.VERTEX) });
-            submesh.VertexFormat.Elements.Add(new List<AlienVBF.Element>() { new AlienVBF.Element(VBFE_InputType.INDICIES_U16) }); 
-
-            submesh.VertexFormatLowDetail = submesh.VertexFormat;
-
-            MemoryStream ms = new MemoryStream();
-            using (BinaryWriter reader = new BinaryWriter(ms))
-            {
-                for (int i = 0; i < submesh.VertexFormat.Elements.Count; ++i)
-                {
-                    if (i == submesh.VertexFormat.Elements.Count - 1)
-                    {
-                        for (int x = 0; x < indices.Length; x++)
-                            reader.Write((UInt16)indices[x]);
-
-                        Utilities.Align(reader, 16);
-                        continue;
-                    }
-
-                    for (int x = 0; x < submesh.VertexCount; ++x)
-                    {
-                        for (int y = 0; y < submesh.VertexFormat.Elements[i].Count; ++y)
-                        {
-                            AlienVBF.Element format = submesh.VertexFormat.Elements[i][y];
-                            switch (format.VariableType)
-                            {
-                                /*
-                                case VBFE_InputType.VECTOR2_INT16_DIV2048:
-                                    {
-                                        switch (format.ShaderSlot)
-                                        {
-                                            case VBFE_InputSlot.UV:
-                                                Vector2 v = new Vector2(mesh.TextureCoordinateChannels[format.VariantIndex][x].X, mesh.TextureCoordinateChannels[format.VariantIndex][x].Y);
-                                                v *= (float)Int16.MaxValue;
-                                                reader.Write((Int16)v.X);
-                                                reader.Write((Int16)v.Y);
-                                                break;
-                                        }
-                                        break;
-                                    }*/
-                                case VBFE_InputType.VECTOR4_INT16_DIVMAX:
-                                    {
-                                        switch (format.ShaderSlot)
-                                        {
-                                            case VBFE_InputSlot.VERTEX:
-                                                Vector4 v = new Vector4(mesh.Vertices[x].X, mesh.Vertices[x].Y, mesh.Vertices[x].Z, 0);
-                                                v *= (float)Int16.MaxValue;
-                                                reader.Write((Int16)v.X);
-                                                reader.Write((Int16)v.Y);
-                                                reader.Write((Int16)v.Z);
-                                                reader.Write((Int16)v.W); //-1,0,1
-                                                break;
-                                        }
-                                        break;
-                                    }
-                            }
-                        }
-                    }
-                    Utilities.Align(reader, 16);
-                }
-            }
-            submesh.content = ms.ToArray();
-            //submesh.
-
-            return submesh;
         }
 
         public static CS2.Component.LOD.Submesh ToSubmesh(this Mesh mesh)

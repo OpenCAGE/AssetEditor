@@ -9,7 +9,6 @@ using Assimp;
 using Assimp.Unmanaged;
 using CATHODE;
 using CathodeLib;
-using ObjLoader.Loader.Loaders;
 
 namespace AlienPAK
 {
@@ -278,31 +277,17 @@ namespace AlienPAK
                                 Models modelsPAK = ((Models)pak.File);
                                 Models.CS2 cs2 = ((Models)pak.File).Entries.FirstOrDefault(o => o.Name.Replace('\\', '/') == nodeVal.Replace('\\', '/'));
                                 Models.CS2.Component.LOD.Submesh submesh = null;
-                                string b = Path.GetExtension(FilePicker.FileName).ToLower();
-                                switch (Path.GetExtension(FilePicker.FileName).ToLower())
+                                using (AssimpContext importer = new AssimpContext())
                                 {
-                                    case ".obj":
-                                        ObjLoaderFactory objLoaderFactory = new ObjLoaderFactory();
-                                        IObjLoader objLoader = objLoaderFactory.Create();
-                                        using (FileStream fileStream = new FileStream(FilePicker.FileName, FileMode.Open))
-                                        {
-                                            submesh = objLoader.Load(fileStream).ToSubmesh();
-                                            //TODO: correctly handle MTLs
-                                        }
-                                        break;
-                                    default:
-                                        //TODO: this doesn't seem to be working properly...
-                                        using (AssimpContext importer = new AssimpContext())
-                                        {
-                                            Scene model = importer.ImportFile(FilePicker.FileName, PostProcessSteps.Triangulate | PostProcessSteps.FindDegenerates | PostProcessSteps.LimitBoneWeights);
-                                            submesh = model.Meshes[0].ToSubmesh();
-                                        }
-                                        break;
+                                    //TODO: validate mesh extents and scale correctly
+                                    Scene model = importer.ImportFile(FilePicker.FileName, PostProcessSteps.Triangulate | PostProcessSteps.FindDegenerates | PostProcessSteps.LimitBoneWeights);
+                                    submesh = model.Meshes[0].ToSubmesh();
                                 }
                                 cs2.Components[0].LODs[0].Submeshes[0].content = submesh.content;
                                 cs2.Components[0].LODs[0].Submeshes[0].IndexCount = submesh.IndexCount;
                                 cs2.Components[0].LODs[0].Submeshes[0].VertexCount = submesh.VertexCount;
                                 cs2.Components[0].LODs[0].Submeshes[0].VertexFormat = submesh.VertexFormat;
+                                cs2.Components[0].LODs[0].Submeshes[0].ScaleFactor = 4 * 6; //TODO: we have to scale down meshes to fit within the int16 limits. we can then scale them up again here.
 
                                 List<Models.CS2.Component.LOD.Submesh> redsModels = new List<Models.CS2.Component.LOD.Submesh>();
                                 for (int i = 0; i < reds.Entries.Count; i++) redsModels.Add(modelsPAK.GetAtWriteIndex(reds.Entries[i].ModelIndex));
