@@ -43,6 +43,9 @@ namespace AlienPAK
                 case Textures.TextureFormat.DXGI_FORMAT_B8G8R8A8_UNORM:
                     format = DirectXTexUtility.DXGIFormat.B8G8R8A8UNORM;
                     break;
+                case Textures.TextureFormat.SIGNED_DISTANCE_FIELD:
+                    format = DirectXTexUtility.DXGIFormat.R8UNORM;
+                    break;
                 default:
                     format = DirectXTexUtility.DXGIFormat.BC7UNORM;
                     break;

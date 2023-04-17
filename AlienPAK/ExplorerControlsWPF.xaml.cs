@@ -220,6 +220,9 @@ namespace AlienPAK
                         case Pfim.ImageFormat.Rgb24:
                             format = PixelFormat.Format24bppRgb;
                             break;
+                        case Pfim.ImageFormat.Rgb8:
+                            format = PixelFormat.Format8bppIndexed;
+                            break;
                         default:
                             Console.WriteLine("Unsupported DDS: " + image.Format);
                             break;
