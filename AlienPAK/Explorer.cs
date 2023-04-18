@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Reflection;
+using System.Runtime.Remoting.Metadata;
 using System.Windows.Forms;
 using System.Windows.Media.Media3D;
 using Assimp;
@@ -151,6 +153,18 @@ namespace AlienPAK
             }
             this.Text = baseTitle + ((level == "") ? "" : " - " + level);
             LoadPAK(path);
+
+            if (redsPath == "") return;
+            RenderableElements reds = new RenderableElements(redsPath);
+            for (int i = 0; i < reds.Entries.Count; i++)
+            {
+                if (reds.Entries[i].ModelLODIndex != -1)
+                {
+                    Console.WriteLine(reds.Entries[i].ModelIndex + " -> " + reds.Entries[i].MaterialIndex + ":\n\t" + reds.Entries[i].ModelLODIndex + " -> " + reds.Entries[i].ModelLODPrimitiveCount);
+                }
+            }
+            Console.WriteLine(((Models)pak.File).Entries.Count);
+            reds.Save();
         }
 
         /* Open a PAK and populate the GUI */
@@ -169,51 +183,115 @@ namespace AlienPAK
         /* Import a new file to the PAK */
         private void ImportFile()
         {
-            return;
-
-            /* This can only happen for UI files, so for OpenCAGE I'm forcing AlienPAKs[0] - might need changing for other PAKs that gain support */
-
-            //Let the user decide what file to add, then add it
             OpenFileDialog FilePicker = new OpenFileDialog();
-            FilePicker.Filter = "Any File|*.*";
-            if (FilePicker.ShowDialog() == DialogResult.OK)
+            switch (pak.Type)
             {
-                Cursor.Current = Cursors.WaitCursor;
-                //PAKReturnType ResponseCode = AlienPAKs[0].AddNewFile(FilePicker.FileName);
-                //MessageBox.Show(AlienErrors.ErrorMessageBody(ResponseCode), AlienErrors.ErrorMessageTitle(ResponseCode), MessageBoxButtons.OK, MessageBoxIcon.Information);
-                Cursor.Current = Cursors.Default;
+                case PAKType.MODELS:
+                    FilePicker.Filter = "FBX Model|*.fbx|GLTF Model|*.gltf|OBJ Model|*.obj"; //TODO: we can support loads here with assimp (importer.GetSupportedExportFormats())
+                    break;
+                default:
+                    MessageBox.Show("This PAK type does not support file importing!", "Import failed", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
             }
-            //This is an expensive call for any PAK except PAK2, as it uses the new system.
-            //We only can call with PAK2 here so it's fine, but worth noting.
-            //treeHelper.UpdateFileTree(AlienPAKs[0].Parse());
+            if (FilePicker.ShowDialog() != DialogResult.OK) return;
+            string newFileName = Path.GetFileNameWithoutExtension(FilePicker.FileName);
+
+            Cursor.Current = Cursors.WaitCursor;
+            try
+            {
+                switch (pak.Type)
+                {
+                    case PAKType.MODELS:
+                        Models modelsPAK = ((Models)pak.File);
+                        Models.CS2 cs2 = new Models.CS2();
+                        cs2.Name = newFileName;
+                        cs2.Components.Add(new Models.CS2.Component());
+                        cs2.Components[0].LODs.Add(new Models.CS2.Component.LOD(newFileName));
+                        using (AssimpContext importer = new AssimpContext())
+                        {
+                            Scene model = importer.ImportFile(FilePicker.FileName, PostProcessSteps.Triangulate | PostProcessSteps.FindDegenerates | PostProcessSteps.LimitBoneWeights | PostProcessSteps.GenerateBoundingBoxes);
+                            for (int i = 0; i < model.Meshes.Count; i++)
+                            {
+                                Models.CS2.Component.LOD.Submesh submesh = model.Meshes[i].ToSubmesh();
+                                if (i == 0) submesh.Unknown2_ = 134282240;
+                                else submesh.Unknown2_ = 134239232;
+                                cs2.Components[0].LODs[0].Submeshes.Add(submesh);
+                            }
+                        }
+                        modelsPAK.Entries.Add(cs2);
+                        SaveModelsAndUpdateREDS();
+                        break;
+                    default:
+                        return;
+                }
+                MessageBox.Show("Successfully imported file!", "Import complete", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.ToString(), "Import failed", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+            Cursor.Current = Cursors.Default;
+            pak.Contents.Add(newFileName);
+            treeHelper.UpdateFileTree(pak.Contents);
             UpdateSelectedFilePreview();
         }
 
         /* Delete the selected file in the PAK */
         private void DeleteSelectedFile()
         {
+            if (FileTree.SelectedNode == null) return;
+            TreeItemType nodeType = ((TreeItem)FileTree.SelectedNode.Tag).Item_Type;
+            string nodeVal = ((TreeItem)FileTree.SelectedNode.Tag).String_Value;
+
+            switch (nodeType)
+            {
+                case TreeItemType.EXPORTABLE_FILE:
+                    DialogResult ConfirmRemoval = MessageBox.Show("Are you sure you would like to remove this file?", "About to remove selected file...", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+                    if (ConfirmRemoval != DialogResult.Yes) return;
+
+                    Cursor.Current = Cursors.WaitCursor;
+                    try
+                    {
+                        switch (pak.Type)
+                        {
+                            case PAKType.ANIMATIONS:
+                            case PAKType.UI:
+                                ((PAK2)pak.File).Entries.RemoveAll(o => o.Filename.Replace('\\', '/') == nodeVal.Replace('\\', '/'));
+                                pak.File.Save();
+                                break;
+                            case PAKType.TEXTURES:
+                                ((Textures)pak.File).Entries.RemoveAll(o => o.Name.Replace('\\', '/') == nodeVal.Replace('\\', '/'));
+                                pak.File.Save();
+                                //TODO: update model references
+                                break;
+                            case PAKType.MATERIAL_MAPPINGS:
+                                ((MaterialMappings)pak.File).Entries.RemoveAll(o => o.MapFilename.Replace('\\', '/') == nodeVal.Replace('\\', '/'));
+                                pak.File.Save();
+                                break;
+                            case PAKType.MODELS:
+                                ((Models)pak.File).Entries.RemoveAll(o => o.Name.Replace('\\', '/') == nodeVal.Replace('\\', '/'));
+                                SaveModelsAndUpdateREDS();
+                                break;
+                            default:
+                                MessageBox.Show("This PAK type does not support file deleting!", "Delete failed", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                return;
+                        }
+                        MessageBox.Show("Successfully deleted file!", "Delete complete", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show(ex.ToString(), "Delete failed", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        return;
+                    }
+                    Cursor.Current = Cursors.Default;
+                    pak.Contents.RemoveAll(o => o.Replace('\\', '/') == nodeVal.Replace('\\', '/'));
+                    treeHelper.UpdateFileTree(pak.Contents);
+                    UpdateSelectedFilePreview();
+                    break;
+            }
+
             return;
-
-            /* This can only happen for UI files, so for OpenCAGE I'm forcing AlienPAKs[0] - might need changing for other PAKs that gain support */
-
-            if (FileTree.SelectedNode == null || ((TreeItem)FileTree.SelectedNode.Tag).Item_Type != TreeItemType.EXPORTABLE_FILE)
-            {
-                MessageBox.Show("Please select a file from the list.", "No file selected.", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                return;
-            }
-
-            DialogResult ConfirmRemoval = MessageBox.Show("Are you sure you would like to remove this file?", "About to remove selected file...", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
-            if (ConfirmRemoval == DialogResult.Yes)
-            {
-                Cursor.Current = Cursors.WaitCursor;
-                //PAKReturnType ResponseCode = AlienPAKs[0].RemoveFile(((TreeItem)FileTree.SelectedNode.Tag).String_Value);
-                //MessageBox.Show(AlienErrors.ErrorMessageBody(ResponseCode), AlienErrors.ErrorMessageTitle(ResponseCode), MessageBoxButtons.OK, MessageBoxIcon.Information);
-                Cursor.Current = Cursors.Default;
-            }
-            //This is an expensive call for any PAK except PAK2, as it uses the new system.
-            //We only can call with PAK2 here so it's fine, but worth noting.
-            //treeHelper.UpdateFileTree(AlienPAKs[0].Parse());
-            UpdateSelectedFilePreview();
         }
 
         /* Export all files in the PAK */
@@ -287,17 +365,7 @@ namespace AlienPAK
                                 cs2.Components[0].LODs[0].Submeshes[0].VertexCount = submesh.VertexCount;
                                 cs2.Components[0].LODs[0].Submeshes[0].VertexFormat = submesh.VertexFormat;
                                 cs2.Components[0].LODs[0].Submeshes[0].ScaleFactor = submesh.ScaleFactor;
-
-                                List<Models.CS2.Component.LOD.Submesh> redsModels = new List<Models.CS2.Component.LOD.Submesh>();
-                                for (int i = 0; i < reds.Entries.Count; i++) redsModels.Add(modelsPAK.GetAtWriteIndex(reds.Entries[i].ModelIndex));
-                                modelsPAK.Save();
-                                for (int i = 0; i < reds.Entries.Count; i++)
-                                {
-                                    if (reds.Entries[i].ModelIndex != -1) reds.Entries[i].ModelIndex = modelsPAK.GetWriteIndex(redsModels[i]);
-                                    reds.Entries[i].ModelLODIndex = -1;
-                                    reds.Entries[i].ModelLODPrimitiveCount = 0;
-                                }
-                                reds.Save();
+                                SaveModelsAndUpdateREDS();
                                 break;
                             default:
                                 MessageBox.Show("This PAK type does not support file importing!", "Import failed", MessageBoxButtons.OK, MessageBoxIcon.Error);
@@ -501,6 +569,29 @@ namespace AlienPAK
         private void FileTree_AfterSelect(object sender, TreeViewEventArgs e)
         {
             UpdateSelectedFilePreview();
+        }
+
+        private void SaveModelsAndUpdateREDS()
+        {
+            Models modelsPAK = ((Models)pak.File);
+            RenderableElements reds = new RenderableElements(redsPath);
+            List<Models.CS2.Component.LOD.Submesh> redsModels = new List<Models.CS2.Component.LOD.Submesh>();
+            List<Models.CS2.Component.LOD.Submesh> redsModelsLOD = new List<Models.CS2.Component.LOD.Submesh>();
+            for (int i = 0; i < reds.Entries.Count; i++)
+            {
+                redsModels.Add(modelsPAK.GetAtWriteIndex(reds.Entries[i].ModelIndex));
+                redsModelsLOD.Add(modelsPAK.GetAtWriteIndex(reds.Entries[i].ModelLODIndex));
+            }
+            modelsPAK.Save();
+            for (int i = 0; i < reds.Entries.Count; i++)
+            {
+                reds.Entries[i].ModelIndex = modelsPAK.GetWriteIndex(redsModels[i]);
+
+                //TODO: urgently need to figure out these values as it's causing rendering issues 
+                reds.Entries[i].ModelLODIndex = -1;
+                reds.Entries[i].ModelLODPrimitiveCount = 0;
+            }
+            reds.Save();
         }
     }
 }

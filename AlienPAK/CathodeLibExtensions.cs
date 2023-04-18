@@ -183,6 +183,7 @@ namespace AlienPAK
                                         Vector4 v = new Vector4(reader.ReadInt16(), reader.ReadInt16(), reader.ReadInt16(), reader.ReadInt16());
                                         v /= (float)Int16.MaxValue;
                                         if (v.W != 0 && v.W != -1 && v.W != 1) throw new Exception("Unexpected vert W");
+                                        v *= submesh.ScaleFactor; //Account for scale
                                         switch (format.ShaderSlot)
                                         {
                                             case VBFE_InputSlot.VERTEX:
@@ -383,7 +384,11 @@ namespace AlienPAK
                                             case VBFE_InputSlot.UV:
                                                 Vector2 v = new Vector2(mesh.TextureCoordinateChannels[format.VariantIndex][x].X, mesh.TextureCoordinateChannels[format.VariantIndex][x].Y);
 
-                                                if (v.X > 1 || v.Y > 1) throw new Exception("Unexpected UV");
+                                                if (v.X > 1 || v.Y > 1)
+                                                {
+                                                    //TODO: uv scaling?
+                                                    //throw new Exception("Unexpected UV");
+                                                }
 
                                                 v *= (float)Int16.MaxValue;
                                                 reader.Write((Int16)v.X);
