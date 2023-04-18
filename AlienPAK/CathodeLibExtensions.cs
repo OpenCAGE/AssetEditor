@@ -17,6 +17,7 @@ using static CATHODE.Models;
 using System.Reflection;
 using Vector3D = System.Windows.Media.Media3D.Vector3D;
 using System.Windows;
+using System.ComponentModel;
 
 namespace AlienPAK
 {
@@ -251,18 +252,37 @@ namespace AlienPAK
 
         public static CS2.Component.LOD.Submesh ToSubmesh(this Mesh mesh)
         {
+            //We can't have more vertices than Int16.MaxValue as we won't be able to point to them
+            if (mesh.VertexCount > Int16.MaxValue) return null;
+
+            //All faces must be triangulated
+            foreach (Assimp.Face face in mesh.Faces) if (face.Indices.Count != 3) return null;
+
+            //Mesh must have some content
+            if (mesh.BoundingBox.Max == new Assimp.Vector3D(0,0,0)) return null;
+
             CS2.Component.LOD.Submesh submesh = new CS2.Component.LOD.Submesh();
             submesh.VertexCount = mesh.VertexCount;
             int[] indices = mesh.GetIndices();
             submesh.IndexCount = indices.Length;
 
-            foreach (Assimp.Face face in mesh.Faces)
+            //Calculate scale factor (meshes must not exceed 1 unit in any direction)
             {
-                if (face.Indices.Count != 3)
+                float x = Math.Max(Math.Abs(mesh.BoundingBox.Min.X), Math.Abs(mesh.BoundingBox.Max.X));
+                float y = Math.Max(Math.Abs(mesh.BoundingBox.Min.Y), Math.Abs(mesh.BoundingBox.Max.Y));
+                float z = Math.Max(Math.Abs(mesh.BoundingBox.Min.Z), Math.Abs(mesh.BoundingBox.Max.Z));
+                submesh.ScaleFactor = 1;
+                int i = 1;
+                while (true)
                 {
-                    string dfsfsd = "";
+                    if (x / (float)submesh.ScaleFactor < 0.99f && y / (float)submesh.ScaleFactor < 0.99f && z / (float)submesh.ScaleFactor < 0.99f) break;
+                    if (i == 1) submesh.ScaleFactor = 4;
+                    else submesh.ScaleFactor = (ushort)(4 * i);
+                    i++;
                 }
             }
+
+
 
             //Example vertex format with vertices, UVs, normals, and a colour
             //submesh.VertexFormat.Elements.Add(new List<AlienVBF.Element>() { new AlienVBF.Element(VBFE_InputType.VECTOR4_INT16_DIVMAX, VBFE_InputSlot.VERTEX), new AlienVBF.Element(VBFE_InputType.VECTOR2_INT16_DIV2048, VBFE_InputSlot.UV), new AlienVBF.Element(VBFE_InputType.INT32, VBFE_InputSlot.COLOUR) });
@@ -362,6 +382,9 @@ namespace AlienPAK
                                         {
                                             case VBFE_InputSlot.UV:
                                                 Vector2 v = new Vector2(mesh.TextureCoordinateChannels[format.VariantIndex][x].X, mesh.TextureCoordinateChannels[format.VariantIndex][x].Y);
+
+                                                if (v.X > 1 || v.Y > 1) throw new Exception("Unexpected UV");
+
                                                 v *= (float)Int16.MaxValue;
                                                 reader.Write((Int16)v.X);
                                                 reader.Write((Int16)v.Y);
@@ -375,6 +398,7 @@ namespace AlienPAK
                                         {
                                             case VBFE_InputSlot.VERTEX:
                                                 Vector4 v = new Vector4(mesh.Vertices[x].X, mesh.Vertices[x].Y, mesh.Vertices[x].Z, 0);
+                                                v /= submesh.ScaleFactor;
                                                 v *= (float)Int16.MaxValue;
                                                 reader.Write((Int16)v.X);
                                                 reader.Write((Int16)v.Y);

@@ -15,7 +15,7 @@ namespace AlienPAK
     public partial class Explorer : Form
     {
         PAKWrapper pak = new PAKWrapper();
-        RenderableElements reds = null;
+        string redsPath = "";
 
         TreeUtility treeHelper;
         ExplorerControlsWPF preview;
@@ -116,7 +116,7 @@ namespace AlienPAK
         private void LoadModePAK(string level)
         {
             string path = SharedData.pathToAI + "/DATA/";
-            reds = null;
+            redsPath = "";
             switch (LaunchMode)
             {
                 case PAKType.ANIMATIONS:
@@ -136,7 +136,7 @@ namespace AlienPAK
                         path += "ENV/GLOBAL/WORLD/GLOBAL_MODELS.PAK";
                     else
                     {
-                        reds = new RenderableElements(path + "ENV/PRODUCTION/" + level + "/WORLD/REDS.BIN");
+                        redsPath = path + "ENV/PRODUCTION/" + level + "/WORLD/REDS.BIN";
                         path += "ENV/PRODUCTION/" + level + "/RENDERABLE/LEVEL_MODELS.PAK";
                     }
                     break;
@@ -270,8 +270,8 @@ namespace AlienPAK
                                 break;
                             //case PAKType.TEXTURES:
                             //    Textures.TEX4 texture = ((Textures)pak.File).Entries.FirstOrDefault(o => o.Name.Replace('\\', '/') == nodeVal.Replace('\\', '/'));
-                                //TODO: handle image import & conversion
-                           //     break;
+                            //TODO: handle image import & conversion
+                            //     break;
                             case PAKType.MODELS:
                                 //TODO: We'll want a UI to select the submeshes to replace
                                 Models modelsPAK = ((Models)pak.File);
@@ -279,15 +279,14 @@ namespace AlienPAK
                                 Models.CS2.Component.LOD.Submesh submesh = null;
                                 using (AssimpContext importer = new AssimpContext())
                                 {
-                                    //TODO: validate mesh extents and scale correctly
-                                    Scene model = importer.ImportFile(FilePicker.FileName, PostProcessSteps.Triangulate | PostProcessSteps.FindDegenerates | PostProcessSteps.LimitBoneWeights);
+                                    Scene model = importer.ImportFile(FilePicker.FileName, PostProcessSteps.Triangulate | PostProcessSteps.FindDegenerates | PostProcessSteps.LimitBoneWeights | PostProcessSteps.GenerateBoundingBoxes);
                                     submesh = model.Meshes[0].ToSubmesh();
                                 }
                                 cs2.Components[0].LODs[0].Submeshes[0].content = submesh.content;
                                 cs2.Components[0].LODs[0].Submeshes[0].IndexCount = submesh.IndexCount;
                                 cs2.Components[0].LODs[0].Submeshes[0].VertexCount = submesh.VertexCount;
                                 cs2.Components[0].LODs[0].Submeshes[0].VertexFormat = submesh.VertexFormat;
-                                cs2.Components[0].LODs[0].Submeshes[0].ScaleFactor = 4 * 6; //TODO: we have to scale down meshes to fit within the int16 limits. we can then scale them up again here.
+                                cs2.Components[0].LODs[0].Submeshes[0].ScaleFactor = submesh.ScaleFactor;
 
                                 List<Models.CS2.Component.LOD.Submesh> redsModels = new List<Models.CS2.Component.LOD.Submesh>();
                                 for (int i = 0; i < reds.Entries.Count; i++) redsModels.Add(modelsPAK.GetAtWriteIndex(reds.Entries[i].ModelIndex));
