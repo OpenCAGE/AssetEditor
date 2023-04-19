@@ -55,6 +55,9 @@ namespace AlienPAK
                     case PAKType.COMMANDS:
                         baseTitle += " - Scripts";
                         break;
+                    case PAKType.MATERIAL_MAPPINGS:
+                        baseTitle += " - Material Mappings";
+                        break;
                 }
             }
             this.Text = baseTitle;
@@ -161,6 +164,7 @@ namespace AlienPAK
                 if (reds.Entries[i].ModelLODIndex != -1)
                 {
                     Console.WriteLine(reds.Entries[i].ModelIndex + " -> " + reds.Entries[i].MaterialIndex + ":\n\t" + reds.Entries[i].ModelLODIndex + " -> " + reds.Entries[i].ModelLODPrimitiveCount);
+                    Console.WriteLine(((Models)pak.File).FindModelLODForSubmesh(((Models)pak.File).GetAtWriteIndex(reds.Entries[i].ModelIndex)).Submeshes.Count);
                 }
             }
             Console.WriteLine(((Models)pak.File).Entries.Count);
@@ -588,8 +592,8 @@ namespace AlienPAK
                 reds.Entries[i].ModelIndex = modelsPAK.GetWriteIndex(redsModels[i]);
 
                 //TODO: urgently need to figure out these values as it's causing rendering issues 
-                reds.Entries[i].ModelLODIndex = -1;
-                reds.Entries[i].ModelLODPrimitiveCount = 0;
+                //reds.Entries[i].ModelLODIndex = -1;
+                //reds.Entries[i].ModelLODPrimitiveCount = 0;
             }
             reds.Save();
         }
