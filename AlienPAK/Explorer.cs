@@ -71,6 +71,37 @@ namespace AlienPAK
             preview.OnExportAllRequested += ExportAll;
             preview.ShowFunctionButtons(PAKFunction.NONE);
             preview.ShowLevelSelect(LaunchMode != PAKType.NONE && LaunchMode != PAKType.ANIMATIONS && LaunchMode != PAKType.UI, LaunchMode);
+            LoadModePAK("SOLACE");
+            Models.CS2 cs21 = ((Models)pak.File).Entries.FirstOrDefault(o => o.Name == "AYZ\\_PROPS_\\PHYSICS\\CARDBOARD_BOX_TEMPLATE\\CARDBOARD_BOX_TEMPLATE_DISPLAY.cs2");
+            int index = ((Models)pak.File).GetWriteIndex(cs21.Components[0].LODs[0].Submeshes[0]);
+            int index1 = ((Models)pak.File).GetWriteIndex(cs21.Components[0].LODs[1].Submeshes[0]);
+
+            Movers mvr = new Movers("G:\\SteamLibrary\\steamapps\\common\\Alien Isolation\\DATA\\ENV\\PRODUCTION\\SOLACE\\WORLD\\MODELS.MVR");
+            Console.WriteLine(mvr.Entries.Count);
+            int highest = 0;
+            RenderableElements reds = new RenderableElements(redsPath);
+            for (int i = 0; i < reds.Entries.Count; i++)
+            {
+                RenderableElements.Element element = reds.Entries[i];
+                if (element.LODIndex > highest) highest = element.LODIndex;
+                //Console.WriteLine(element.ModelLODIndex + " -> " + element.ModelLODPrimitiveCount);
+                //continue;
+                if (reds.Entries[i].ModelIndex == index)
+                {
+                    element.LODIndex = i;
+                    //element.ModelLODPrimitiveCount = 0;
+                    Console.WriteLine(element.LODIndex + " -> " + element.LODCount);
+                    //Models.CS2 lod22 = ((Models)pak.File).FindModelForSubmesh(((Models)pak.File).GetAtWriteIndex(element.ModelLODIndex));
+                    string sdfgdf = "";
+                }
+                Models.CS2.Component.LOD lod = ((Models)pak.File).FindModelLODForSubmesh(((Models)pak.File).GetAtWriteIndex(element.ModelIndex));
+                if (reds.Entries[i].LODIndex != -1 && (lod == null || lod.Submeshes.Count != reds.Entries[i].LODCount))
+                {
+                    string sdf = "";
+                }
+            }
+            //Console.WriteLine(((Models)pak.File).Entries.Count);
+            reds.Save();
             return;
 
             string lvlPath = "G:\\SteamLibrary\\steamapps\\common\\Alien Isolation\\DATA\\ENV\\PRODUCTION\\SOLACE";
@@ -161,13 +192,13 @@ namespace AlienPAK
             RenderableElements reds = new RenderableElements(redsPath);
             for (int i = 0; i < reds.Entries.Count; i++)
             {
-                if (reds.Entries[i].ModelLODIndex != -1)
+                if (reds.Entries[i].LODIndex != -1)
                 {
-                    Console.WriteLine(reds.Entries[i].ModelIndex + " -> " + reds.Entries[i].MaterialIndex + ":\n\t" + reds.Entries[i].ModelLODIndex + " -> " + reds.Entries[i].ModelLODPrimitiveCount);
-                    Console.WriteLine(((Models)pak.File).FindModelLODForSubmesh(((Models)pak.File).GetAtWriteIndex(reds.Entries[i].ModelIndex)).Submeshes.Count);
+                    //Console.WriteLine(reds.Entries[i].ModelIndex + " -> " + reds.Entries[i].MaterialIndex + ":\n\t" + reds.Entries[i].ModelLODIndex + " -> " + reds.Entries[i].ModelLODPrimitiveCount);
+                    //Console.WriteLine(((Models)pak.File).FindModelLODForSubmesh(((Models)pak.File).GetAtWriteIndex(reds.Entries[i].ModelIndex)).Submeshes.Count);
                 }
             }
-            Console.WriteLine(((Models)pak.File).Entries.Count);
+            //Console.WriteLine(((Models)pak.File).Entries.Count);
             reds.Save();
         }
 
@@ -361,14 +392,19 @@ namespace AlienPAK
                                 Models.CS2.Component.LOD.Submesh submesh = null;
                                 using (AssimpContext importer = new AssimpContext())
                                 {
-                                    Scene model = importer.ImportFile(FilePicker.FileName, PostProcessSteps.Triangulate | PostProcessSteps.FindDegenerates | PostProcessSteps.LimitBoneWeights | PostProcessSteps.GenerateBoundingBoxes);
+                                    Scene model = importer.ImportFile(FilePicker.FileName, PostProcessSteps.Triangulate | PostProcessSteps.FindDegenerates | PostProcessSteps.LimitBoneWeights | PostProcessSteps.GenerateBoundingBoxes); //PostProcessSteps.PreTransformVertices
                                     submesh = model.Meshes[0].ToSubmesh();
                                 }
                                 cs2.Components[0].LODs[0].Submeshes[0].content = submesh.content;
                                 cs2.Components[0].LODs[0].Submeshes[0].IndexCount = submesh.IndexCount;
                                 cs2.Components[0].LODs[0].Submeshes[0].VertexCount = submesh.VertexCount;
                                 cs2.Components[0].LODs[0].Submeshes[0].VertexFormat = submesh.VertexFormat;
+                                cs2.Components[0].LODs[0].Submeshes[0].VertexFormatLowDetail = submesh.VertexFormatLowDetail;
                                 cs2.Components[0].LODs[0].Submeshes[0].ScaleFactor = submesh.ScaleFactor;
+                                cs2.Components[0].LODs[0].Submeshes[0].AABBMax = submesh.AABBMax;
+                                cs2.Components[0].LODs[0].Submeshes[0].AABBMin = submesh.AABBMin;
+                                cs2.Components[0].LODs[0].Submeshes[0].LODMaxDistance_ = 99999999;
+                                cs2.Components[0].LODs[0].Submeshes[0].LODMinDistance_ = -99999999;
                                 SaveModelsAndUpdateREDS();
                                 break;
                             default:
@@ -580,20 +616,14 @@ namespace AlienPAK
             Models modelsPAK = ((Models)pak.File);
             RenderableElements reds = new RenderableElements(redsPath);
             List<Models.CS2.Component.LOD.Submesh> redsModels = new List<Models.CS2.Component.LOD.Submesh>();
-            List<Models.CS2.Component.LOD.Submesh> redsModelsLOD = new List<Models.CS2.Component.LOD.Submesh>();
             for (int i = 0; i < reds.Entries.Count; i++)
             {
                 redsModels.Add(modelsPAK.GetAtWriteIndex(reds.Entries[i].ModelIndex));
-                redsModelsLOD.Add(modelsPAK.GetAtWriteIndex(reds.Entries[i].ModelLODIndex));
             }
             modelsPAK.Save();
             for (int i = 0; i < reds.Entries.Count; i++)
             {
                 reds.Entries[i].ModelIndex = modelsPAK.GetWriteIndex(redsModels[i]);
-
-                //TODO: urgently need to figure out these values as it's causing rendering issues 
-                //reds.Entries[i].ModelLODIndex = -1;
-                //reds.Entries[i].ModelLODPrimitiveCount = 0;
             }
             reds.Save();
         }

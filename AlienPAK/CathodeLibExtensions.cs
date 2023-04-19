@@ -283,6 +283,9 @@ namespace AlienPAK
                 }
             }
 
+            submesh.AABBMax = new Vector3(mesh.BoundingBox.Max.X, mesh.BoundingBox.Max.Y, mesh.BoundingBox.Max.Z);
+            submesh.AABBMin = new Vector3(mesh.BoundingBox.Min.X, mesh.BoundingBox.Min.Y, mesh.BoundingBox.Min.Z);
+
 
 
             //Example vertex format with vertices, UVs, normals, and a colour
