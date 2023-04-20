@@ -1,18 +1,22 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.Remoting.Metadata;
 using System.Windows.Documents;
 using System.Windows.Forms;
+using System.Windows.Media;
 using System.Windows.Media.Media3D;
 using Assimp;
 using Assimp.Unmanaged;
 using CATHODE;
+using CATHODE.LEGACY;
 using CathodeLib;
 using DirectXTexNet;
+using static CATHODE.Materials.Material;
 
 namespace AlienPAK
 {
@@ -20,6 +24,13 @@ namespace AlienPAK
     {
         PAKWrapper pak = new PAKWrapper();
         string extraPath = "";
+
+        //TODO: having implemented all this to get textured models, we might as well just use the CathodeLib Level func instead of the above PAK stuff
+        private Textures textures = null;
+        private Textures texturesGlobal = null;
+        private Materials materials = null;
+        private ShadersPAK shaders = null;
+        private IDXRemap shadersIDX = null;
 
         TreeUtility treeHelper;
         ExplorerControlsWPF preview;
@@ -157,6 +168,11 @@ namespace AlienPAK
         {
             string path = SharedData.pathToAI + "/DATA/";
             extraPath = "";
+            textures = null;
+            texturesGlobal = null;
+            materials = null;
+            shaders = null;
+            shadersIDX = null;
             switch (LaunchMode)
             {
                 case PAKType.ANIMATIONS:
@@ -180,10 +196,19 @@ namespace AlienPAK
                     break;
                 case PAKType.MODELS:
                     if (level == "GLOBAL")
-                        path += "ENV/GLOBAL/WORLD/GLOBAL_MODELS.PAK";
+                        throw new Exception("Not supporting this yet.");
+                        //path += "ENV/GLOBAL/WORLD/GLOBAL_MODELS.PAK";
                     else
                     {
                         extraPath = path + "ENV/PRODUCTION/" + level + "/WORLD/REDS.BIN";
+
+                        //TEMP!!
+                        textures = new Textures(path + "ENV/PRODUCTION/" + level + "/RENDERABLE/LEVEL_TEXTURES.ALL.PAK");
+                        texturesGlobal = new Textures(path + "ENV/GLOBAL/WORLD/GLOBAL_TEXTURES.ALL.PAK");
+                        materials = new Materials(path + "ENV/PRODUCTION/" + level + "/RENDERABLE/LEVEL_MODELS.MTL");
+                        shaders = new ShadersPAK(path + "ENV/PRODUCTION/" + level + "/RENDERABLE/LEVEL_SHADERS_DX11.PAK"); //legacy!
+                        shadersIDX = new IDXRemap(path + "ENV/PRODUCTION/" + level + "/RENDERABLE/LEVEL_SHADERS_DX11_IDX_REMAP.PAK"); //legacy!
+
                         path += "ENV/PRODUCTION/" + level + "/RENDERABLE/LEVEL_MODELS.PAK";
                     }
                     break;
@@ -559,9 +584,35 @@ namespace AlienPAK
                             Models.CS2 cs2 = ((Models)pak.File).Entries.FirstOrDefault(o => o.Name.Replace('\\', '/') == nodeVal.Replace('\\', '/'));
                             Model3DGroup model = new Model3DGroup();
                             foreach (Models.CS2.Component component in cs2.Components)
+                            {
                                 foreach (Models.CS2.Component.LOD lod in component.LODs)
+                                {
                                     foreach (Models.CS2.Component.LOD.Submesh submesh in lod.Submeshes)
-                                        model.Children.Add(submesh.ToGeometryModel3D()); //TODO: are there some offsets/scaling we should be accounting for here?
+                                    {
+                                        GeometryModel3D mdl = submesh.ToGeometryModel3D();
+                                        try
+                                        {
+                                            ShadersPAK.ShaderMaterialMetadata mdlMeta = shaders.GetMaterialMetadataFromShader(materials.GetAtWriteIndex(submesh.MaterialLibraryIndex), shadersIDX);
+                                            ShadersPAK.MaterialTextureContext mdlMetaDiff = mdlMeta.textures.FirstOrDefault(o => o.Type == ShadersPAK.ShaderSlot.DIFFUSE_MAP);
+                                            if (mdlMetaDiff != null)
+                                            {
+                                                Textures tex = mdlMetaDiff.TextureInfo.Source == Texture.TextureSource.GLOBAL ? texturesGlobal : textures;
+                                                Textures.TEX4 diff = tex.GetAtWriteIndex(mdlMetaDiff.TextureInfo.BinIndex);
+                                                byte[] diffDDS = diff?.ToDDS();
+                                                mdl.Material = new DiffuseMaterial(new ImageBrush(diffDDS?.ToBitmap()?.ToImageSource()));
+                                                //TODO: normals?
+                                            }
+                                        }
+                                        catch (Exception ex2)
+                                        {
+                                            Console.WriteLine(ex2.ToString());
+                                        }
+                                        model.Children.Add(mdl); //TODO: are there some offsets/scaling we should be accounting for here?
+                                    }
+                                    break;
+                                }
+                                //break;
+                            }
                             preview.SetModelPreview(model); //TODO: perhaps we should just pass the CS2 object to the model previewer and let that pick what to render
                             break;
                     }

@@ -76,7 +76,7 @@ namespace AlienPAK
             imagePreviewGroup.Visibility = _filePreviewBitmap == null ? Visibility.Collapsed : Visibility.Visible;
             modelPreviewGroup.Visibility = Visibility.Collapsed;
             if (_filePreviewBitmap == null) return;
-            filePreviewImage.Source = ImageSourceFromBitmap(_filePreviewBitmap);
+            filePreviewImage.Source = _filePreviewBitmap?.ToImageSource();
         }
 
         /* Show the model preview for the selected file in UI */
@@ -199,21 +199,6 @@ namespace AlienPAK
                 default:
                     return extension.Substring(1).ToUpper();
             }
-        }
-
-        [DllImport("gdi32.dll", EntryPoint = "DeleteObject")]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        public static extern bool DeleteObject([In] IntPtr hObject);
-
-        /* Convert a Bitmap to ImageSource */
-        public System.Windows.Media.ImageSource ImageSourceFromBitmap(Bitmap bmp)
-        {
-            var handle = bmp.GetHbitmap();
-            try
-            {
-                return Imaging.CreateBitmapSourceFromHBitmap(handle, IntPtr.Zero, Int32Rect.Empty, System.Windows.Media.Imaging.BitmapSizeOptions.FromEmptyOptions());
-            }
-            finally { DeleteObject(handle); }
         }
     }
 }

@@ -24,6 +24,7 @@ using System.Drawing.Imaging;
 using PixelFormat = System.Drawing.Imaging.PixelFormat;
 using Color = System.Windows.Media.Color;
 using static CATHODE.Textures;
+using System.Windows.Interop;
 
 namespace AlienPAK
 {
@@ -163,6 +164,21 @@ namespace AlienPAK
                 return null;
             }
             return toReturn;
+        }
+
+        [DllImport("gdi32.dll", EntryPoint = "DeleteObject")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        public static extern bool DeleteObject([In] IntPtr hObject);
+
+        /* Convert a Bitmap to ImageSource */
+        public static ImageSource ToImageSource(this Bitmap bmp)
+        {
+            var handle = bmp.GetHbitmap();
+            try
+            {
+                return Imaging.CreateBitmapSourceFromHBitmap(handle, IntPtr.Zero, Int32Rect.Empty, System.Windows.Media.Imaging.BitmapSizeOptions.FromEmptyOptions());
+            }
+            finally { DeleteObject(handle); }
         }
 
         public static GeometryModel3D ToGeometryModel3D(this CS2.Component.LOD.Submesh submesh)
