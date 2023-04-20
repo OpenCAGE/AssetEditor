@@ -97,8 +97,8 @@ namespace AlienPAK
             {
                 levelSelectDropdown.Items.Clear();
                 List<string> mapList = Directory.GetFiles(SharedData.pathToAI + "/DATA/ENV/PRODUCTION/", "COMMANDS.PAK", SearchOption.AllDirectories).ToList<string>();
-                if (type == PAKType.TEXTURES/* || type == PAKType.MODELS*/)
-                    levelSelectDropdown.Items.Add("GLOBAL");
+                //if (type == PAKType.TEXTURES/* || type == PAKType.MODELS*/)
+                //    levelSelectDropdown.Items.Add("GLOBAL");      //TODO: currently not doing this for TEXTURES as we need to support GLOBAL index updating in ALL maps
                 for (int i = 0; i < mapList.Count; i++)
                 {
                     string[] fileSplit = mapList[i].Split(new[] { "PRODUCTION" }, StringSplitOptions.None);
