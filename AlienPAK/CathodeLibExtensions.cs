@@ -18,11 +18,18 @@ using System.Reflection;
 using Vector3D = System.Windows.Media.Media3D.Vector3D;
 using System.Windows;
 using System.ComponentModel;
+using System.Drawing;
+using System.Runtime.InteropServices;
+using System.Drawing.Imaging;
+using PixelFormat = System.Drawing.Imaging.PixelFormat;
+using Color = System.Windows.Media.Color;
+using static CATHODE.Textures;
 
 namespace AlienPAK
 {
     public static class CathodeLibExtensions
     {
+        /* Convert a TEX4 to DDS */
         public static byte[] ToDDS(this Textures.TEX4 texture, bool forceLowRes = false)
         {
             Textures.TEX4.Part part = texture?.tex_HighRes?.Content != null && !forceLowRes ? texture.tex_HighRes : texture?.tex_LowRes?.Content != null ? texture.tex_LowRes : null;
@@ -59,6 +66,103 @@ namespace AlienPAK
                 bw.Write(part.Content);
             }
             return ms.ToArray();
+        }
+
+        /* Convert DDS to a TEX4 Part */
+        public static Textures.TEX4.Part ToTEX4Part(this byte[] content, out TextureFormat format, Textures.TEX4.Part part = null) //Optionally pass a part to start from
+        {
+            if (part == null) part = new Textures.TEX4.Part();
+            MemoryStream imageStream = new MemoryStream(content);
+            using (Pfim.IImage image = Pfim.Pfim.FromStream(imageStream))
+            {
+                part.MipLevels = (short)image.MipMaps.Length;
+                part.Width = (short)image.Width;
+                part.Height = (short)image.Height;
+                List<byte> contentList = content.ToList();
+                contentList.RemoveRange(0, 148);
+                part.Content = contentList.ToArray();
+                switch (((Pfim.Dds)image).Header10.DxgiFormat)
+                {
+                    //TODO: should the other non-UNORM formats redirect to these too?
+                    case Pfim.DxgiFormat.BC1_UNORM:
+                        format = TextureFormat.DXGI_FORMAT_BC1_UNORM;
+                        break;
+                    case Pfim.DxgiFormat.BC3_UNORM:
+                        format = TextureFormat.DXGI_FORMAT_BC3_UNORM;
+                        break;
+                    case Pfim.DxgiFormat.BC5_UNORM:
+                        format = TextureFormat.DXGI_FORMAT_BC5_UNORM;
+                        break;
+                    case Pfim.DxgiFormat.B8G8R8A8_UNORM:
+                        format = TextureFormat.DXGI_FORMAT_B8G8R8A8_UNORM;
+                        break;
+                    case Pfim.DxgiFormat.B8G8R8X8_UNORM: //unsure if this is correct
+                        format = TextureFormat.DXGI_FORMAT_B8G8R8_UNORM;
+                        break;
+                    case Pfim.DxgiFormat.R8_UNORM:
+                        format = TextureFormat.SIGNED_DISTANCE_FIELD;
+                        break;
+                    case Pfim.DxgiFormat.BC7_UNORM:
+                    default:
+                        format = TextureFormat.DXGI_FORMAT_BC7_UNORM;
+                        break;
+                }
+                //part.Depth = //TODO
+            }
+            return part;
+        }
+
+        /* Convert a TEX4 to Bitmap */
+        public static Bitmap ToBitmap(this Textures.TEX4 texture, bool forceLowRes = false)
+        {
+            byte[] content = texture?.ToDDS(forceLowRes);
+            return content?.ToBitmap();
+        }
+        public static Bitmap ToBitmap(this byte[] content, bool forceLowRes = false)
+        {
+            Bitmap toReturn = null;
+            if (content == null) return null;
+            try
+            {
+                MemoryStream imageStream = new MemoryStream(content);
+                using (var image = Pfim.Pfim.FromStream(imageStream))
+                {
+                    PixelFormat format = PixelFormat.DontCare;
+                    switch (image.Format)
+                    {
+                        case Pfim.ImageFormat.Rgba32:
+                            format = PixelFormat.Format32bppArgb;
+                            break;
+                        case Pfim.ImageFormat.Rgb24:
+                            format = PixelFormat.Format24bppRgb;
+                            break;
+                        case Pfim.ImageFormat.Rgb8:
+                            format = PixelFormat.Format8bppIndexed;
+                            break;
+                        default:
+                            Console.WriteLine("Unsupported DDS: " + image.Format);
+                            break;
+                    }
+                    if (format != PixelFormat.DontCare)
+                    {
+                        var handle = GCHandle.Alloc(image.Data, GCHandleType.Pinned);
+                        try
+                        {
+                            var data = Marshal.UnsafeAddrOfPinnedArrayElement(image.Data, 0);
+                            toReturn = new Bitmap(image.Width, image.Height, image.Stride, format, data);
+                        }
+                        finally
+                        {
+                            handle.Free();
+                        }
+                    }
+                }
+            }
+            catch
+            {
+                return null;
+            }
+            return toReturn;
         }
 
         public static GeometryModel3D ToGeometryModel3D(this CS2.Component.LOD.Submesh submesh)

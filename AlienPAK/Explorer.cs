@@ -5,19 +5,21 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.Remoting.Metadata;
+using System.Windows.Documents;
 using System.Windows.Forms;
 using System.Windows.Media.Media3D;
 using Assimp;
 using Assimp.Unmanaged;
 using CATHODE;
 using CathodeLib;
+using DirectXTexNet;
 
 namespace AlienPAK
 {
     public partial class Explorer : Form
     {
         PAKWrapper pak = new PAKWrapper();
-        string redsPath = "";
+        string extraPath = "";
 
         TreeUtility treeHelper;
         ExplorerControlsWPF preview;
@@ -64,13 +66,15 @@ namespace AlienPAK
 
             preview = (ExplorerControlsWPF)elementHost1.Child;
             preview.OnLevelSelected += LoadModePAK;
-            preview.OnImportRequested += ImportFile;
+            preview.OnImportRequested += ImportNewFile;
             preview.OnExportRequested += ExportSelectedFile;
-            preview.OnReplaceRequested += ImportSelectedFile;
+            preview.OnReplaceRequested += ReplaceSelectedFile;
             preview.OnDeleteRequested += DeleteSelectedFile;
-            preview.OnExportAllRequested += ExportAll;
+            preview.OnExportAllRequested += ExportAllFiles;
             preview.ShowFunctionButtons(PAKFunction.NONE);
             preview.ShowLevelSelect(LaunchMode != PAKType.NONE && LaunchMode != PAKType.ANIMATIONS && LaunchMode != PAKType.UI, LaunchMode);
+            return;
+
             LoadModePAK("SOLACE");
             Models.CS2 cs21 = ((Models)pak.File).Entries.FirstOrDefault(o => o.Name == "AYZ\\_PROPS_\\PHYSICS\\CARDBOARD_BOX_TEMPLATE\\CARDBOARD_BOX_TEMPLATE_DISPLAY.cs2");
             int index = ((Models)pak.File).GetWriteIndex(cs21.Components[0].LODs[0].Submeshes[0]);
@@ -79,7 +83,7 @@ namespace AlienPAK
             Movers mvr = new Movers("G:\\SteamLibrary\\steamapps\\common\\Alien Isolation\\DATA\\ENV\\PRODUCTION\\SOLACE\\WORLD\\MODELS.MVR");
             Console.WriteLine(mvr.Entries.Count);
             int highest = 0;
-            RenderableElements reds = new RenderableElements(redsPath);
+            RenderableElements reds = new RenderableElements(extraPath);
             for (int i = 0; i < reds.Entries.Count; i++)
             {
                 RenderableElements.Element element = reds.Entries[i];
@@ -152,7 +156,7 @@ namespace AlienPAK
         private void LoadModePAK(string level)
         {
             string path = SharedData.pathToAI + "/DATA/";
-            redsPath = "";
+            extraPath = "";
             switch (LaunchMode)
             {
                 case PAKType.ANIMATIONS:
@@ -163,16 +167,23 @@ namespace AlienPAK
                     break;
                 case PAKType.TEXTURES:
                     if (level == "GLOBAL")
+                    {
+                        //TODO: here we'll need to update ALL LEVELS that point to GLOBAL :/
+                        //We probs shouldn't support GLOBAL until we do this...
                         path += "ENV/GLOBAL/WORLD/GLOBAL_TEXTURES.ALL.PAK";
+                    }
                     else
+                    {
+                        extraPath = path + "ENV/PRODUCTION/" + level + "/RENDERABLE/LEVEL_MODELS.MTL";
                         path += "ENV/PRODUCTION/" + level + "/RENDERABLE/LEVEL_TEXTURES.ALL.PAK";
+                    }
                     break;
                 case PAKType.MODELS:
                     if (level == "GLOBAL")
                         path += "ENV/GLOBAL/WORLD/GLOBAL_MODELS.PAK";
                     else
                     {
-                        redsPath = path + "ENV/PRODUCTION/" + level + "/WORLD/REDS.BIN";
+                        extraPath = path + "ENV/PRODUCTION/" + level + "/WORLD/REDS.BIN";
                         path += "ENV/PRODUCTION/" + level + "/RENDERABLE/LEVEL_MODELS.PAK";
                     }
                     break;
@@ -187,19 +198,6 @@ namespace AlienPAK
             }
             this.Text = baseTitle + ((level == "") ? "" : " - " + level);
             LoadPAK(path);
-
-            if (redsPath == "") return;
-            RenderableElements reds = new RenderableElements(redsPath);
-            for (int i = 0; i < reds.Entries.Count; i++)
-            {
-                if (reds.Entries[i].LODIndex != -1)
-                {
-                    //Console.WriteLine(reds.Entries[i].ModelIndex + " -> " + reds.Entries[i].MaterialIndex + ":\n\t" + reds.Entries[i].ModelLODIndex + " -> " + reds.Entries[i].ModelLODPrimitiveCount);
-                    //Console.WriteLine(((Models)pak.File).FindModelLODForSubmesh(((Models)pak.File).GetAtWriteIndex(reds.Entries[i].ModelIndex)).Submeshes.Count);
-                }
-            }
-            //Console.WriteLine(((Models)pak.File).Entries.Count);
-            reds.Save();
         }
 
         /* Open a PAK and populate the GUI */
@@ -216,7 +214,7 @@ namespace AlienPAK
         }
 
         /* Import a new file to the PAK */
-        private void ImportFile()
+        private void ImportNewFile()
         {
             OpenFileDialog FilePicker = new OpenFileDialog();
             switch (pak.Type)
@@ -297,8 +295,7 @@ namespace AlienPAK
                                 break;
                             case PAKType.TEXTURES:
                                 ((Textures)pak.File).Entries.RemoveAll(o => o.Name.Replace('\\', '/') == nodeVal.Replace('\\', '/'));
-                                pak.File.Save();
-                                //TODO: update model references
+                                SaveTexturesAndUpdateMaterials();
                                 break;
                             case PAKType.MATERIAL_MAPPINGS:
                                 ((MaterialMappings)pak.File).Entries.RemoveAll(o => o.MapFilename.Replace('\\', '/') == nodeVal.Replace('\\', '/'));
@@ -330,7 +327,7 @@ namespace AlienPAK
         }
 
         /* Export all files in the PAK */
-        private void ExportAll()
+        private void ExportAllFiles()
         {
             return;
 
@@ -354,7 +351,7 @@ namespace AlienPAK
         }
 
         /* Import a file to replace the selected PAK entry */
-        private void ImportSelectedFile()
+        private void ReplaceSelectedFile()
         {
             if (FileTree.SelectedNode == null) return;
             TreeItemType nodeType = ((TreeItem)FileTree.SelectedNode.Tag).Item_Type;
@@ -381,10 +378,25 @@ namespace AlienPAK
                                 ((PAK2)pak.File).Entries.FirstOrDefault(o => o.Filename.Replace('\\', '/') == nodeVal.Replace('\\', '/')).Content = File.ReadAllBytes(FilePicker.FileName);
                                 pak.File.Save();
                                 break;
-                            //case PAKType.TEXTURES:
-                            //    Textures.TEX4 texture = ((Textures)pak.File).Entries.FirstOrDefault(o => o.Name.Replace('\\', '/') == nodeVal.Replace('\\', '/'));
-                            //TODO: handle image import & conversion
-                            //     break;
+                            case PAKType.TEXTURES:
+                                Textures.TEX4 texture = ((Textures)pak.File).Entries.FirstOrDefault(o => o.Name.Replace('\\', '/') == nodeVal.Replace('\\', '/'));
+                                if (Path.GetExtension(FilePicker.FileName).ToUpper() == ".DDS")
+                                {
+                                    byte[] content = File.ReadAllBytes(FilePicker.FileName);
+                                    Textures.TEX4.Part part = texture?.tex_HighRes?.Content != null ? texture.tex_HighRes : texture?.tex_LowRes?.Content != null ? texture.tex_LowRes : null;
+                                    part = content?.ToTEX4Part(out texture.Format, part);
+                                    if (texture?.tex_HighRes?.Content != null) texture.tex_HighRes = part;
+                                    else texture.tex_LowRes = part;
+                                    SaveTexturesAndUpdateMaterials();
+                                    break;
+                                }
+                                //TODO: implement this!!!!
+                                MessageBox.Show("PNG/JPG image import conversion is not currently supported!", "WIP", MessageBoxButtons.OK, MessageBoxIcon.Asterisk);
+                                break;
+                                ScratchImage img = TexHelper.Instance.LoadFromWICFile(FilePicker.FileName, WIC_FLAGS.FORCE_RGB).GenerateMipMaps(TEX_FILTER_FLAGS.DEFAULT, 10); /* Was using 11, but gives remainders - going for 10 */
+                                ScratchImage imgDecom = img.Compress(DXGI_FORMAT.BC7_UNORM, TEX_COMPRESS_FLAGS.BC7_QUICK, 0.5f); //TODO use baseFormat
+                                imgDecom.SaveToDDSFile(DDS_FLAGS.FORCE_DX10_EXT, FilePicker.FileName + ".DDS");
+                                break;
                             case PAKType.MODELS:
                                 //TODO: We'll want a UI to select the submeshes to replace
                                 Models modelsPAK = ((Models)pak.File);
@@ -544,12 +556,6 @@ namespace AlienPAK
                             preview.SetImagePreview(content);
                             break;
                         case PAKType.MODELS:
-                            /*
-                            Model3DGroup model1 = new Model3DGroup();
-                            Models.CS2.Component.LOD.Submesh submesh1 = CathodeLibExtensions.ToSubmesh(null);
-                            model1.Children.Add(submesh1.ToGeometryModel3D());
-                            preview.SetModelPreview(model1);
-                            break;*/
                             Models.CS2 cs2 = ((Models)pak.File).Entries.FirstOrDefault(o => o.Name.Replace('\\', '/') == nodeVal.Replace('\\', '/'));
                             Model3DGroup model = new Model3DGroup();
                             foreach (Models.CS2.Component component in cs2.Components)
@@ -588,7 +594,7 @@ namespace AlienPAK
         /* Import/export selected file (main menu) */
         private void importFileToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            ImportSelectedFile();
+            ReplaceSelectedFile();
         }
         private void exportFileToolStripMenuItem_Click(object sender, EventArgs e)
         {
@@ -598,7 +604,7 @@ namespace AlienPAK
         /* Import/export selected file (context menu) */
         private void importFileContext_Click(object sender, EventArgs e)
         {
-            ImportSelectedFile();
+            ReplaceSelectedFile();
         }
         private void exportFileContext_Click(object sender, EventArgs e)
         {
@@ -614,18 +620,61 @@ namespace AlienPAK
         private void SaveModelsAndUpdateREDS()
         {
             Models modelsPAK = ((Models)pak.File);
-            RenderableElements reds = new RenderableElements(redsPath);
+            if (extraPath == "")
+            {
+                modelsPAK.Save();
+                return;
+            }
+            RenderableElements reds = new RenderableElements(extraPath);
             List<Models.CS2.Component.LOD.Submesh> redsModels = new List<Models.CS2.Component.LOD.Submesh>();
             for (int i = 0; i < reds.Entries.Count; i++)
-            {
                 redsModels.Add(modelsPAK.GetAtWriteIndex(reds.Entries[i].ModelIndex));
-            }
             modelsPAK.Save();
             for (int i = 0; i < reds.Entries.Count; i++)
-            {
                 reds.Entries[i].ModelIndex = modelsPAK.GetWriteIndex(redsModels[i]);
-            }
             reds.Save();
+        }
+
+        private void SaveTexturesAndUpdateMaterials()
+        {
+            Textures texturesPAK = ((Textures)pak.File);
+            Materials materials = new Materials(extraPath);
+            List<Textures.TEX4> materialTextures = new List<Textures.TEX4>();
+            for (int i = 0; i < materials.Entries.Count; i++)
+            {
+                for (int x = 0; x < materials.Entries[i].TextureReferences.Count; x++)
+                {
+                    switch (materials.Entries[i].TextureReferences[x].Source)
+                    {
+                        case Materials.Material.Texture.TextureSource.LEVEL:
+                            materialTextures.Add(texturesPAK.GetAtWriteIndex(materials.Entries[i].TextureReferences[x].BinIndex));
+                            break;
+                        case Materials.Material.Texture.TextureSource.GLOBAL:
+                            materialTextures.Add(null/*GlobalTextures.GetAtWriteIndex(materials.Entries[i].TextureReferences[x].BinIndex)*/);
+                            break;
+                    }
+                }
+            }
+            materials.Save();
+            texturesPAK.Save();
+            int y = 0;
+            for (int i = 0; i < materials.Entries.Count; i++)
+            {
+                for (int x = 0; x < materials.Entries[i].TextureReferences.Count; x++)
+                {
+                    switch (materials.Entries[i].TextureReferences[x].Source)
+                    {
+                        case Materials.Material.Texture.TextureSource.LEVEL:
+                            materials.Entries[i].TextureReferences[x].BinIndex = texturesPAK.GetWriteIndex(materialTextures[y]);
+                            break;
+                        case Materials.Material.Texture.TextureSource.GLOBAL:
+                            //materials.Entries[i].TextureReferences[x].BinIndex = GlobalTextures.GetWriteIndex(materialTextures[y]);
+                            break;
+                    }
+                    y++;
+                }
+            }
+            materials.Save();
         }
     }
 }

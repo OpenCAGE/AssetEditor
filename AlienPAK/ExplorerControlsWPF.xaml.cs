@@ -72,7 +72,7 @@ namespace AlienPAK
         /* Show the image preview for the selected file in UI if possible */
         public void SetImagePreview(byte[] content)
         {
-            _filePreviewBitmap = GetAsBitmap(content);
+            _filePreviewBitmap = content?.ToBitmap();
             imagePreviewGroup.Visibility = _filePreviewBitmap == null ? Visibility.Collapsed : Visibility.Visible;
             modelPreviewGroup.Visibility = Visibility.Collapsed;
             if (_filePreviewBitmap == null) return;
@@ -199,54 +199,6 @@ namespace AlienPAK
                 default:
                     return extension.Substring(1).ToUpper();
             }
-        }
-
-        /* Convert a DDS file to bitmap */
-        private Bitmap GetAsBitmap(byte[] content)
-        {
-            Bitmap toReturn = null;
-            if (content == null) return null;
-            try
-            {
-                MemoryStream imageStream = new MemoryStream(content);
-                using (var image = Pfim.Pfim.FromStream(imageStream))
-                {
-                    PixelFormat format = PixelFormat.DontCare;
-                    switch (image.Format)
-                    {
-                        case Pfim.ImageFormat.Rgba32:
-                            format = PixelFormat.Format32bppArgb;
-                            break;
-                        case Pfim.ImageFormat.Rgb24:
-                            format = PixelFormat.Format24bppRgb;
-                            break;
-                        case Pfim.ImageFormat.Rgb8:
-                            format = PixelFormat.Format8bppIndexed;
-                            break;
-                        default:
-                            Console.WriteLine("Unsupported DDS: " + image.Format);
-                            break;
-                    }
-                    if (format != PixelFormat.DontCare)
-                    {
-                        var handle = GCHandle.Alloc(image.Data, GCHandleType.Pinned);
-                        try
-                        {
-                            var data = Marshal.UnsafeAddrOfPinnedArrayElement(image.Data, 0);
-                            toReturn = new Bitmap(image.Width, image.Height, image.Stride, format, data);
-                        }
-                        finally
-                        {
-                            handle.Free();
-                        }
-                    }
-                }
-            }
-            catch
-            {
-                return null;
-            }
-            return toReturn;
         }
 
         [DllImport("gdi32.dll", EntryPoint = "DeleteObject")]
