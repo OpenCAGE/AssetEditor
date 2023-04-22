@@ -17,6 +17,10 @@ using static CATHODE.Models;
 using static CATHODE.Models.CS2.Component;
 using System.Windows.Media.Animation;
 using static CATHODE.Models.CS2.Component.LOD;
+using Assimp;
+using System.Runtime.InteropServices;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement.StartPanel;
+using static CATHODE.Models.CS2;
 
 namespace AlienPAK
 {
@@ -24,13 +28,15 @@ namespace AlienPAK
     {
         private TreeUtility _treeHelper;
         private CS2 _model = null;
-        private List<StringMeshLookup> _treeLookup = new List<StringMeshLookup>();  
+        private List<StringMeshLookup> _treeLookup = new List<StringMeshLookup>();
 
         private Textures _textures = null;
         private Textures _texturesGlobal = null;
         private Materials _materials = null;
         private ShadersPAK _shaders = null;
         private IDXRemap _shadersIDX = null;
+
+        private const string _fileFilter = "FBX Model|*.fbx|GLTF Model|*.gltf|OBJ Model|*.obj"; //TODO: we can support loads here with assimp (importer.GetSupportedExportFormats())
 
         ModelEditorControlsWPF _controls;
 
@@ -48,35 +54,207 @@ namespace AlienPAK
             if (_model == null) return;
             this.Text = _model.Name;
 
+            RefreshTree();
+
+            _controls = (ModelEditorControlsWPF)elementHost1.Child;
+            _controls.renderMaterials.IsChecked = true; //todo: remember this option
+            _controls.OnEditMaterialRequested += OnEditMaterialRequested;
+            _controls.OnMaterialRenderCheckChanged += OnMaterialRenderCheckChanged;
+            _controls.OnAddRequested += OnAddRequested;
+            _controls.OnReplaceRequested += OnReplaceRequested;
+            _controls.OnDeleteRequested += OnDeleteRequested;
+            _controls.OnExportRequested += OnExportRequested;
+        }
+
+        /* Export model by selected part */
+        private void OnExportRequested()
+        {
+            StringMeshLookup lookup = _treeLookup.FirstOrDefault(o => o.String == FileTree.SelectedNode?.FullPath);
+
+            string fileName = Path.GetFileName(FileTree.SelectedNode.Text);
+            while (Path.GetExtension(fileName).Length != 0) fileName = fileName.Substring(0, fileName.Length - Path.GetExtension(fileName).Length); //Remove extensions from output filename
+
+            SaveFileDialog picker = new SaveFileDialog();
+            picker.Filter = _fileFilter;
+            picker.FileName = fileName;
+            if (picker.ShowDialog() != DialogResult.OK) return;
+
+            try
+            {
+                Scene scene = new Scene();
+                scene.Materials.Add(new Assimp.Material());
+                scene.RootNode = new Node(_model.Name);
+                for (int i = 0; i < _model.Components.Count; i++)
+                {
+                    if (lookup != null && lookup.component != null && _model.Components[i] != lookup.component) continue;
+                    Node componentNode = new Node(i.ToString());
+                    scene.RootNode.Children.Add(componentNode);
+                    for (int x = 0; x < _model.Components[i].LODs.Count; x++)
+                    {
+                        if (lookup != null && lookup.lod != null && _model.Components[i].LODs[x] != lookup.lod) continue;
+                        Node lodNode = new Node(_model.Components[i].LODs[x].Name);
+                        componentNode.Children.Add(lodNode);
+                        for (int y = 0; y < _model.Components[i].LODs[x].Submeshes.Count; y++)
+                        {
+                            if (lookup != null && lookup.submesh != null && _model.Components[i].LODs[x].Submeshes[y] != lookup.submesh) continue;
+                            Node submeshNode = new Node(y.ToString());
+                            lodNode.Children.Add(submeshNode);
+
+                            Mesh mesh = _model.Components[i].LODs[x].Submeshes[y].ToMesh();
+                            mesh.Name = _model.Name + " [" + x + "] -> " + lodNode.Name + " [" + i + "]";
+                            scene.Meshes.Add(mesh);
+                            submeshNode.MeshIndices.Add(scene.Meshes.Count - 1);
+                        }
+                    }
+                }
+                AssimpContext exp = new AssimpContext();
+                exp.ExportFile(scene, picker.FileName, Path.GetExtension(picker.FileName).Replace(".", ""));
+                exp.Dispose();
+                MessageBox.Show("Successfully exported file!", "Export complete", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            catch (Exception e)
+            {
+                MessageBox.Show(e.ToString(), "Export failed", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        /* Delete selected model part */
+        private void OnDeleteRequested()
+        {
+            StringMeshLookup lookup = _treeLookup.FirstOrDefault(o => o.String == FileTree.SelectedNode?.FullPath);
+
+            if (lookup?.cs2 != null)
+                lookup.cs2.Components.Clear();
+            if (lookup?.component != null)
+                lookup.component.LODs.Clear();
+            if (lookup?.lod != null)
+                lookup.lod.Submeshes.Clear();
+            if (lookup?.submesh != null)
+                for (int i = 0; i < _model.Components.Count; i++)
+                    for (int x = 0; x < _model.Components[i].LODs.Count; x++)
+                        _model.Components[i].LODs[x].Submeshes.Remove(lookup.submesh);
+
+            RefreshTree();
+            RefreshSelectedModelPreview();
+        }
+
+        /* Replace selected model part */
+        private void OnReplaceRequested()
+        {
+            StringMeshLookup lookup = _treeLookup.FirstOrDefault(o => o.String == FileTree.SelectedNode?.FullPath);
+            if (lookup == null || lookup.submesh == null) return;
+
+            OpenFileDialog filePicker = new OpenFileDialog();
+            filePicker.Filter = _fileFilter;
+            if (filePicker.ShowDialog() != DialogResult.OK) return;
+
+            Models.CS2.Component.LOD.Submesh submesh = null;
+            using (AssimpContext importer = new AssimpContext())
+            {
+                Scene model = importer.ImportFile(filePicker.FileName, PostProcessSteps.Triangulate | PostProcessSteps.FindDegenerates | PostProcessSteps.LimitBoneWeights | PostProcessSteps.GenerateBoundingBoxes); //PostProcessSteps.PreTransformVertices
+                submesh = model.Meshes[0].ToSubmesh();
+            }
+            if (submesh == null)
+            {
+                MessageBox.Show("An error occurred while generating the CS2 submesh!\nPlease try again, or use a different model.\nYour model must contain a single mesh in the root node.", "Error!", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+            lookup.submesh.content = submesh.content;
+            lookup.submesh.IndexCount = submesh.IndexCount;
+            lookup.submesh.VertexCount = submesh.VertexCount;
+            lookup.submesh.VertexFormat = submesh.VertexFormat;
+            lookup.submesh.VertexFormatLowDetail = submesh.VertexFormatLowDetail;
+            lookup.submesh.ScaleFactor = submesh.ScaleFactor;
+            lookup.submesh.AABBMax = submesh.AABBMax;
+            lookup.submesh.AABBMin = submesh.AABBMin;
+            //lookup.submesh.LODMaxDistance_ = 99999999;
+            //lookup.submesh.LODMinDistance_ = -99999999;
+            RefreshTree();
+            RefreshSelectedModelPreview();
+        }
+
+        /* Refresh the model tree in UI */
+        private void RefreshTree()
+        {
             List<string> contents = new List<string>();
             string componentString = "";
             string lodString = "";
             string submeshString = "";
-            for (int i = 0; i < model.Components.Count; i++)
+            for (int i = 0; i < _model.Components.Count; i++)
             {
-                componentString = Path.GetFileName(model.Name) + "\\Component " + i;
-                _treeLookup.Add(new StringMeshLookup() { String = componentString, component = model.Components[i] });
-                for (int x = 0; x < model.Components[i].LODs.Count; x++)
+                componentString = Path.GetFileName(_model.Name) + "\\Component " + i;
+                _treeLookup.Add(new StringMeshLookup() { String = componentString, component = _model.Components[i] });
+                for (int x = 0; x < _model.Components[i].LODs.Count; x++)
                 {
-                    lodString = componentString + "\\Part " + x + ": " + model.Components[i].LODs[x].Name;
-                    _treeLookup.Add(new StringMeshLookup() { String = lodString, lod = model.Components[i].LODs[x] });
-                    for (int y = 0; y < model.Components[i].LODs[x].Submeshes.Count; y++)
+                    lodString = componentString + "\\Part " + x + ": " + _model.Components[i].LODs[x].Name;
+                    _treeLookup.Add(new StringMeshLookup() { String = lodString, lod = _model.Components[i].LODs[x] });
+                    for (int y = 0; y < _model.Components[i].LODs[x].Submeshes.Count; y++)
                     {
                         submeshString = lodString + "\\Mesh " + y;
-                        _treeLookup.Add(new StringMeshLookup() { String = submeshString, submesh = model.Components[i].LODs[x].Submeshes[y] });
+                        _treeLookup.Add(new StringMeshLookup() { String = submeshString, submesh = _model.Components[i].LODs[x].Submeshes[y] });
                         contents.Add(submeshString);
                     }
                 }
             }
             _treeHelper.UpdateFileTree(contents);
             FileTree.ExpandAll();
-
-            _controls = (ModelEditorControlsWPF)elementHost1.Child;
-            _controls.renderMaterials.IsChecked = true; //todo: remember this option
-            _controls.OnEditMaterialRequested += OnEditMaterialRequested;
-            _controls.OnMaterialRenderCheckChanged += OnMaterialRenderCheckChanged;
         }
 
+        /* Add a new submesh to the model at selected location */
+        private void OnAddRequested(SelectedModelType type)
+        {
+            StringMeshLookup lookup = _treeLookup.FirstOrDefault(o => o.String == FileTree.SelectedNode?.FullPath);
+            if (lookup == null) return;
+
+            OpenFileDialog filePicker = new OpenFileDialog();
+            filePicker.Filter = _fileFilter; 
+            if (filePicker.ShowDialog() != DialogResult.OK) return;
+
+            Models.CS2.Component.LOD.Submesh submesh = null;
+            using (AssimpContext importer = new AssimpContext())
+            {
+                Scene model = importer.ImportFile(filePicker.FileName, PostProcessSteps.Triangulate | PostProcessSteps.FindDegenerates | PostProcessSteps.LimitBoneWeights | PostProcessSteps.GenerateBoundingBoxes); //PostProcessSteps.PreTransformVertices
+                submesh = model.Meshes[0].ToSubmesh();
+            }
+            if (submesh == null)
+            {
+                MessageBox.Show("An error occurred while generating the CS2 submesh!\nPlease try again, or use a different model.\nYour model must contain a single mesh in the root node.", "Error!", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+            submesh.Unknown2_ = 134282240;
+
+            switch (type)
+            {
+                case SelectedModelType.COMPONENT:
+                    if (lookup.cs2 != null)
+                    {
+                        CS2.Component newComponent = new CS2.Component();
+                        LOD newLOD = new LOD(Path.GetFileNameWithoutExtension(filePicker.FileName));
+                        newLOD.Submeshes.Add(submesh); 
+                        newComponent.LODs.Add(newLOD);
+                        lookup.cs2.Components.Add(newComponent);
+                    }
+                    break;
+                case SelectedModelType.LOD:
+                    if (lookup.component != null)
+                    {
+                        LOD newLOD = new LOD(Path.GetFileNameWithoutExtension(filePicker.FileName));
+                        newLOD.Submeshes.Add(submesh);
+                        lookup.component.LODs.Add(newLOD); 
+                    }
+                    break;
+                case SelectedModelType.SUBMESH:
+                    if (lookup.lod != null)
+                    {
+                        submesh.Unknown2_ = lookup.lod.Submeshes.Count == 0 ? (uint)134282240 : (uint)134239232; 
+                        lookup.lod.Submeshes.Add(submesh);
+                    }
+                    break;
+            }
+            RefreshTree();
+        }
+
+        /* Edit the material of the selected submesh */
         private void OnEditMaterialRequested()
         {
             if (FileTree.SelectedNode == null) return;
@@ -89,7 +267,6 @@ namespace AlienPAK
             materialEditor.OnMaterialSelected += OnMaterialSelected;
             materialEditor.Show();
         }
-
         private void OnMaterialSelected(int index)
         {
             StringMeshLookup lookup = _treeLookup.FirstOrDefault(o => o.String == FileTree.SelectedNode.FullPath);
@@ -99,19 +276,24 @@ namespace AlienPAK
             RefreshSelectedModelPreview();
         }
 
+        /* Enable/disable materials in render */
         private void OnMaterialRenderCheckChanged(bool check)
         {
             RefreshSelectedModelPreview();
         }
 
+        /* Select model tree object */
         private void FileTree_AfterSelect(object sender, TreeViewEventArgs e)
         {
             RefreshSelectedModelPreview();
         }
         
+        /* Update model preview based on selected tree object */
         private void RefreshSelectedModelPreview()
         {
             _controls.ShowContextualButtons(SelectedModelType.NONE);
+            _controls.SetModelPreview(null, "", 0, "");
+
             if (FileTree.SelectedNode == null) return;
             StringMeshLookup lookup = _treeLookup.FirstOrDefault(o => o.String == FileTree.SelectedNode.FullPath);
 
@@ -145,7 +327,6 @@ namespace AlienPAK
                                     byte[] diffDDS = diff?.ToDDS();
                                     mdl.Material = new DiffuseMaterial(new ImageBrush(diffDDS?.ToBitmap()?.ToImageSource()));
                                     mdl.BackMaterial = null;
-                                    //TODO: normals?
                                 }
                             }
                         }
@@ -158,12 +339,9 @@ namespace AlienPAK
                     }
                 }
             }
-            _controls.SetModelPreview(model); 
+
             string[] nameContents = (FileTree.SelectedNode.FullPath + "\\").Split('\\');
-            _controls.fileNameText.Text = nameContents[nameContents.Length - 2];
-            _controls.vertexCount.Text = vertCount.ToString();
-            _controls.materialInfo.Text = materialInfo;
-            _controls.materialLabel.Visibility = materialInfo != "" ? System.Windows.Visibility.Visible : System.Windows.Visibility.Collapsed;
+            _controls.SetModelPreview(model, nameContents[nameContents.Length - 2], vertCount, materialInfo); 
         }
 
         private class StringMeshLookup

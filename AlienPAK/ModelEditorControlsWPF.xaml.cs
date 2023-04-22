@@ -19,22 +19,13 @@ namespace AlienPAK
     /// </summary>
     public partial class ModelEditorControlsWPF : UserControl
     {
-        public Action OnImportRequested;
         public Action OnExportRequested;
         public Action OnDeleteRequested;
         public Action OnReplaceRequested;
-        public Action OnExportAllRequested;
+        public Action<SelectedModelType> OnAddRequested;
         public Action OnEditMaterialRequested;
 
         public Action<bool> OnMaterialRenderCheckChanged;
-
-        public bool ModelPreviewVisible
-        {
-            get
-            {
-                return modelPreviewGroup.Visibility == Visibility.Visible;
-            }
-        }
 
         public ModelEditorControlsWPF()
         {
@@ -42,11 +33,15 @@ namespace AlienPAK
         }
 
         /* Show the model preview for the selected file in UI */
-        public void SetModelPreview(Model3DGroup content)
+        public void SetModelPreview(Model3DGroup content, string filename, int vertCount, string material)
         {
-            modelPreviewGroup.Visibility = Visibility.Visible;
             filePreviewModel.Content = content;
             filePreviewModelContainer.ZoomExtents();
+
+            fileNameText.Text = filename;
+            vertexCount.Text = vertCount.ToString();
+            materialInfo.Text = material;
+            materialLabel.Visibility = material != "" ? Visibility.Visible : Visibility.Collapsed;
         }
 
         public void ShowContextualButtons(SelectedModelType type)
@@ -61,10 +56,6 @@ namespace AlienPAK
         }
 
         /* Button event triggers */
-        private void ImportBtn(object sender, RoutedEventArgs e)
-        {
-            OnImportRequested?.Invoke();
-        }
         private void ExportBtn(object sender, RoutedEventArgs e)
         {
             OnExportRequested?.Invoke();
@@ -77,21 +68,17 @@ namespace AlienPAK
         {
             OnReplaceRequested?.Invoke();
         }
-        private void ExportAll(object sender, RoutedEventArgs e)
-        {
-            OnExportAllRequested?.Invoke();
-        }
         private void AddComponentBtn(object sender, RoutedEventArgs e)
         {
-
+            OnAddRequested?.Invoke(SelectedModelType.COMPONENT);
         }
         private void AddLODBtn(object sender, RoutedEventArgs e)
         {
-
+            OnAddRequested?.Invoke(SelectedModelType.LOD);
         }
         private void AddSubmeshBtn(object sender, RoutedEventArgs e)
         {
-
+            OnAddRequested?.Invoke(SelectedModelType.SUBMESH);
         }
         private void EditMaterialBtn(object sender, RoutedEventArgs e)
         {
