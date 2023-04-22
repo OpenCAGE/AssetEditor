@@ -33,10 +33,10 @@ namespace AlienPAK
         }
 
         /* Show the model preview for the selected file in UI */
-        public void SetModelPreview(Model3DGroup content, string filename, int vertCount, string material)
+        public void SetModelPreview(Model3DGroup content, string filename, int vertCount, string material, bool doZoom = true)
         {
             filePreviewModel.Content = content;
-            filePreviewModelContainer.ZoomExtents();
+            if (doZoom) filePreviewModelContainer.ZoomExtents();
 
             fileNameText.Text = filename;
             vertexCount.Text = vertCount.ToString();

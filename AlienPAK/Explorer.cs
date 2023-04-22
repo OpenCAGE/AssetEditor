@@ -82,7 +82,7 @@ namespace AlienPAK
             preview.OnReplaceRequested += ReplaceSelectedFile;
             preview.OnDeleteRequested += DeleteSelectedFile;
             preview.OnExportAllRequested += ExportAllFiles;
-            preview.ShowFunctionButtons(PAKFunction.NONE);
+            preview.ShowFunctionButtons(PAKFunction.NONE, LaunchMode == PAKType.MODELS);
             preview.ShowLevelSelect(LaunchMode != PAKType.NONE && LaunchMode != PAKType.ANIMATIONS && LaunchMode != PAKType.UI, LaunchMode);
             return;
 
@@ -223,13 +223,6 @@ namespace AlienPAK
             }
             this.Text = baseTitle + ((level == "") ? "" : " - " + level);
             LoadPAK(path);
-
-            //TESTTT!!!
-            Models modelsPAK1 = ((Models)pak.File);
-            string nodeVal = "AYZ/_PROPS_/DYNAMIC/ENGINEERING/CAGED_S_01/CAGED_S_01_DISPLAY.cs2";
-            Models.CS2 cs21 = ((Models)pak.File).Entries.FirstOrDefault(o => o.Name.Replace('\\', '/') == nodeVal.Replace('\\', '/'));
-            ModelEditor editor1 = new ModelEditor(cs21, textures, texturesGlobal, materials, shaders, shadersIDX);
-            editor1.Show();
         }
 
         /* Open a PAK and populate the GUI */
@@ -389,20 +382,21 @@ namespace AlienPAK
             TreeItemType nodeType = ((TreeItem)FileTree.SelectedNode.Tag).Item_Type;
             string nodeVal = ((TreeItem)FileTree.SelectedNode.Tag).String_Value;
 
-            //TESTTT!!!
-            Models modelsPAK1 = ((Models)pak.File);
-            Models.CS2 cs21 = ((Models)pak.File).Entries.FirstOrDefault(o => o.Name.Replace('\\', '/') == nodeVal.Replace('\\', '/'));
-            ModelEditor editor1 = new ModelEditor(cs21, textures, texturesGlobal, materials, shaders, shadersIDX);
-            editor1.Show();
-            return;
-            //--
-
             switch (nodeType)
             {
                 case TreeItemType.EXPORTABLE_FILE:
+                    //TODO: refactor
+                    if (pak.Type == PAKType.MODELS)
+                    {
+                        Models.CS2 cs2 = ((Models)pak.File).Entries.FirstOrDefault(o => o.Name.Replace('\\', '/') == nodeVal.Replace('\\', '/'));
+                        ModelEditor modelEditor = new ModelEditor(cs2, textures, texturesGlobal, materials, shaders, shadersIDX);
+                        modelEditor.FormClosed += ModelEditor_FormClosed;
+                        modelEditor.Show();
+                        break;
+                    }
+
                     string filter = "File|*" + Path.GetExtension(FileTree.SelectedNode.Text);
                     if (preview.FilePreviewVisible && preview.FilePreviewBitmap != null) filter = "PNG Image|*.png|JPG Image|*.jpg|DDS Image|*.dds";
-                    if (preview.ModelPreviewVisible) filter = "FBX Model|*.fbx|GLTF Model|*.gltf|OBJ Model|*.obj"; //TODO: we can support loads here with assimp (importer.GetSupportedExportFormats())
 
                     OpenFileDialog FilePicker = new OpenFileDialog();
                     FilePicker.Filter = filter;
@@ -437,28 +431,6 @@ namespace AlienPAK
                                 ScratchImage imgDecom = img.Compress(DXGI_FORMAT.BC7_UNORM, TEX_COMPRESS_FLAGS.BC7_QUICK, 0.5f); //TODO use baseFormat
                                 imgDecom.SaveToDDSFile(DDS_FLAGS.FORCE_DX10_EXT, FilePicker.FileName + ".DDS");
                                 break;
-                            case PAKType.MODELS:
-                                //TODO: We'll want a UI to select the submeshes to replace
-                                Models modelsPAK = ((Models)pak.File);
-                                Models.CS2 cs2 = ((Models)pak.File).Entries.FirstOrDefault(o => o.Name.Replace('\\', '/') == nodeVal.Replace('\\', '/'));
-                                Models.CS2.Component.LOD.Submesh submesh = null;
-                                using (AssimpContext importer = new AssimpContext())
-                                {
-                                    Scene model = importer.ImportFile(FilePicker.FileName, PostProcessSteps.Triangulate | PostProcessSteps.FindDegenerates | PostProcessSteps.LimitBoneWeights | PostProcessSteps.GenerateBoundingBoxes); //PostProcessSteps.PreTransformVertices
-                                    submesh = model.Meshes[0].ToSubmesh();
-                                }
-                                cs2.Components[0].LODs[0].Submeshes[0].content = submesh.content;
-                                cs2.Components[0].LODs[0].Submeshes[0].IndexCount = submesh.IndexCount;
-                                cs2.Components[0].LODs[0].Submeshes[0].VertexCount = submesh.VertexCount;
-                                cs2.Components[0].LODs[0].Submeshes[0].VertexFormat = submesh.VertexFormat;
-                                cs2.Components[0].LODs[0].Submeshes[0].VertexFormatLowDetail = submesh.VertexFormatLowDetail;
-                                cs2.Components[0].LODs[0].Submeshes[0].ScaleFactor = submesh.ScaleFactor;
-                                cs2.Components[0].LODs[0].Submeshes[0].AABBMax = submesh.AABBMax;
-                                cs2.Components[0].LODs[0].Submeshes[0].AABBMin = submesh.AABBMin;
-                                cs2.Components[0].LODs[0].Submeshes[0].LODMaxDistance_ = 99999999;
-                                cs2.Components[0].LODs[0].Submeshes[0].LODMinDistance_ = -99999999;
-                                SaveModelsAndUpdateREDS();
-                                break;
                             default:
                                 MessageBox.Show("This PAK type does not support file importing!", "Import failed", MessageBoxButtons.OK, MessageBoxIcon.Error);
                                 return;
@@ -473,6 +445,12 @@ namespace AlienPAK
                     UpdateSelectedFilePreview();
                     break;
             }
+        }
+        private void ModelEditor_FormClosed(object sender, FormClosedEventArgs e)
+        {
+            SaveModelsAndUpdateREDS();
+            this.BringToFront();
+            this.Focus();
         }
 
         /* Export the selected PAK entry as a standalone file */
@@ -573,7 +551,7 @@ namespace AlienPAK
         /* Update file preview */
         private void UpdateSelectedFilePreview()
         {
-            preview.ShowFunctionButtons(pak.Functionality);
+            preview.ShowFunctionButtons(pak.Functionality, pak.Type == PAKType.MODELS);
             if (FileTree.SelectedNode == null) return;
             TreeItemType nodeType = ((TreeItem)FileTree.SelectedNode.Tag).Item_Type;
             string nodeVal = ((TreeItem)FileTree.SelectedNode.Tag).String_Value;

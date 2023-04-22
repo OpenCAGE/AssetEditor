@@ -7,7 +7,7 @@
              xmlns:local="clr-namespace:AlienPAK"
              mc:Ignorable="d" 
              d:DesignHeight="676" d:DesignWidth="600">
-    <Grid Height="676" Width="600" Background="White">
+    <Grid Height="676" Width="600">
 
         <StackPanel>
             <GroupBox x:Name="modelPreviewGroup" Header="Selected Preview" Margin="0 0 0 10">

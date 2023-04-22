@@ -121,11 +121,14 @@ namespace AlienPAK
         }
 
         /* Toggle available buttons given the functionality of the current PAK */
-        public void ShowFunctionButtons(PAKFunction function)
+        public void ShowFunctionButtons(PAKFunction function, bool isModelPAK) 
         {
             imagePreviewGroup.Visibility = Visibility.Collapsed;
             modelPreviewGroup.Visibility = Visibility.Collapsed;
             fileInfoGroup.Visibility = Visibility.Collapsed;
+
+            //TODO: this is a temp hack to show the model button before i implement a nicer method when textures have a window too
+            replaceBtn.Content = isModelPAK ? "Modify Selected" : "Replace Selected";
 
             exportBtn.Visibility = FlagToVisibility(function, PAKFunction.CAN_EXPORT_FILES);
             replaceBtn.Visibility = FlagToVisibility(function, PAKFunction.CAN_REPLACE_FILES);

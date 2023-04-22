@@ -149,11 +149,15 @@ namespace AlienPAK
             if (filePicker.ShowDialog() != DialogResult.OK) return;
 
             Models.CS2.Component.LOD.Submesh submesh = null;
-            using (AssimpContext importer = new AssimpContext())
+            try
             {
-                Scene model = importer.ImportFile(filePicker.FileName, PostProcessSteps.Triangulate | PostProcessSteps.FindDegenerates | PostProcessSteps.LimitBoneWeights | PostProcessSteps.GenerateBoundingBoxes); //PostProcessSteps.PreTransformVertices
-                submesh = model.Meshes[0].ToSubmesh();
+                using (AssimpContext importer = new AssimpContext())
+                {
+                    Scene model = importer.ImportFile(filePicker.FileName, PostProcessSteps.Triangulate | PostProcessSteps.FindDegenerates | PostProcessSteps.LimitBoneWeights | PostProcessSteps.GenerateBoundingBoxes); //PostProcessSteps.PreTransformVertices
+                    submesh = model.Meshes[0].ToSubmesh();
+                }
             }
+            catch { }
             if (submesh == null)
             {
                 MessageBox.Show("An error occurred while generating the CS2 submesh!\nPlease try again, or use a different model.\nYour model must contain a single mesh in the root node.", "Error!", MessageBoxButtons.OK, MessageBoxIcon.Error);
@@ -273,13 +277,13 @@ namespace AlienPAK
             Submesh submesh = lookup?.submesh;
             if (submesh == null) return;
             submesh.MaterialLibraryIndex = index;
-            RefreshSelectedModelPreview();
+            RefreshSelectedModelPreview(false);
         }
 
         /* Enable/disable materials in render */
         private void OnMaterialRenderCheckChanged(bool check)
         {
-            RefreshSelectedModelPreview();
+            RefreshSelectedModelPreview(false);
         }
 
         /* Select model tree object */
@@ -289,7 +293,7 @@ namespace AlienPAK
         }
         
         /* Update model preview based on selected tree object */
-        private void RefreshSelectedModelPreview()
+        private void RefreshSelectedModelPreview(bool doZoom = true)
         {
             _controls.ShowContextualButtons(SelectedModelType.NONE);
             _controls.SetModelPreview(null, "", 0, "");
@@ -334,14 +338,15 @@ namespace AlienPAK
                         {
                             Console.WriteLine(ex2.ToString());
                         }
-                        vertCount += ((MeshGeometry3D)mdl.Geometry).Positions.Count;
+                        MeshGeometry3D geo = (MeshGeometry3D)mdl.Geometry;
+                        if (geo != null) vertCount += geo.Positions.Count;
                         model.Children.Add(mdl); //TODO: are there some offsets/scaling we should be accounting for here?
                     }
                 }
             }
 
             string[] nameContents = (FileTree.SelectedNode.FullPath + "\\").Split('\\');
-            _controls.SetModelPreview(model, nameContents[nameContents.Length - 2], vertCount, materialInfo); 
+            _controls.SetModelPreview(model, nameContents[nameContents.Length - 2], vertCount, materialInfo, doZoom); 
         }
 
         private class StringMeshLookup
