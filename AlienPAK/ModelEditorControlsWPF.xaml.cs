@@ -19,13 +19,14 @@ namespace AlienPAK
     /// </summary>
     public partial class ModelEditorControlsWPF : UserControl
     {
-        public Action<string> OnLevelSelected;
-
         public Action OnImportRequested;
         public Action OnExportRequested;
         public Action OnDeleteRequested;
         public Action OnReplaceRequested;
         public Action OnExportAllRequested;
+        public Action OnEditMaterialRequested;
+
+        public Action<bool> OnMaterialRenderCheckChanged;
 
         public bool ModelPreviewVisible
         {
@@ -35,30 +36,9 @@ namespace AlienPAK
             }
         }
 
-        private Bitmap _filePreviewBitmap = null;
-        public Bitmap FilePreviewBitmap
-        {
-            get { return _filePreviewBitmap; }
-        }
-
         public ModelEditorControlsWPF()
         {
             InitializeComponent();
-        }
-
-        /* Set the information for the currently selected file in UI */
-        public void SetFileInfo(string name, string size)
-        {
-            fileInfoGroup.Visibility = Visibility.Visible;
-            fileNameText.Text = name;
-
-            fileSizeText.Text = size + " bytes";
-            fileSizeLabel.Visibility = size == null || size == "" ? Visibility.Collapsed : Visibility.Visible;
-            fileSizeText.Visibility = fileSizeLabel.Visibility;
-
-            fileTypeText.Text = GetFileType(name);
-            fileTypeLabel.Visibility = fileTypeText.Text == "" ? Visibility.Collapsed : Visibility.Visible;
-            fileTypeText.Visibility = fileTypeLabel.Visibility;
         }
 
         /* Show the model preview for the selected file in UI */
@@ -67,21 +47,6 @@ namespace AlienPAK
             modelPreviewGroup.Visibility = Visibility.Visible;
             filePreviewModel.Content = content;
             filePreviewModelContainer.ZoomExtents();
-        }
-
-        /* Toggle available buttons given the functionality of the current PAK */
-        public void ShowFunctionButtons(PAKFunction function)
-        {
-            modelPreviewGroup.Visibility = Visibility.Collapsed;
-            fileInfoGroup.Visibility = Visibility.Collapsed;
-
-            exportBtn.Visibility = FlagToVisibility(function, PAKFunction.CAN_EXPORT_FILES);
-            replaceBtn.Visibility = FlagToVisibility(function, PAKFunction.CAN_REPLACE_FILES);
-            deleteBtn.Visibility = FlagToVisibility(function, PAKFunction.CAN_DELETE_FILES);
-        }
-        private Visibility FlagToVisibility(PAKFunction function, PAKFunction flag)
-        {
-            return function.HasFlag(flag) ? Visibility.Visible : Visibility.Collapsed;
         }
 
         /* Button event triggers */
@@ -117,39 +82,14 @@ namespace AlienPAK
         {
 
         }
-
-        /* Get a nicely formatted string for the type of a file */
-        private string GetFileType(string path)
+        private void EditMaterialBtn(object sender, RoutedEventArgs e)
         {
-            string extension = Path.GetExtension(path);
-            if (extension == "") return "";
-            switch (extension.Substring(1).ToUpper())
-            {
-                case "DDS":
-                    return "DDS (Image)";
-                case "TGA":
-                    return "TGA (Image)";
-                case "PNG":
-                    return "PNG (Image)";
-                case "JPG":
-                    return "JPG (Image)";
-                case "GFX":
-                    return "GFX (Adobe Flash)";
-                case "CS2":
-                    return "CS2 (Model)";
-                case "BIN":
-                    return "BIN (Binary File)";
-                case "BML":
-                    return "BML (Binary XML)";
-                case "XML":
-                    return "XML (Markup)";
-                case "TXT":
-                    return "TXT (Text)";
-                case "DXBC":
-                    return "DXBC (Compiled HLSL)";
-                default:
-                    return extension.Substring(1).ToUpper();
-            }
+            OnEditMaterialRequested?.Invoke();
+        }
+
+        private void OnRenderMaterialsChecked(object sender, RoutedEventArgs e)
+        {
+            OnMaterialRenderCheckChanged?.Invoke(renderMaterials.IsChecked == true);
         }
     }
 }

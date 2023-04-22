@@ -129,6 +129,12 @@
     <Compile Include="Explorer.Designer.cs">
       <DependentUpon>Explorer.cs</DependentUpon>
     </Compile>
+    <Compile Include="MaterialEditor.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="MaterialEditor.Designer.cs">
+      <DependentUpon>MaterialEditor.cs</DependentUpon>
+    </Compile>
     <Compile Include="ModelEditorControlsWPF.xaml.cs">
       <DependentUpon>ModelEditorControlsWPF.xaml</DependentUpon>
     </Compile>
@@ -165,6 +171,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="Landing.resx">
       <DependentUpon>Landing.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="MaterialEditor.resx">
+      <DependentUpon>MaterialEditor.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="ModelEditor.resx">
       <DependentUpon>ModelEditor.cs</DependentUpon>

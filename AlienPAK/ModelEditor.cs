@@ -15,6 +15,8 @@ using System.Windows.Media.Media3D;
 using System.Windows.Media;
 using static CATHODE.Models;
 using static CATHODE.Models.CS2.Component;
+using System.Windows.Media.Animation;
+using static CATHODE.Models.CS2.Component.LOD;
 
 namespace AlienPAK
 {
@@ -44,6 +46,7 @@ namespace AlienPAK
             InitializeComponent();
             _treeHelper = new TreeUtility(FileTree);
             if (_model == null) return;
+            this.Text = _model.Name;
 
             List<string> contents = new List<string>();
             string componentString = "";
@@ -69,6 +72,26 @@ namespace AlienPAK
             FileTree.ExpandAll();
 
             _controls = (ModelEditorControlsWPF)elementHost1.Child;
+            _controls.renderMaterials.IsChecked = true; //todo: remember this option
+            _controls.OnEditMaterialRequested += OnEditMaterialRequested;
+            _controls.OnMaterialRenderCheckChanged += OnMaterialRenderCheckChanged;
+        }
+
+        private void OnEditMaterialRequested()
+        {
+            if (FileTree.SelectedNode == null) return;
+            StringMeshLookup lookup = _treeLookup.FirstOrDefault(o => o.String == FileTree.SelectedNode.FullPath);
+            if (lookup == null || lookup.submesh == null) return;
+            Materials.Material material = _materials.GetAtWriteIndex(lookup.submesh.MaterialLibraryIndex);
+            if (material == null) return;
+
+            MaterialEditor materialEditor = new MaterialEditor(material);
+            materialEditor.Show();
+        }
+
+        private void OnMaterialRenderCheckChanged(bool check)
+        {
+            FileTree_AfterSelect(null, null);
         }
 
         private void FileTree_AfterSelect(object sender, TreeViewEventArgs e)
@@ -77,6 +100,8 @@ namespace AlienPAK
             StringMeshLookup lookup = _treeLookup.FirstOrDefault(o => o.String == FileTree.SelectedNode.FullPath);
 
             Model3DGroup model = new Model3DGroup();
+            int vertCount = 0;
+            string materialInfo = "";
             foreach (Models.CS2.Component component in _model.Components)
             {
                 if (lookup != null && lookup.component != null && component != lookup.component) continue;
@@ -89,26 +114,38 @@ namespace AlienPAK
                         GeometryModel3D mdl = submesh.ToGeometryModel3D();
                         try
                         {
-                            ShadersPAK.ShaderMaterialMetadata mdlMeta = _shaders.GetMaterialMetadataFromShader(_materials.GetAtWriteIndex(submesh.MaterialLibraryIndex), _shadersIDX);
-                            ShadersPAK.MaterialTextureContext mdlMetaDiff = mdlMeta.textures.FirstOrDefault(o => o.Type == ShadersPAK.ShaderSlot.DIFFUSE_MAP);
-                            if (mdlMetaDiff != null)
+                            Materials.Material material = _materials.GetAtWriteIndex(submesh.MaterialLibraryIndex);
+                            if (lookup?.submesh != null) materialInfo = material.Name;
+                            if (_controls.renderMaterials.IsChecked == true)
                             {
-                                Textures tex = mdlMetaDiff.TextureInfo.Source == Texture.TextureSource.GLOBAL ? _texturesGlobal : _textures;
-                                Textures.TEX4 diff = tex.GetAtWriteIndex(mdlMetaDiff.TextureInfo.BinIndex);
-                                byte[] diffDDS = diff?.ToDDS();
-                                mdl.Material = new DiffuseMaterial(new ImageBrush(diffDDS?.ToBitmap()?.ToImageSource()));
-                                //TODO: normals?
+                                ShadersPAK.ShaderMaterialMetadata mdlMeta = _shaders.GetMaterialMetadataFromShader(material, _shadersIDX);
+                                ShadersPAK.MaterialTextureContext mdlMetaDiff = mdlMeta.textures.FirstOrDefault(o => o.Type == ShadersPAK.ShaderSlot.DIFFUSE_MAP);
+                                if (mdlMetaDiff != null)
+                                {
+                                    Textures tex = mdlMetaDiff.TextureInfo.Source == Texture.TextureSource.GLOBAL ? _texturesGlobal : _textures;
+                                    Textures.TEX4 diff = tex.GetAtWriteIndex(mdlMetaDiff.TextureInfo.BinIndex);
+                                    byte[] diffDDS = diff?.ToDDS();
+                                    mdl.Material = new DiffuseMaterial(new ImageBrush(diffDDS?.ToBitmap()?.ToImageSource()));
+                                    mdl.BackMaterial = null;
+                                    //TODO: normals?
+                                }
                             }
                         }
                         catch (Exception ex2)
                         {
                             Console.WriteLine(ex2.ToString());
                         }
+                        vertCount += ((MeshGeometry3D)mdl.Geometry).Positions.Count;
                         model.Children.Add(mdl); //TODO: are there some offsets/scaling we should be accounting for here?
                     }
                 }
             }
             _controls.SetModelPreview(model); 
+            string[] nameContents = (FileTree.SelectedNode.FullPath + "\\").Split('\\');
+            _controls.fileNameText.Text = nameContents[nameContents.Length - 2];
+            _controls.vertexCount.Text = vertCount.ToString();
+            _controls.materialInfo.Text = materialInfo;
+            _controls.materialLabel.Visibility = materialInfo != "" ? System.Windows.Visibility.Visible : System.Windows.Visibility.Collapsed;
         }
 
         private class StringMeshLookup

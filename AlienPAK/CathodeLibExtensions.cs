@@ -347,7 +347,6 @@ namespace AlienPAK
                     Normals = normals,
                     TextureCoordinates = uv0,
                 },
-                //TODO: we can figure out the actual diffuse texture and colour here from CST and material info from the CS2
                 Material = new DiffuseMaterial(new SolidColorBrush(Color.FromRgb(255, 255, 0))),
                 BackMaterial = new DiffuseMaterial(new SolidColorBrush(Color.FromRgb(255, 255, 0)))
             };

@@ -11,11 +11,14 @@
 
         <StackPanel>
             <GroupBox x:Name="modelPreviewGroup" Header="Selected Preview" Margin="0 0 0 10">
-                <HelixToolkit:HelixViewport3D x:Name="filePreviewModelContainer" Height="300" ZoomExtentsWhenLoaded="True" ShowViewCube="True" ViewCubeVerticalPosition="Top">
-                    <HelixToolkit:SunLight/>
-                    <ModelVisual3D x:Name="filePreviewModel" />
-                    <!--<HelixToolkit:GridLinesVisual3D Width="8" Length="8" MinorDistance="1" MajorDistance="1" Thickness="0.01"/>-->
-                </HelixToolkit:HelixViewport3D>
+                <StackPanel>
+                    <HelixToolkit:HelixViewport3D x:Name="filePreviewModelContainer" Height="450" ZoomExtentsWhenLoaded="True" ShowViewCube="True" ViewCubeVerticalPosition="Top">
+                        <HelixToolkit:SunLight/>
+                        <ModelVisual3D x:Name="filePreviewModel" />
+                        <!--<HelixToolkit:GridLinesVisual3D Width="8" Length="8" MinorDistance="1" MajorDistance="1" Thickness="0.01"/>-->
+                    </HelixToolkit:HelixViewport3D>
+                    <CheckBox x:Name="renderMaterials" HorizontalAlignment="Right" Checked="OnRenderMaterialsChecked" Unchecked="OnRenderMaterialsChecked" Margin="0 -20 6 0">Materials</CheckBox>
+                </StackPanel>
             </GroupBox>
 
             <GroupBox x:Name="fileInfoGroup" Header="Selected Info" Margin="0 0 0 10">
@@ -25,10 +28,10 @@
                             <TextBlock FontWeight="Bold" Margin="0 0 5 0">Name:</TextBlock>
                         </WrapPanel>
                         <WrapPanel>
-                            <TextBlock x:Name="fileSizeLabel" FontWeight="Bold" Margin="0 0 5 0">Size:</TextBlock>
+                            <TextBlock FontWeight="Bold" Margin="0 0 5 0">Vertices:</TextBlock>
                         </WrapPanel>
                         <WrapPanel>
-                            <TextBlock x:Name="fileTypeLabel" FontWeight="Bold" Margin="0 0 5 0">Vertices:</TextBlock>
+                            <TextBlock x:Name="materialLabel" FontWeight="Bold" Margin="0 0 5 0">Material:</TextBlock>
                         </WrapPanel>
                     </StackPanel>
                     <StackPanel>
@@ -36,10 +39,10 @@
                             <TextBlock x:Name="fileNameText">text</TextBlock>
                         </WrapPanel>
                         <WrapPanel>
-                            <TextBlock x:Name="fileSizeText">0</TextBlock>
+                            <TextBlock x:Name="vertexCount">0</TextBlock>
                         </WrapPanel>
                         <WrapPanel>
-                            <TextBlock x:Name="fileTypeText">0</TextBlock>
+                            <TextBlock x:Name="materialInfo">text</TextBlock>
                         </WrapPanel>
                     </StackPanel>
                 </WrapPanel>
@@ -49,6 +52,7 @@
                 <WrapPanel Margin="10">
                     <Button x:Name="exportBtn" Click="ExportBtn" Padding="10 5">Export Selected</Button>
                     <Button x:Name="replaceBtn" Click="ReplaceBtn" Margin="10 0 0 0" Padding="10 5">Replace Selected</Button>
+                    <Button x:Name="editMaterialBtn" Click="EditMaterialBtn" Margin="10 0 0 0" Padding="10 5">Edit Material</Button>
                     <Button x:Name="deleteBtn" Click="DeleteBtn" Margin="10 0 0 0" Padding="10 5">Delete Selected</Button>
                     <Button x:Name="addComponentBtn" Click="AddComponentBtn" Margin="10 0 0 0" Padding="10 5">Add New Component</Button>
                     <Button x:Name="addLODBtn" Click="AddLODBtn" Margin="10 0 0 0" Padding="10 5">Add New LOD</Button>

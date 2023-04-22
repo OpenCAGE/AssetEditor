@@ -389,6 +389,14 @@ namespace AlienPAK
             TreeItemType nodeType = ((TreeItem)FileTree.SelectedNode.Tag).Item_Type;
             string nodeVal = ((TreeItem)FileTree.SelectedNode.Tag).String_Value;
 
+            //TESTTT!!!
+            Models modelsPAK1 = ((Models)pak.File);
+            Models.CS2 cs21 = ((Models)pak.File).Entries.FirstOrDefault(o => o.Name.Replace('\\', '/') == nodeVal.Replace('\\', '/'));
+            ModelEditor editor1 = new ModelEditor(cs21, textures, texturesGlobal, materials, shaders, shadersIDX);
+            editor1.Show();
+            return;
+            //--
+
             switch (nodeType)
             {
                 case TreeItemType.EXPORTABLE_FILE:
