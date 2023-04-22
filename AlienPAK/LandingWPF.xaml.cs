@@ -10,6 +10,8 @@ namespace AlienPAK
     /// </summary>
     public partial class LandingWPF : UserControl
     {
+        public Action DoFocus;
+
         public LandingWPF()
         {
             InitializeComponent();
@@ -52,7 +54,12 @@ namespace AlienPAK
         private void LaunchEditor(PAKType type)
         {
             Explorer interfaceTool = new Explorer(type);
+            interfaceTool.FormClosed += InterfaceTool_FormClosed;
             interfaceTool.Show();
+        }
+        private void InterfaceTool_FormClosed(object sender, System.Windows.Forms.FormClosedEventArgs e)
+        {
+            DoFocus?.Invoke();
         }
     }
 }

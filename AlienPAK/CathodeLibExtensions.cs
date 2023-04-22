@@ -405,8 +405,6 @@ namespace AlienPAK
             submesh.AABBMax = new Vector3(mesh.BoundingBox.Max.X, mesh.BoundingBox.Max.Y, mesh.BoundingBox.Max.Z);
             submesh.AABBMin = new Vector3(mesh.BoundingBox.Min.X, mesh.BoundingBox.Min.Y, mesh.BoundingBox.Min.Z);
 
-
-
             //Example vertex format with vertices, UVs, normals, and a colour
             //submesh.VertexFormat.Elements.Add(new List<AlienVBF.Element>() { new AlienVBF.Element(VBFE_InputType.VECTOR4_INT16_DIVMAX, VBFE_InputSlot.VERTEX), new AlienVBF.Element(VBFE_InputType.VECTOR2_INT16_DIV2048, VBFE_InputSlot.UV), new AlienVBF.Element(VBFE_InputType.INT32, VBFE_InputSlot.COLOUR) });
             //submesh.VertexFormat.Elements.Add(new List<AlienVBF.Element>() { new AlienVBF.Element(VBFE_InputType.VECTOR3, VBFE_InputSlot.NORMAL) });
@@ -418,9 +416,12 @@ namespace AlienPAK
 
             submesh.VertexFormat = new AlienVBF();
             submesh.VertexFormat.Elements.Add(new List<AlienVBF.Element>() { new AlienVBF.Element(VBFE_InputType.VECTOR4_INT16_DIVMAX, VBFE_InputSlot.VERTEX), new AlienVBF.Element(VBFE_InputType.VECTOR2_INT16_DIV2048, VBFE_InputSlot.UV) { Offset = 8 } });
-            submesh.VertexFormat.Elements.Add(new List<AlienVBF.Element>() { new AlienVBF.Element(VBFE_InputType.INDICIES_U16) }); //todo: this is always last, and we should enforce that too - b/c otherwise OUR parser breaks
+            submesh.VertexFormat.Elements.Add(new List<AlienVBF.Element>() { new AlienVBF.Element(VBFE_InputType.VECTOR3, VBFE_InputSlot.NORMAL) });
+            submesh.VertexFormat.Elements.Add(new List<AlienVBF.Element>() { new AlienVBF.Element(VBFE_InputType.INDICIES_U16) }); 
 
-            submesh.VertexFormatLowDetail = submesh.VertexFormat;
+            submesh.VertexFormatLowDetail = new AlienVBF();
+            submesh.VertexFormatLowDetail.Elements.Add(new List<AlienVBF.Element>() { new AlienVBF.Element(VBFE_InputType.VECTOR4_INT16_DIVMAX, VBFE_InputSlot.VERTEX), new AlienVBF.Element(VBFE_InputType.VECTOR2_INT16_DIV2048, VBFE_InputSlot.UV) { Offset = 8 } });
+            submesh.VertexFormatLowDetail.Elements.Add(new List<AlienVBF.Element>() { new AlienVBF.Element(VBFE_InputType.INDICIES_U16) }); 
 
             MemoryStream ms = new MemoryStream();
             using (BinaryWriter reader = new BinaryWriter(ms))
@@ -442,24 +443,25 @@ namespace AlienPAK
                         {
                             AlienVBF.Element format = submesh.VertexFormat.Elements[i][y];
                             switch (format.VariableType)
-                            {/*
+                            {
                                 case VBFE_InputType.VECTOR3:
                                     {
-                                        Vector3D v = new Vector3D(reader.ReadSingle(), reader.ReadSingle(), reader.ReadSingle());
                                         switch (format.ShaderSlot)
                                         {
                                             case VBFE_InputSlot.NORMAL:
-                                                normals.Add(v);
+                                                reader.Write((float)mesh.Normals[x].X);
+                                                reader.Write((float)mesh.Normals[x].Y);
+                                                reader.Write((float)mesh.Normals[x].Z);
                                                 break;
                                             case VBFE_InputSlot.TANGENT:
-                                                tangents.Add(new Vector4((float)v.X, (float)v.Y, (float)v.Z, 0));
+                                                //tangents.Add(new Vector4((float)v.X, (float)v.Y, (float)v.Z, 0));
                                                 break;
                                             case VBFE_InputSlot.UV:
                                                 //TODO: 3D UVW
                                                 break;
                                         };
                                         break;
-                                    }
+                                    }/*
                                 case VBFE_InputType.INT32:
                                     {
                                         int v = reader.ReadInt32();

@@ -14,7 +14,15 @@ namespace AlienPAK
 
         private void Landing_ContentTools_Load(object sender, EventArgs e)
         {
-            ((LandingWPF)elementHost1.Child).SetVersionInfo(ProductVersion);
+            LandingWPF wpf = (LandingWPF)elementHost1.Child;
+            wpf.SetVersionInfo(ProductVersion);
+            wpf.DoFocus += DoFocus;
+        }
+
+        private void DoFocus()
+        {
+            this.BringToFront();
+            this.Focus();
         }
         
         private void FormClosingEvent(object sender, FormClosingEventArgs e)

@@ -450,6 +450,7 @@ namespace AlienPAK
         {
             SaveModelsAndUpdateREDS();
             SaveTexturesAndUpdateMaterials(textures, materials);
+            UpdateSelectedFilePreview();
             this.BringToFront();
             this.Focus();
         }
