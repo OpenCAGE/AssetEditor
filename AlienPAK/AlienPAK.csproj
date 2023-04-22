@@ -135,6 +135,9 @@
     <Compile Include="MaterialEditor.Designer.cs">
       <DependentUpon>MaterialEditor.cs</DependentUpon>
     </Compile>
+    <Compile Include="MaterialEditorControlsWPF.xaml.cs">
+      <DependentUpon>MaterialEditorControlsWPF.xaml</DependentUpon>
+    </Compile>
     <Compile Include="ModelEditorControlsWPF.xaml.cs">
       <DependentUpon>ModelEditorControlsWPF.xaml</DependentUpon>
     </Compile>
@@ -206,6 +209,10 @@
     <EmbeddedResource Include="Resources\DirectXTexNet.dll" />
   </ItemGroup>
   <ItemGroup>
+    <Page Include="MaterialEditorControlsWPF.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
     <Page Include="ModelEditorControlsWPF.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>

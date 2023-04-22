@@ -85,7 +85,7 @@ namespace AlienPAK
             Materials.Material material = _materials.GetAtWriteIndex(lookup.submesh.MaterialLibraryIndex);
             if (material == null) return;
 
-            MaterialEditor materialEditor = new MaterialEditor(material);
+            MaterialEditor materialEditor = new MaterialEditor(material, _materials, _shaders, _textures, _texturesGlobal, _shadersIDX);
             materialEditor.Show();
         }
 
