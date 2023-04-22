@@ -86,18 +86,36 @@ namespace AlienPAK
             if (material == null) return;
 
             MaterialEditor materialEditor = new MaterialEditor(material, _materials, _shaders, _textures, _texturesGlobal, _shadersIDX);
+            materialEditor.OnMaterialSelected += OnMaterialSelected;
             materialEditor.Show();
+        }
+
+        private void OnMaterialSelected(int index)
+        {
+            StringMeshLookup lookup = _treeLookup.FirstOrDefault(o => o.String == FileTree.SelectedNode.FullPath);
+            Submesh submesh = lookup?.submesh;
+            if (submesh == null) return;
+            submesh.MaterialLibraryIndex = index;
+            RefreshSelectedModelPreview();
         }
 
         private void OnMaterialRenderCheckChanged(bool check)
         {
-            FileTree_AfterSelect(null, null);
+            RefreshSelectedModelPreview();
         }
 
         private void FileTree_AfterSelect(object sender, TreeViewEventArgs e)
         {
+            RefreshSelectedModelPreview();
+        }
+        
+        private void RefreshSelectedModelPreview()
+        {
+            _controls.ShowContextualButtons(SelectedModelType.NONE);
             if (FileTree.SelectedNode == null) return;
             StringMeshLookup lookup = _treeLookup.FirstOrDefault(o => o.String == FileTree.SelectedNode.FullPath);
+
+            _controls.ShowContextualButtons(lookup?.component != null ? SelectedModelType.COMPONENT : lookup?.lod != null ? SelectedModelType.LOD : lookup?.submesh != null ? SelectedModelType.SUBMESH : SelectedModelType.CS2);
 
             Model3DGroup model = new Model3DGroup();
             int vertCount = 0;

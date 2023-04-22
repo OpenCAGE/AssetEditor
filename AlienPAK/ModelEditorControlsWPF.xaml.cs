@@ -49,6 +49,17 @@ namespace AlienPAK
             filePreviewModelContainer.ZoomExtents();
         }
 
+        public void ShowContextualButtons(SelectedModelType type)
+        {
+            exportBtn.Visibility = type != SelectedModelType.NONE ? Visibility.Visible : Visibility.Collapsed;
+            replaceBtn.Visibility = type == SelectedModelType.SUBMESH ? Visibility.Visible : Visibility.Collapsed;
+            editMaterialBtn.Visibility = type == SelectedModelType.SUBMESH ? Visibility.Visible : Visibility.Collapsed;
+            deleteBtn.Visibility = type != SelectedModelType.CS2 && type != SelectedModelType.NONE ? Visibility.Visible : Visibility.Collapsed;
+            addComponentBtn.Visibility = type == SelectedModelType.CS2 ? Visibility.Visible : Visibility.Collapsed;
+            addLODBtn.Visibility = type == SelectedModelType.COMPONENT ? Visibility.Visible : Visibility.Collapsed;
+            addSubmeshBtn.Visibility = type == SelectedModelType.LOD ? Visibility.Visible : Visibility.Collapsed;
+        }
+
         /* Button event triggers */
         private void ImportBtn(object sender, RoutedEventArgs e)
         {
@@ -91,5 +102,14 @@ namespace AlienPAK
         {
             OnMaterialRenderCheckChanged?.Invoke(renderMaterials.IsChecked == true);
         }
+    }
+
+    public enum SelectedModelType
+    {
+        NONE,
+        CS2,
+        COMPONENT,
+        LOD,
+        SUBMESH
     }
 }
