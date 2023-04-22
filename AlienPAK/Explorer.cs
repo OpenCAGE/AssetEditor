@@ -223,6 +223,13 @@ namespace AlienPAK
             }
             this.Text = baseTitle + ((level == "") ? "" : " - " + level);
             LoadPAK(path);
+
+            //TESTTT!!!
+            Models modelsPAK1 = ((Models)pak.File);
+            string nodeVal = "AYZ/_PROPS_/DYNAMIC/ENGINEERING/CAGED_S_01/CAGED_S_01_DISPLAY.cs2";
+            Models.CS2 cs21 = ((Models)pak.File).Entries.FirstOrDefault(o => o.Name.Replace('\\', '/') == nodeVal.Replace('\\', '/'));
+            ModelEditor editor1 = new ModelEditor(cs21, textures, texturesGlobal, materials, shaders, shadersIDX);
+            editor1.Show();
         }
 
         /* Open a PAK and populate the GUI */
@@ -609,9 +616,7 @@ namespace AlienPAK
                                         }
                                         model.Children.Add(mdl); //TODO: are there some offsets/scaling we should be accounting for here?
                                     }
-                                    break;
                                 }
-                                //break;
                             }
                             preview.SetModelPreview(model); //TODO: perhaps we should just pass the CS2 object to the model previewer and let that pick what to render
                             break;

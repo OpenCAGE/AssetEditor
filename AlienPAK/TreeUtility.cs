@@ -9,16 +9,13 @@ namespace AlienPAK
 {
     public enum TreeItemType
     {
-        EXPORTABLE_FILE, //An exportable file
-        LOADED_STRING, //A loaded string (WIP for COMMANDS.PAK)
-        PREVIEW_ONLY_FILE, //A read-only file (export not supported yet)
-        DIRECTORY //A parent directory listing
+        EXPORTABLE_FILE,
+        DIRECTORY,
     };
     public enum TreeItemIcon
     {
         FOLDER,
         FILE,
-        STRING
     };
 
     public struct TreeItem
@@ -74,15 +71,13 @@ namespace AlienPAK
             {
                 TreeNode FileNode = new TreeNode(FileNameParts[index]);
                 TreeItem ThisTag = new TreeItem();
+
+                for (int i = 0; i < FileNameParts.Length; i++) ThisTag.String_Value += FileNameParts[i] + "/";
+                ThisTag.String_Value = ThisTag.String_Value.ToString().Substring(0, ThisTag.String_Value.ToString().Length - 1);
+
                 if (FileNameParts.Length - 1 == index)
                 {
                     //Node is a file
-                    for (int i = 0; i < FileNameParts.Length; i++)
-                    {
-                        ThisTag.String_Value += FileNameParts[i] + "/";
-                    }
-                    ThisTag.String_Value = ThisTag.String_Value.ToString().Substring(0, ThisTag.String_Value.ToString().Length - 1);
-
                     ThisTag.Item_Type = TreeItemType.EXPORTABLE_FILE;
                     FileNode.ImageIndex = (int)TreeItemIcon.FILE;
                     FileNode.SelectedImageIndex = (int)TreeItemIcon.FILE;

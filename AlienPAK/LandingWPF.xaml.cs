@@ -17,6 +17,7 @@ namespace AlienPAK
         public void SetVersionInfo(string version)
         {
             VersionText.Content = "Version " + version;
+            LaunchEditor(PAKType.MODELS);
         }
 
         private void OpenTextures(object sender, RoutedEventArgs e)

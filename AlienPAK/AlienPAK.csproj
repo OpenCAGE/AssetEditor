@@ -129,6 +129,9 @@
     <Compile Include="Explorer.Designer.cs">
       <DependentUpon>Explorer.cs</DependentUpon>
     </Compile>
+    <Compile Include="ModelEditorControlsWPF.xaml.cs">
+      <DependentUpon>ModelEditorControlsWPF.xaml</DependentUpon>
+    </Compile>
     <Compile Include="ExplorerControlsWPF.xaml.cs">
       <DependentUpon>ExplorerControlsWPF.xaml</DependentUpon>
     </Compile>
@@ -140,6 +143,12 @@
     </Compile>
     <Compile Include="LandingWPF.xaml.cs">
       <DependentUpon>LandingWPF.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="ModelEditor.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="ModelEditor.Designer.cs">
+      <DependentUpon>ModelEditor.cs</DependentUpon>
     </Compile>
     <Compile Include="PAKWrapper.cs" />
     <Compile Include="Program.cs" />
@@ -156,6 +165,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="Landing.resx">
       <DependentUpon>Landing.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="ModelEditor.resx">
+      <DependentUpon>ModelEditor.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
@@ -185,6 +197,10 @@
     <EmbeddedResource Include="Resources\DirectXTexNet.dll" />
   </ItemGroup>
   <ItemGroup>
+    <Page Include="ModelEditorControlsWPF.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
     <Page Include="ExplorerControlsWPF.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
