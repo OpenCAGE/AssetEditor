@@ -8,6 +8,7 @@ using System.Data;
 using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Numerics;
 using System.Security.Cryptography;
 using System.Text;
@@ -28,6 +29,7 @@ namespace AlienPAK
 
         List<Materials.Material> _sortedMaterials = new List<Materials.Material>();
         ShadersPAK.ShaderMaterialMetadata _selectedMaterialMeta = null;
+        ShadersPAK.ShaderEntry _selectedMaterialShader = null;
 
         MaterialEditorControlsWPF _controls = null;
 
@@ -46,6 +48,7 @@ namespace AlienPAK
 
             _controls = (MaterialEditorControlsWPF)elementHost1.Child;
             _controls.OnMaterialTextureIndexSelected += OnMaterialTextureIndexSelected;
+            _controls.DiffuseScaleChanged += DiffuseScaleChanged;
 
             _sortedMaterials.AddRange(_materials.Entries);
             _sortedMaterials = _sortedMaterials.OrderBy(o => o.Name).ToList();
@@ -57,6 +60,14 @@ namespace AlienPAK
             }
         }
 
+        private void DiffuseScaleChanged(float scale)
+        {
+            if (_selectedMaterialMeta == null || materialList.SelectedIndex == -1 || _sortedMaterials[materialList.SelectedIndex] == null || _selectedMaterialShader == null) return;
+            BinaryWriter cstWriter = new BinaryWriter(new MemoryStream(_materials.CSTData[2]));
+            WriteToCST<float>(ref cstWriter, (_sortedMaterials[materialList.SelectedIndex].ConstantBuffers[2].CstIndex * 4) + (_selectedMaterialShader.CSTLinks[2][_selectedMaterialMeta.cstIndexes.DiffuseUVMultiplierIndex] * 4), scale);
+            cstWriter.Close();
+        }
+
         private void OnMaterialTextureIndexSelected(int index)
         {
             ShowTextureForMaterial(_controls.materialTextureSelection.SelectedIndex);
@@ -65,8 +76,12 @@ namespace AlienPAK
         private void materialList_SelectedIndexChanged(object sender, EventArgs e)
         {
             _selectedMaterialMeta = null;
+            _selectedMaterialShader = null;
             if (materialList.SelectedIndex == -1) return;
             _selectedMaterialMeta = _shaders.GetMaterialMetadataFromShader(_sortedMaterials[materialList.SelectedIndex], _shadersIDX);
+
+            int shaderIndex = _shadersIDX.Datas[_sortedMaterials[materialList.SelectedIndex].UberShaderIndex].Index;
+            _selectedMaterialShader = _shaders.Shaders[shaderIndex];
 
             _controls.fileNameText.Text = _sortedMaterials[materialList.SelectedIndex].Name;
 
@@ -80,11 +95,9 @@ namespace AlienPAK
                 _controls.materialTextureSelection.SelectedIndex = 0;
             ShowTextureForMaterial(_controls.materialTextureSelection.SelectedIndex);
 
-            int shaderIndex = _shadersIDX.Datas[_sortedMaterials[materialList.SelectedIndex].UberShaderIndex].Index;
-            ShadersPAK.ShaderEntry shader = _shaders.Shaders[shaderIndex];
-            _controls.shaderName.Text = shader.Index + " (" + _selectedMaterialMeta.shaderCategory.ToString() + ")";
+            _controls.shaderName.Text = _selectedMaterialShader.Index + " (" + _selectedMaterialMeta.shaderCategory.ToString() + ")";
 
-            UpdateShaderCSTInfo(_selectedMaterialMeta.cstIndexes, shader, _sortedMaterials[materialList.SelectedIndex]);
+            UpdateShaderCSTInfo(_selectedMaterialMeta.cstIndexes, _selectedMaterialShader, _sortedMaterials[materialList.SelectedIndex]);
         }
 
         private void UpdateShaderCSTInfo(ShadersPAK.MaterialPropertyIndex cstIndexes, ShadersPAK.ShaderEntry shader, Materials.Material InMaterial)
@@ -142,11 +155,15 @@ namespace AlienPAK
             _controls.materialTexturePreview.Source = diff?.ToDDS()?.ToBitmap()?.ToImageSource();
         }
 
-        //todo: implement WriteToCST type thing
         private T LoadFromCST<T>(ref BinaryReader cstReader, int offset)
         {
             cstReader.BaseStream.Position = offset;
             return Utilities.Consume<T>(cstReader);
+        }
+        private void WriteToCST<T>(ref BinaryWriter cstWriter, int offset, T content)
+        {
+            cstWriter.BaseStream.Position = offset;
+            Utilities.Write<T>(cstWriter, content);
         }
         private bool CSTIndexValid(int i, ref ShadersPAK.ShaderEntry Shader)
         {

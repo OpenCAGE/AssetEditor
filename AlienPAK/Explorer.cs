@@ -320,7 +320,7 @@ namespace AlienPAK
                                 break;
                             case PAKType.TEXTURES:
                                 ((Textures)pak.File).Entries.RemoveAll(o => o.Name.Replace('\\', '/') == nodeVal.Replace('\\', '/'));
-                                SaveTexturesAndUpdateMaterials();
+                                SaveTexturesAndUpdateMaterials((Textures)pak.File, new Materials(extraPath));
                                 break;
                             case PAKType.MATERIAL_MAPPINGS:
                                 ((MaterialMappings)pak.File).Entries.RemoveAll(o => o.MapFilename.Replace('\\', '/') == nodeVal.Replace('\\', '/'));
@@ -396,7 +396,7 @@ namespace AlienPAK
                     }
 
                     string filter = "File|*" + Path.GetExtension(FileTree.SelectedNode.Text);
-                    if (preview.FilePreviewVisible && preview.FilePreviewBitmap != null) filter = "PNG Image|*.png|JPG Image|*.jpg|DDS Image|*.dds";
+                    //if (preview.FilePreviewVisible && preview.FilePreviewBitmap != null) filter = "PNG Image|*.png|JPG Image|*.jpg|DDS Image|*.dds";
 
                     OpenFileDialog FilePicker = new OpenFileDialog();
                     FilePicker.Filter = filter;
@@ -421,7 +421,7 @@ namespace AlienPAK
                                     part = content?.ToTEX4Part(out texture.Format, part);
                                     if (texture?.tex_HighRes?.Content != null) texture.tex_HighRes = part;
                                     else texture.tex_LowRes = part;
-                                    SaveTexturesAndUpdateMaterials();
+                                    SaveTexturesAndUpdateMaterials((Textures)pak.File, new Materials(extraPath));
                                     break;
                                 }
                                 //TODO: implement this!!!!
@@ -449,6 +449,7 @@ namespace AlienPAK
         private void ModelEditor_FormClosed(object sender, FormClosedEventArgs e)
         {
             SaveModelsAndUpdateREDS();
+            SaveTexturesAndUpdateMaterials(textures, materials);
             this.BringToFront();
             this.Focus();
         }
@@ -677,10 +678,8 @@ namespace AlienPAK
             reds.Save();
         }
 
-        private void SaveTexturesAndUpdateMaterials()
+        private void SaveTexturesAndUpdateMaterials(Textures texturesPAK, Materials materials)
         {
-            Textures texturesPAK = ((Textures)pak.File);
-            Materials materials = new Materials(extraPath);
             List<Textures.TEX4> materialTextures = new List<Textures.TEX4>();
             for (int i = 0; i < materials.Entries.Count; i++)
             {

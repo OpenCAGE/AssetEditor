@@ -323,15 +323,26 @@ namespace AlienPAK
                             if (_controls.renderMaterials.IsChecked == true)
                             {
                                 ShadersPAK.ShaderMaterialMetadata mdlMeta = _shaders.GetMaterialMetadataFromShader(material, _shadersIDX);
+                                MaterialGroup mg = new MaterialGroup();
                                 ShadersPAK.MaterialTextureContext mdlMetaDiff = mdlMeta.textures.FirstOrDefault(o => o.Type == ShadersPAK.ShaderSlot.DIFFUSE_MAP);
-                                if (mdlMetaDiff != null)
+                                if (mdlMetaDiff?.TextureInfo != null)
                                 {
                                     Textures tex = mdlMetaDiff.TextureInfo.Source == Texture.TextureSource.GLOBAL ? _texturesGlobal : _textures;
                                     Textures.TEX4 diff = tex.GetAtWriteIndex(mdlMetaDiff.TextureInfo.BinIndex);
-                                    byte[] diffDDS = diff?.ToDDS();
-                                    mdl.Material = new DiffuseMaterial(new ImageBrush(diffDDS?.ToBitmap()?.ToImageSource()));
-                                    mdl.BackMaterial = null;
+                                    mg.Children.Add(new DiffuseMaterial(new ImageBrush(diff?.ToDDS()?.ToBitmap()?.ToImageSource())));
                                 }
+                                /*
+                                mdlMetaDiff = mdlMeta.textures.FirstOrDefault(o => o.Type == ShadersPAK.ShaderSlot.SPECULAR_MAP);
+                                if (mdlMetaDiff?.TextureInfo != null)
+                                {
+                                    Textures tex = mdlMetaDiff.TextureInfo.Source == Texture.TextureSource.GLOBAL ? _texturesGlobal : _textures;
+                                    Textures.TEX4 diff = tex.GetAtWriteIndex(mdlMetaDiff.TextureInfo.BinIndex);
+                                    mg.Children.Add(new SpecularMaterial(new ImageBrush(diff?.ToDDS()?.ToBitmap()?.ToImageSource()), 1.0f)); //todo get specular from cst
+                                }
+                                */
+                                mg.Freeze();
+                                mdl.Material = mg;
+                                mdl.BackMaterial = null;
                             }
                         }
                         catch (Exception ex2)

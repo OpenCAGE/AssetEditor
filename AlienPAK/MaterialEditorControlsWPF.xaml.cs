@@ -21,6 +21,8 @@ namespace AlienPAK
     {
         public Action<int> OnMaterialTextureIndexSelected;
 
+        public Action<float> DiffuseScaleChanged;
+
         public MaterialEditorControlsWPF()
         {
             InitializeComponent();
@@ -29,6 +31,11 @@ namespace AlienPAK
         private void MaterialTextureSelected(object sender, EventArgs e)
         {
             OnMaterialTextureIndexSelected?.Invoke(materialTextureSelection.SelectedIndex);
+        }
+
+        private void matDiffuseScale_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            DiffuseScaleChanged?.Invoke(Convert.ToSingle(matDiffuseScale.Text));
         }
     }
 }
