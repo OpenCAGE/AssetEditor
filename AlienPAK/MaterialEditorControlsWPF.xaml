@@ -73,8 +73,8 @@
                                 </StackPanel>
                                 <StackPanel>
                                     <WrapPanel>
-                                        <!--<TextBox x:Name="matDiffuseScale" Width="50" TextChanged="matDiffuseScale_TextChanged">1</TextBox>-->
-                                        <TextBlock x:Name="matDiffuseScale">1</TextBlock>
+                                        <TextBox x:Name="matDiffuseScale" Width="50" TextChanged="matDiffuseScale_TextChanged">1</TextBox>
+                                        <!--<TextBlock x:Name="matDiffuseScale">1</TextBlock>-->
                                     </WrapPanel>
                                     <WrapPanel>
                                         <TextBlock x:Name="matDiffuseOffset">1</TextBlock>

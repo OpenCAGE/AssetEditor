@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.Remoting.Metadata;
+using System.Threading;
 using System.Windows.Documents;
 using System.Windows.Forms;
 using System.Windows.Media;
@@ -449,6 +450,7 @@ namespace AlienPAK
         private void ModelEditor_FormClosed(object sender, FormClosedEventArgs e)
         {
             SaveModelsAndUpdateREDS();
+            Thread.Sleep(1500); //todo: temp hack 
             SaveTexturesAndUpdateMaterials(textures, materials);
             UpdateSelectedFilePreview();
             this.BringToFront();
@@ -679,7 +681,7 @@ namespace AlienPAK
             reds.Save();
         }
 
-        private void SaveTexturesAndUpdateMaterials(Textures texturesPAK, Materials materials)
+        public static void SaveTexturesAndUpdateMaterials(Textures texturesPAK, Materials materials)
         {
             List<Textures.TEX4> materialTextures = new List<Textures.TEX4>();
             for (int i = 0; i < materials.Entries.Count; i++)

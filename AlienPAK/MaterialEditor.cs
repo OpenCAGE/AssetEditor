@@ -50,21 +50,30 @@ namespace AlienPAK
             _controls.OnMaterialTextureIndexSelected += OnMaterialTextureIndexSelected;
             _controls.DiffuseScaleChanged += DiffuseScaleChanged;
 
+            PopulateUI(material);
+        }
+
+        private void PopulateUI(Materials.Material material = null)
+        {
+            _sortedMaterials.Clear();
             _sortedMaterials.AddRange(_materials.Entries);
             _sortedMaterials = _sortedMaterials.OrderBy(o => o.Name).ToList();
 
+            materialList.BeginUpdate();
+            materialList.Items.Clear();
             for (int i = 0; i < _sortedMaterials.Count; i++)
             {
                 materialList.Items.Add(_sortedMaterials[i].Name);
                 if (_sortedMaterials[i] == material) materialList.SelectedIndex = i;
             }
+            materialList.EndUpdate();
         }
 
         private void DiffuseScaleChanged(float scale)
         {
             if (_selectedMaterialMeta == null || materialList.SelectedIndex == -1 || _sortedMaterials[materialList.SelectedIndex] == null || _selectedMaterialShader == null) return;
             BinaryWriter cstWriter = new BinaryWriter(new MemoryStream(_materials.CSTData[2]));
-            WriteToCST<float>(ref cstWriter, (_sortedMaterials[materialList.SelectedIndex].ConstantBuffers[2].CstIndex * 4) + (_selectedMaterialShader.CSTLinks[2][_selectedMaterialMeta.cstIndexes.DiffuseUVMultiplierIndex] * 4), scale);
+            WriteToCST<float>(ref cstWriter, (_sortedMaterials[materialList.SelectedIndex].ConstantBuffers[2].Offset * 4) + (_selectedMaterialShader.CSTLinks[2][_selectedMaterialMeta.cstIndexes.DiffuseUVMultiplierIndex] * 4), scale);
             cstWriter.Close();
         }
 
@@ -103,7 +112,7 @@ namespace AlienPAK
         private void UpdateShaderCSTInfo(ShadersPAK.MaterialPropertyIndex cstIndexes, ShadersPAK.ShaderEntry shader, Materials.Material InMaterial)
         {
             BinaryReader cstReader = new BinaryReader(new MemoryStream(_materials.CSTData[2]));
-            int baseOffset = (InMaterial.ConstantBuffers[2].CstIndex * 4);
+            int baseOffset = (InMaterial.ConstantBuffers[2].Offset * 4);
 
             _controls.matColourLabel.Visibility = CSTIndexValid(cstIndexes.DiffuseIndex, ref shader) ? System.Windows.Visibility.Visible : System.Windows.Visibility.Collapsed;
             _controls.matColour.Visibility = _controls.matColourLabel.Visibility;
@@ -174,6 +183,43 @@ namespace AlienPAK
         {
             OnMaterialSelected?.Invoke(_materials.GetWriteIndex(_sortedMaterials[materialList.SelectedIndex]));
             this.Close();
+        }
+
+        private void duplicateMaterial_Click(object sender, EventArgs e)
+        {
+            Materials.Material newMaterial = _sortedMaterials[materialList.SelectedIndex].Copy();
+            newMaterial.Name += " Clone";
+            for (int i = 0; i < newMaterial.ConstantBuffers.Count; i++)
+            {
+                if (newMaterial.ConstantBuffers == null) continue;
+                byte[] cstData = null;
+                using (MemoryStream stream = new MemoryStream(_materials.CSTData[i]))
+                {
+                    using (BinaryReader cstReader = new BinaryReader(stream))
+                    {
+                        cstReader.BaseStream.Position = newMaterial.ConstantBuffers[i].Offset * 4;
+                        cstData = cstReader.ReadBytes(newMaterial.ConstantBuffers[i].Length * 4);
+                    }
+                }
+                newMaterial.ConstantBuffers[i] = new Materials.Material.ConstantBuffer();
+                if (cstData != null)
+                {
+                    using (MemoryStream stream = new MemoryStream())
+                    {
+                        using (BinaryWriter cstWriter = new BinaryWriter(stream))
+                        {
+                            cstWriter.Write(_materials.CSTData[i]);
+                            newMaterial.ConstantBuffers[i].Offset = (int)cstWriter.BaseStream.Position / 4;
+                            newMaterial.ConstantBuffers[i].Length = cstData.Length / 4;
+                            cstWriter.Write(cstData);
+                        }
+                        _materials.CSTData[i] = stream.ToArray();
+                    }
+                }
+            }
+            _materials.Entries.Add(newMaterial);
+            Explorer.SaveTexturesAndUpdateMaterials(_textures, _materials);
+            PopulateUI(newMaterial);
         }
     }
 }
