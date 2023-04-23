@@ -77,6 +77,7 @@ namespace AlienPAK
             MemoryStream imageStream = new MemoryStream(content);
             using (Pfim.IImage image = Pfim.Pfim.FromStream(imageStream))
             {
+                part.Depth = 1; //todo
                 part.MipLevels = (short)image.MipMaps.Length;
                 part.Width = (short)image.Width;
                 part.Height = (short)image.Height;
@@ -109,7 +110,6 @@ namespace AlienPAK
                         format = TextureFormat.DXGI_FORMAT_BC7_UNORM;
                         break;
                 }
-                //part.Depth = //TODO
             }
             return part;
         }

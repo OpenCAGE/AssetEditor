@@ -29,6 +29,8 @@ namespace AlienPAK
         public Action<MaterialProperty, float> FloatMaterialPropertyChanged;
         public Action<MaterialProperty, Vector4> Vec4MaterialPropertyChanged;
 
+        public Action<string> OnNameUpdated;
+
         public MaterialEditorControlsWPF()
         {
             InitializeComponent();
@@ -86,6 +88,11 @@ namespace AlienPAK
                 ((SolidColorBrush)matColour.Background).Color = System.Windows.Media.Color.FromArgb(colourPicker.Color.A, colourPicker.Color.R, colourPicker.Color.G, colourPicker.Color.B);
                 Vec4MaterialPropertyChanged?.Invoke(MaterialProperty.COLOUR, colourVec);
             }
+        }
+
+        private void fileNameText_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            OnNameUpdated?.Invoke(fileNameText.Text);
         }
     }
 

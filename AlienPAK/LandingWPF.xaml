@@ -71,9 +71,7 @@
             <Button Style="{StaticResource TextButton}" Click="OpenAnimations">
                 Animations
             </Button>
-            <Button Style="{StaticResource TextButton}" Click="OpenMaterialMaps">
-                Material Mappings
-            </Button>
+            <!--<Button Style="{StaticResource TextButton}" Click="OpenMaterialMaps">Material Mappings</Button> -->
         </StackPanel>
 
         <WrapPanel HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="20">

@@ -54,8 +54,15 @@ namespace AlienPAK
             _controls.Vec4MaterialPropertyChanged += MaterialPropertyChanged;
             _controls.OnGlobalOptionChange += OnGlobalOptionChange;
             _controls.OnTextureIndexChange += OnTextureIndexChange;
+            _controls.OnNameUpdated += OnNameUpdated;
 
             PopulateUI(material);
+        }
+
+        private void OnNameUpdated(string name)
+        {
+            if (materialList.SelectedIndex == -1) return;
+            _sortedMaterials[materialList.SelectedIndex].Name = name;
         }
 
         //todo: this whole flow needs a bit of a refactor as i've changed quite a bit

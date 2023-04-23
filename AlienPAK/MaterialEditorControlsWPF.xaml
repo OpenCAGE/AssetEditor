@@ -34,7 +34,7 @@
                         </StackPanel>
                         <StackPanel>
                             <WrapPanel>
-                                <TextBlock x:Name="fileNameText">text</TextBlock>
+                                <TextBox x:Name="fileNameText" Width="350" TextChanged="fileNameText_TextChanged">text</TextBox>
                             </WrapPanel>
                             <WrapPanel>
                                 <TextBlock x:Name="shaderName">text</TextBlock>

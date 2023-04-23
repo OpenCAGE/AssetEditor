@@ -245,6 +245,13 @@ namespace AlienPAK
             OpenFileDialog FilePicker = new OpenFileDialog();
             switch (pak.Type)
             {
+                case PAKType.ANIMATIONS:
+                case PAKType.UI:
+                    FilePicker.Filter = "All Files|*.*";
+                    break;
+                case PAKType.TEXTURES:
+                    FilePicker.Filter = "DDS Files|*.DDS"; //"PNG Image|*.png|JPG Image|*.jpg|DDS Image|*.dds";
+                    break;
                 case PAKType.MODELS:
                     FilePicker.Filter = "FBX Model|*.fbx|GLTF Model|*.gltf|OBJ Model|*.obj"; //TODO: we can support loads here with assimp (importer.GetSupportedExportFormats())
                     break;
@@ -260,9 +267,36 @@ namespace AlienPAK
             {
                 switch (pak.Type)
                 {
+                    case PAKType.ANIMATIONS:
+                    case PAKType.UI:
+                        PAK2 pak2PAK = (PAK2)pak.File;
+                        newFileName = Path.GetFileName(FilePicker.FileName);
+                        pak2PAK.Entries.Add(new PAK2.File() { Filename = newFileName, Content = File.ReadAllBytes(FilePicker.FileName) });
+                        break;
+                    case PAKType.TEXTURES:
+                        Textures texturePAK = (Textures)pak.File;
+                        newFileName += ".dds";
+                        Textures.TEX4 texture = new Textures.TEX4() { Name = Path.GetFileName(FilePicker.FileName) };
+                        if (Path.GetExtension(FilePicker.FileName).ToUpper() == ".DDS")
+                        {
+                            byte[] content = File.ReadAllBytes(FilePicker.FileName);
+                            //TODO: perhaps we need a custom UI for this to allow swapping high/low res assets individually
+                            Textures.TEX4.Part part = content?.ToTEX4Part(out texture.Format);
+                            part.unk3 = 4294967295;
+                            texture.Type = Textures.AlienTextureType.DIFFUSE; //todo: ui to allow selection of this
+                            texture.tex_HighRes = part.Copy();
+                            texture.tex_LowRes = part.Copy();
+                            texture.tex_LowRes.unk2 = 32768;
+                            texturePAK.Entries.Add(texture);
+                            SaveTexturesAndUpdateMaterials((Textures)pak.File, new Materials(extraPath));
+                            break;
+                        }
+                        //TODO: implement DDS conversion
+                        break;
                     case PAKType.MODELS:
-                        Models modelsPAK = ((Models)pak.File);
+                        Models modelsPAK = (Models)pak.File;
                         Models.CS2 cs2 = new Models.CS2();
+                        newFileName += ".cs2";
                         cs2.Name = newFileName;
                         cs2.Components.Add(new Models.CS2.Component());
                         cs2.Components[0].LODs.Add(new Models.CS2.Component.LOD(newFileName));
@@ -281,6 +315,10 @@ namespace AlienPAK
                                 if (i == 0) submesh.Unknown2_ = 134282240;
                                 else submesh.Unknown2_ = 134239232;
                                 cs2.Components[0].LODs[0].Submeshes.Add(submesh);
+                            }
+                            for (int i = 0; i < model.Meshes.Count; i++)
+                            {
+                                cs2.Components[0].LODs[0].Submeshes[i].ScaleFactor = (ushort)(cs2.Components[0].LODs[0].Submeshes[i].ScaleFactor / 1.5f);
                             }
                         }
                         modelsPAK.Entries.Add(cs2);
@@ -431,7 +469,7 @@ namespace AlienPAK
                                     SaveTexturesAndUpdateMaterials((Textures)pak.File, new Materials(extraPath));
                                     break;
                                 }
-                                //TODO: implement this!!!!
+                                //TODO: implement this!!!! (into import new above too)
                                 MessageBox.Show("PNG/JPG image import conversion is not currently supported!", "WIP", MessageBoxButtons.OK, MessageBoxIcon.Asterisk);
                                 break;
                                 ScratchImage img = TexHelper.Instance.LoadFromWICFile(FilePicker.FileName, WIC_FLAGS.FORCE_RGB).GenerateMipMaps(TEX_FILTER_FLAGS.DEFAULT, 10); /* Was using 11, but gives remainders - going for 10 */
