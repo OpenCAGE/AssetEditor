@@ -44,19 +44,19 @@
                         <StackPanel Width="209">
                             <WrapPanel>
                                 <StackPanel>
-                                    <WrapPanel>
+                                    <WrapPanel Height="18" VerticalAlignment="Center">
                                         <TextBlock x:Name="matColourLabel" FontWeight="Bold" Margin="0 0 5 0">Tint:</TextBlock>
                                     </WrapPanel>
-                                    <WrapPanel>
+                                    <WrapPanel Height="18" VerticalAlignment="Center">
                                         <TextBlock x:Name="matNormalScaleLabel" FontWeight="Bold" Margin="0 0 5 0">Normal Scale:</TextBlock>
                                     </WrapPanel>
                                 </StackPanel>
                                 <StackPanel>
-                                    <WrapPanel>
-                                        <TextBlock x:Name="matColour" Background="Red" Width="100"></TextBlock>
+                                    <WrapPanel Height="18" VerticalAlignment="Center">
+                                        <Button x:Name="matColour" Background="Red" Width="100" Height="18" Click="matColour_Click"></Button>
                                     </WrapPanel>
-                                    <WrapPanel>
-                                        <TextBlock x:Name="matNormalScale">1</TextBlock>
+                                    <WrapPanel Height="18" VerticalAlignment="Center">
+                                        <TextBox x:Name="matNormalScale" Width="50" TextChanged="matNormalScale_TextChanged">1</TextBox>
                                     </WrapPanel>
                                 </StackPanel>
                             </WrapPanel>
@@ -64,20 +64,19 @@
                         <StackPanel Width="209">
                             <WrapPanel>
                                 <StackPanel>
-                                    <WrapPanel>
+                                    <WrapPanel Height="18" VerticalAlignment="Center">
                                         <TextBlock x:Name="matDiffuseScaleLabel" FontWeight="Bold" Margin="0 0 5 0">Diffuse Scale:</TextBlock>
                                     </WrapPanel>
-                                    <WrapPanel>
+                                    <WrapPanel Height="18" VerticalAlignment="Center">
                                         <TextBlock x:Name="matDiffuseOffsetLabel" FontWeight="Bold" Margin="0 0 5 0">Diffuse Offset:</TextBlock>
                                     </WrapPanel>
                                 </StackPanel>
                                 <StackPanel>
-                                    <WrapPanel>
+                                    <WrapPanel Height="18" VerticalAlignment="Center">
                                         <TextBox x:Name="matDiffuseScale" Width="50" TextChanged="matDiffuseScale_TextChanged">1</TextBox>
-                                        <!--<TextBlock x:Name="matDiffuseScale">1</TextBlock>-->
                                     </WrapPanel>
-                                    <WrapPanel>
-                                        <TextBlock x:Name="matDiffuseOffset">1</TextBlock>
+                                    <WrapPanel Height="18" VerticalAlignment="Center">
+                                        <TextBox x:Name="matDiffuseOffset" Width="50" TextChanged="matDiffuseOffset_TextChanged">1</TextBox>
                                     </WrapPanel>
                                 </StackPanel>
                             </WrapPanel>

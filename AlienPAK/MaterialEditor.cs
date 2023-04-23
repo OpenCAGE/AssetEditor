@@ -48,7 +48,8 @@ namespace AlienPAK
 
             _controls = (MaterialEditorControlsWPF)elementHost1.Child;
             _controls.OnMaterialTextureIndexSelected += OnMaterialTextureIndexSelected;
-            _controls.DiffuseScaleChanged += DiffuseScaleChanged;
+            _controls.FloatMaterialPropertyChanged += MaterialPropertyChanged;
+            _controls.Vec4MaterialPropertyChanged += MaterialPropertyChanged;
 
             PopulateUI(material);
         }
@@ -69,11 +70,29 @@ namespace AlienPAK
             materialList.EndUpdate();
         }
 
-        private void DiffuseScaleChanged(float scale)
+        private void MaterialPropertyChanged<T>(MaterialProperty property, T val)
         {
             if (_selectedMaterialMeta == null || materialList.SelectedIndex == -1 || _sortedMaterials[materialList.SelectedIndex] == null || _selectedMaterialShader == null) return;
+            int offset = _sortedMaterials[materialList.SelectedIndex].ConstantBuffers[2].Offset;
+            switch (property)
+            {
+                case MaterialProperty.COLOUR:
+                    offset += _selectedMaterialShader.CSTLinks[2][_selectedMaterialMeta.cstIndexes.DiffuseIndex];
+                    break;
+                case MaterialProperty.DIFFUSE_SCALE:
+                    offset += _selectedMaterialShader.CSTLinks[2][_selectedMaterialMeta.cstIndexes.DiffuseUVMultiplierIndex];
+                    break;
+                case MaterialProperty.DIFFUSE_OFFSET:
+                    offset += _selectedMaterialShader.CSTLinks[2][_selectedMaterialMeta.cstIndexes.DiffuseUVAdderIndex];
+                    break;
+                case MaterialProperty.NORMAL_SCALE:
+                    offset += _selectedMaterialShader.CSTLinks[2][_selectedMaterialMeta.cstIndexes.NormalUVMultiplierIndex];
+                    break;
+                default:
+                    return;
+            }
             BinaryWriter cstWriter = new BinaryWriter(new MemoryStream(_materials.CSTData[2]));
-            WriteToCST<float>(ref cstWriter, (_sortedMaterials[materialList.SelectedIndex].ConstantBuffers[2].Offset * 4) + (_selectedMaterialShader.CSTLinks[2][_selectedMaterialMeta.cstIndexes.DiffuseUVMultiplierIndex] * 4), scale);
+            WriteToCST<T>(ref cstWriter, offset * 4, val);
             cstWriter.Close();
         }
 
@@ -176,7 +195,7 @@ namespace AlienPAK
         }
         private bool CSTIndexValid(int i, ref ShadersPAK.ShaderEntry Shader)
         {
-            return i >= 0 && i < Shader.Header.CSTCounts[2] && (int)Shader.CSTLinks[2][i] != -1;
+            return i >= 0 && i < Shader.Header.CSTCounts[2] && (int)Shader.CSTLinks[2][i] != -1 && Shader.CSTLinks[2][i] != 255;
         }
 
         private void selectMaterial_Click(object sender, EventArgs e)
@@ -212,8 +231,9 @@ namespace AlienPAK
                             newMaterial.ConstantBuffers[i].Offset = (int)cstWriter.BaseStream.Position / 4;
                             newMaterial.ConstantBuffers[i].Length = cstData.Length / 4;
                             cstWriter.Write(cstData);
+
+                            _materials.CSTData[i] = stream.ToArray();
                         }
-                        _materials.CSTData[i] = stream.ToArray();
                     }
                 }
             }

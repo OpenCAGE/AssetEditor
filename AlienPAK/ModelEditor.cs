@@ -278,6 +278,9 @@ namespace AlienPAK
             if (submesh == null) return;
             submesh.MaterialLibraryIndex = index;
             RefreshSelectedModelPreview(false);
+
+            this.Focus();
+            this.BringToFront();
         }
 
         /* Enable/disable materials in render */

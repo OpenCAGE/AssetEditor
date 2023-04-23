@@ -11,6 +11,8 @@ using System.Windows;
 using System.Drawing.Imaging;
 using CATHODE;
 using System.Windows.Media.Media3D;
+using System.Windows.Media;
+using System.Numerics;
 
 namespace AlienPAK
 {
@@ -21,7 +23,8 @@ namespace AlienPAK
     {
         public Action<int> OnMaterialTextureIndexSelected;
 
-        public Action<float> DiffuseScaleChanged;
+        public Action<MaterialProperty, float> FloatMaterialPropertyChanged;
+        public Action<MaterialProperty, System.Numerics.Vector4> Vec4MaterialPropertyChanged;
 
         public MaterialEditorControlsWPF()
         {
@@ -35,7 +38,65 @@ namespace AlienPAK
 
         private void matDiffuseScale_TextChanged(object sender, TextChangedEventArgs e)
         {
-            DiffuseScaleChanged?.Invoke(Convert.ToSingle(matDiffuseScale.Text));
+            matDiffuseScale.Text = ForceStringNumeric(matDiffuseScale.Text, true);
+            FloatMaterialPropertyChanged?.Invoke(MaterialProperty.DIFFUSE_SCALE, Convert.ToSingle(matDiffuseScale.Text));
         }
+
+        private void matDiffuseOffset_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            matDiffuseOffset.Text = ForceStringNumeric(matDiffuseOffset.Text, true);
+            FloatMaterialPropertyChanged?.Invoke(MaterialProperty.DIFFUSE_OFFSET, Convert.ToSingle(matDiffuseOffset.Text));
+        }
+
+        private void matNormalScale_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            matNormalScale.Text = ForceStringNumeric(matNormalScale.Text, true);
+            FloatMaterialPropertyChanged?.Invoke(MaterialProperty.NORMAL_SCALE, Convert.ToSingle(matNormalScale.Text));
+        }
+
+        private void matColour_Click(object sender, RoutedEventArgs e)
+        {
+            System.Windows.Forms.ColorDialog colourPicker = new System.Windows.Forms.ColorDialog();
+            System.Windows.Media.Color colour = ((SolidColorBrush)matColour.Background).Color;
+            colourPicker.Color = System.Drawing.Color.FromArgb(colour.A, colour.R, colour.G, colour.B);
+
+            if (colourPicker.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+            {
+                Vector4 colourVec = new Vector4((float)colourPicker.Color.R / 255.0f, (float)colourPicker.Color.G / 255.0f, (float)colourPicker.Color.B / 255.0f, (float)colourPicker.Color.A / 255.0f);
+                ((SolidColorBrush)matColour.Background).Color = System.Windows.Media.Color.FromArgb(colourPicker.Color.A, colourPicker.Color.R, colourPicker.Color.G, colourPicker.Color.B);
+                Vec4MaterialPropertyChanged?.Invoke(MaterialProperty.COLOUR, colourVec);
+            }
+        }
+
+        private string ForceStringNumeric(string str, bool allowDots = false)
+        {
+            string editedText = "";
+            bool hasIncludedDot = false;
+            bool hasIncludedMinus = false;
+            for (int i = 0; i < str.Length; i++)
+            {
+                if (Char.IsNumber(str[i]) || (str[i] == '.' && allowDots) || (str[i] == '-'))
+                {
+                    if (str[i] == '-' && hasIncludedMinus) continue;
+                    if (str[i] == '-' && i != 0) continue;
+                    if (str[i] == '-') hasIncludedMinus = true;
+                    if (str[i] == '.' && hasIncludedDot) continue;
+                    if (str[i] == '.') hasIncludedDot = true;
+                    editedText += str[i];
+                }
+            }
+            if (editedText == "") editedText = "0";
+            if (editedText == "-") editedText = "-0";
+            if (editedText == ".") editedText = "0";
+            return editedText;
+        }
+    }
+
+    public enum MaterialProperty
+    {
+        COLOUR,
+        DIFFUSE_SCALE,
+        DIFFUSE_OFFSET,
+        NORMAL_SCALE,
     }
 }
