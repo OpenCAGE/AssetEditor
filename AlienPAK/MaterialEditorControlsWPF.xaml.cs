@@ -58,19 +58,19 @@ namespace AlienPAK
 
         private void matDiffuseScale_TextChanged(object sender, TextChangedEventArgs e)
         {
-            matDiffuseScale.Text = ForceStringNumeric(matDiffuseScale.Text, true);
+            matDiffuseScale.Text = matDiffuseScale.Text.ForceStringNumeric(true);
             FloatMaterialPropertyChanged?.Invoke(MaterialProperty.DIFFUSE_SCALE, Convert.ToSingle(matDiffuseScale.Text));
         }
 
         private void matDiffuseOffset_TextChanged(object sender, TextChangedEventArgs e)
         {
-            matDiffuseOffset.Text = ForceStringNumeric(matDiffuseOffset.Text, true);
+            matDiffuseOffset.Text = matDiffuseOffset.Text.ForceStringNumeric(true);
             FloatMaterialPropertyChanged?.Invoke(MaterialProperty.DIFFUSE_OFFSET, Convert.ToSingle(matDiffuseOffset.Text));
         }
 
         private void matNormalScale_TextChanged(object sender, TextChangedEventArgs e)
         {
-            matNormalScale.Text = ForceStringNumeric(matNormalScale.Text, true);
+            matNormalScale.Text = matNormalScale.Text.ForceStringNumeric(true);
             FloatMaterialPropertyChanged?.Invoke(MaterialProperty.NORMAL_SCALE, Convert.ToSingle(matNormalScale.Text));
         }
 
@@ -86,29 +86,6 @@ namespace AlienPAK
                 ((SolidColorBrush)matColour.Background).Color = System.Windows.Media.Color.FromArgb(colourPicker.Color.A, colourPicker.Color.R, colourPicker.Color.G, colourPicker.Color.B);
                 Vec4MaterialPropertyChanged?.Invoke(MaterialProperty.COLOUR, colourVec);
             }
-        }
-
-        private string ForceStringNumeric(string str, bool allowDots = false)
-        {
-            string editedText = "";
-            bool hasIncludedDot = false;
-            bool hasIncludedMinus = false;
-            for (int i = 0; i < str.Length; i++)
-            {
-                if (Char.IsNumber(str[i]) || (str[i] == '.' && allowDots) || (str[i] == '-'))
-                {
-                    if (str[i] == '-' && hasIncludedMinus) continue;
-                    if (str[i] == '-' && i != 0) continue;
-                    if (str[i] == '-') hasIncludedMinus = true;
-                    if (str[i] == '.' && hasIncludedDot) continue;
-                    if (str[i] == '.') hasIncludedDot = true;
-                    editedText += str[i];
-                }
-            }
-            if (editedText == "") editedText = "0";
-            if (editedText == "-") editedText = "-0";
-            if (editedText == ".") editedText = "0";
-            return editedText;
         }
     }
 

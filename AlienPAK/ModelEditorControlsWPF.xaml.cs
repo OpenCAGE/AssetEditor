@@ -27,21 +27,27 @@ namespace AlienPAK
 
         public Action<bool> OnMaterialRenderCheckChanged;
 
+        public Action<int> OnScaleFactorChanged;
+
         public ModelEditorControlsWPF()
         {
             InitializeComponent();
         }
 
         /* Show the model preview for the selected file in UI */
-        public void SetModelPreview(Model3DGroup content, string filename, int vertCount, string material, bool doZoom = true)
+        public void SetModelPreview(Model3DGroup content, string filename, int vertCount, string material, int sf = -1, bool doZoom = true)
         {
             filePreviewModel.Content = content;
             if (doZoom) filePreviewModelContainer.ZoomExtents();
 
             fileNameText.Text = filename;
             vertexCount.Text = vertCount.ToString();
-            materialInfo.Text = material;
             materialLabel.Visibility = material != "" ? Visibility.Visible : Visibility.Collapsed;
+            materialInfo.Text = material;
+            materialInfo.Visibility = materialLabel.Visibility;
+            scaleFactorLabel.Visibility = sf != -1 ? Visibility.Visible : Visibility.Collapsed;
+            if (sf != -1) scaleFactor.Text = sf.ToString();
+            scaleFactor.Visibility = scaleFactorLabel.Visibility;
         }
 
         public void ShowContextualButtons(SelectedModelType type)
@@ -88,6 +94,13 @@ namespace AlienPAK
         private void OnRenderMaterialsChecked(object sender, RoutedEventArgs e)
         {
             OnMaterialRenderCheckChanged?.Invoke(renderMaterials.IsChecked == true);
+        }
+
+        private void scaleFactor_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            if (scaleFactor.Text == "-1") scaleFactor.Text = "0";
+            scaleFactor.Text = scaleFactor.Text.ForceStringNumeric();
+            OnScaleFactorChanged?.Invoke(Convert.ToInt32(scaleFactor.Text));
         }
     }
 

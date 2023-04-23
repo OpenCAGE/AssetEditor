@@ -25,6 +25,7 @@ using PixelFormat = System.Drawing.Imaging.PixelFormat;
 using Color = System.Windows.Media.Color;
 using static CATHODE.Textures;
 using System.Windows.Interop;
+using static CATHODE.Models.CS2.Component.LOD;
 
 namespace AlienPAK
 {
@@ -370,7 +371,7 @@ namespace AlienPAK
             return mesh;
         }
 
-        public static CS2.Component.LOD.Submesh ToSubmesh(this Mesh mesh)
+        public static CS2.Component.LOD.Submesh ToSubmesh(this Mesh mesh, ushort? customScaleFactor = null)
         {
             //We can't have more vertices than Int16.MaxValue as we won't be able to point to them
             if (mesh.VertexCount > Int16.MaxValue) return null;
@@ -386,21 +387,8 @@ namespace AlienPAK
             int[] indices = mesh.GetIndices();
             submesh.IndexCount = indices.Length;
 
-            //Calculate scale factor (meshes must not exceed 1 unit in any direction)
-            {
-                float x = Math.Max(Math.Abs(mesh.BoundingBox.Min.X), Math.Abs(mesh.BoundingBox.Max.X));
-                float y = Math.Max(Math.Abs(mesh.BoundingBox.Min.Y), Math.Abs(mesh.BoundingBox.Max.Y));
-                float z = Math.Max(Math.Abs(mesh.BoundingBox.Min.Z), Math.Abs(mesh.BoundingBox.Max.Z));
-                submesh.ScaleFactor = 1;
-                int i = 1;
-                while (true)
-                {
-                    if (x / (float)submesh.ScaleFactor < 0.99f && y / (float)submesh.ScaleFactor < 0.99f && z / (float)submesh.ScaleFactor < 0.99f) break;
-                    if (i == 1) submesh.ScaleFactor = 4;
-                    else submesh.ScaleFactor = (ushort)(4 * i);
-                    i++;
-                }
-            }
+            //meshes must not exceed 1 unit in any direction -> TODO: we should validate customScaleFactor here...
+            submesh.ScaleFactor = customScaleFactor == null ? mesh.CalculateScaleFactor() : (ushort)customScaleFactor;
 
             submesh.AABBMax = new Vector3(mesh.BoundingBox.Max.X, mesh.BoundingBox.Max.Y, mesh.BoundingBox.Max.Z);
             submesh.AABBMin = new Vector3(mesh.BoundingBox.Min.X, mesh.BoundingBox.Min.Y, mesh.BoundingBox.Min.Z);
@@ -565,6 +553,46 @@ namespace AlienPAK
             //submesh.
 
             return submesh;
+        }
+
+        public static ushort CalculateScaleFactor(this Mesh mesh)
+        {
+            float x = Math.Max(Math.Abs(mesh.BoundingBox.Min.X), Math.Abs(mesh.BoundingBox.Max.X));
+            float y = Math.Max(Math.Abs(mesh.BoundingBox.Min.Y), Math.Abs(mesh.BoundingBox.Max.Y));
+            float z = Math.Max(Math.Abs(mesh.BoundingBox.Min.Z), Math.Abs(mesh.BoundingBox.Max.Z));
+            ushort scaleFactor = 1;
+            int i = 1;
+            while (true)
+            {
+                if (x / (float)scaleFactor < 0.99f && y / (float)scaleFactor < 0.99f && z / (float)scaleFactor < 0.99f) break;
+                if (i == 1) scaleFactor = 4;
+                else scaleFactor = (ushort)(4 * i);
+                i++;
+            }
+            return scaleFactor;
+        }
+
+        public static string ForceStringNumeric(this string str, bool allowDots = false)
+        {
+            string editedText = "";
+            bool hasIncludedDot = false;
+            bool hasIncludedMinus = false;
+            for (int i = 0; i < str.Length; i++)
+            {
+                if (Char.IsNumber(str[i]) || (str[i] == '.' && allowDots) || (str[i] == '-'))
+                {
+                    if (str[i] == '-' && hasIncludedMinus) continue;
+                    if (str[i] == '-' && i != 0) continue;
+                    if (str[i] == '-') hasIncludedMinus = true;
+                    if (str[i] == '.' && hasIncludedDot) continue;
+                    if (str[i] == '.') hasIncludedDot = true;
+                    editedText += str[i];
+                }
+            }
+            if (editedText == "") editedText = "0";
+            if (editedText == "-") editedText = "-0";
+            if (editedText == ".") editedText = "0";
+            return editedText;
         }
     }
 }

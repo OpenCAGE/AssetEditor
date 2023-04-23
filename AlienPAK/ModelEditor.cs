@@ -64,6 +64,15 @@ namespace AlienPAK
             _controls.OnReplaceRequested += OnReplaceRequested;
             _controls.OnDeleteRequested += OnDeleteRequested;
             _controls.OnExportRequested += OnExportRequested;
+            _controls.OnScaleFactorChanged += OnScaleFactorChanged;
+        }
+
+        /* Update submesh scale factor */
+        private void OnScaleFactorChanged(int scaleFactor)
+        {
+            StringMeshLookup lookup = _treeLookup.FirstOrDefault(o => o.String == FileTree.SelectedNode?.FullPath);
+            if (lookup == null || lookup.submesh == null) return;
+            lookup.submesh.ScaleFactor = (ushort)scaleFactor;
         }
 
         /* Export model by selected part */
@@ -360,7 +369,7 @@ namespace AlienPAK
             }
 
             string[] nameContents = (FileTree.SelectedNode.FullPath + "\\").Split('\\');
-            _controls.SetModelPreview(model, nameContents[nameContents.Length - 2], vertCount, materialInfo, doZoom); 
+            _controls.SetModelPreview(model, nameContents[nameContents.Length - 2], vertCount, materialInfo, lookup?.submesh == null ? -1 : (int)lookup.submesh.ScaleFactor, doZoom); 
         }
 
         private class StringMeshLookup

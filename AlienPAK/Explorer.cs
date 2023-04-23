@@ -269,9 +269,15 @@ namespace AlienPAK
                         using (AssimpContext importer = new AssimpContext())
                         {
                             Scene model = importer.ImportFile(FilePicker.FileName, PostProcessSteps.Triangulate | PostProcessSteps.FindDegenerates | PostProcessSteps.LimitBoneWeights | PostProcessSteps.GenerateBoundingBoxes);
+                            ushort biggestSF = 0;
                             for (int i = 0; i < model.Meshes.Count; i++)
                             {
-                                Models.CS2.Component.LOD.Submesh submesh = model.Meshes[i].ToSubmesh();
+                                ushort newSF = model.Meshes[i].CalculateScaleFactor();
+                                if (newSF > biggestSF) biggestSF = newSF;
+                            }
+                            for (int i = 0; i < model.Meshes.Count; i++)
+                            {
+                                Models.CS2.Component.LOD.Submesh submesh = model.Meshes[i].ToSubmesh(biggestSF);
                                 if (i == 0) submesh.Unknown2_ = 134282240;
                                 else submesh.Unknown2_ = 134239232;
                                 cs2.Components[0].LODs[0].Submeshes.Add(submesh);
