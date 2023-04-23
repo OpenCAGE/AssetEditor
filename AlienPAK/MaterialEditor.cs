@@ -10,12 +10,14 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Numerics;
+using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Controls;
 using System.Windows.Forms;
 using System.Windows.Media;
+using static CATHODE.Materials.Material;
 
 namespace AlienPAK
 {
@@ -50,12 +52,35 @@ namespace AlienPAK
             _controls.OnMaterialTextureIndexSelected += OnMaterialTextureIndexSelected;
             _controls.FloatMaterialPropertyChanged += MaterialPropertyChanged;
             _controls.Vec4MaterialPropertyChanged += MaterialPropertyChanged;
+            _controls.OnGlobalOptionChange += OnGlobalOptionChange;
+            _controls.OnTextureIndexChange += OnTextureIndexChange;
 
             PopulateUI(material);
         }
 
+        private void OnGlobalOptionChange(bool global)
+        {
+            Console.WriteLine("OnGlobalOptionChange");
+            List<string> textures = new List<string>();
+            Textures textureDB = global ? _texturesGlobal : _textures;
+            for (int i = 0; i < textureDB.Entries.Count; i++) textures.Add(textureDB.Entries[i].Name);
+            _controls.PopulateTextureDropdown(textures);
+            _controls.textureFile.SelectedIndex = 0;
+        }
+
+        private void OnTextureIndexChange(int index, bool global)
+        {
+            Console.WriteLine("OnTextureIndexChange");
+            ShadersPAK.MaterialTextureContext mdlMetaDiff = _selectedMaterialMeta.textures[_controls.materialTextureSelection.SelectedIndex];
+            mdlMetaDiff.TextureInfo.Source = global ? Texture.TextureSource.GLOBAL : Texture.TextureSource.LEVEL;
+            Textures texDB = (global ? _texturesGlobal : _textures);
+            mdlMetaDiff.TextureInfo.BinIndex = texDB.GetWriteIndex(texDB.Entries[index]);
+            materialList_SelectedIndexChanged(null, null);
+        }
+
         private void PopulateUI(Materials.Material material = null)
         {
+            Console.WriteLine("PopulateUI");
             _sortedMaterials.Clear();
             _sortedMaterials.AddRange(_materials.Entries);
             _sortedMaterials = _sortedMaterials.OrderBy(o => o.Name).ToList();
@@ -72,6 +97,7 @@ namespace AlienPAK
 
         private void MaterialPropertyChanged<T>(MaterialProperty property, T val)
         {
+            Console.WriteLine("MaterialPropertyChanged");
             if (_selectedMaterialMeta == null || materialList.SelectedIndex == -1 || _sortedMaterials[materialList.SelectedIndex] == null || _selectedMaterialShader == null) return;
             int offset = _sortedMaterials[materialList.SelectedIndex].ConstantBuffers[2].Offset;
             switch (property)
@@ -98,11 +124,13 @@ namespace AlienPAK
 
         private void OnMaterialTextureIndexSelected(int index)
         {
+            Console.WriteLine("OnMaterialTextureIndexSelected");
             ShowTextureForMaterial(_controls.materialTextureSelection.SelectedIndex);
         }
 
         private void materialList_SelectedIndexChanged(object sender, EventArgs e)
         {
+            Console.WriteLine("materialList_SelectedIndexChanged");
             _selectedMaterialMeta = null;
             _selectedMaterialShader = null;
             if (materialList.SelectedIndex == -1) return;
@@ -171,15 +199,17 @@ namespace AlienPAK
 
         private void ShowTextureForMaterial(int index)
         {
+            Console.WriteLine("ShowTextureForMaterial");
             _controls.materialTexturePreview.Source = null;
-            _controls.materialTextureName.Text = "";
+            _controls.PopulateTextureDropdown(new List<string>());
             if (index == -1) return;
             ShadersPAK.MaterialTextureContext mdlMetaDiff = _selectedMaterialMeta.textures[index];
             if (mdlMetaDiff == null || mdlMetaDiff.TextureInfo == null) return;
 
-            Textures tex = mdlMetaDiff.TextureInfo.Source == Materials.Material.Texture.TextureSource.GLOBAL ? _texturesGlobal : _textures;
-            Textures.TEX4 diff = tex.GetAtWriteIndex(mdlMetaDiff.TextureInfo.BinIndex);
-            _controls.materialTextureName.Text = diff == null ? "" : diff.Name;
+            _controls.textureUseGlobal.IsChecked = mdlMetaDiff.TextureInfo.Source == Texture.TextureSource.GLOBAL;
+            OnGlobalOptionChange(mdlMetaDiff.TextureInfo.Source == Texture.TextureSource.GLOBAL);
+            Textures.TEX4 diff = (mdlMetaDiff.TextureInfo.Source == Texture.TextureSource.GLOBAL ? _texturesGlobal : _textures).GetAtWriteIndex(mdlMetaDiff.TextureInfo.BinIndex);
+            _controls.textureFile.SelectedItem = diff == null ? "" : diff.Name;
             _controls.materialTexturePreview.Source = diff?.ToDDS()?.ToBitmap()?.ToImageSource();
         }
 

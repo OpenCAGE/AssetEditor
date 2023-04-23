@@ -23,12 +23,32 @@ namespace AlienPAK
     {
         public Action<int> OnMaterialTextureIndexSelected;
 
+        public Action<int, bool> OnTextureIndexChange;
+        public Action<bool> OnGlobalOptionChange;
+
         public Action<MaterialProperty, float> FloatMaterialPropertyChanged;
-        public Action<MaterialProperty, System.Numerics.Vector4> Vec4MaterialPropertyChanged;
+        public Action<MaterialProperty, Vector4> Vec4MaterialPropertyChanged;
 
         public MaterialEditorControlsWPF()
         {
             InitializeComponent();
+        }
+
+        private void textureUseGlobal_Checked(object sender, RoutedEventArgs e)
+        {
+            OnGlobalOptionChange?.Invoke(textureUseGlobal.IsChecked == true);
+        }
+
+        public void PopulateTextureDropdown(List<string> textures)
+        {
+            textureFile.Items.Clear();
+            for (int i = 0; i < textures.Count; i++)
+                textureFile.Items.Add(textures[i]);
+        }
+
+        private void textureFile_DropDownClosed(object sender, EventArgs e)
+        {
+            OnTextureIndexChange?.Invoke(textureFile.SelectedIndex, textureUseGlobal.IsChecked == true);
         }
 
         private void MaterialTextureSelected(object sender, EventArgs e)

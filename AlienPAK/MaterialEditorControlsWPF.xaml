@@ -13,7 +13,10 @@
             <GroupBox x:Name="materialPreviewGroup" Header="Selected Material Texture Preview" Margin="0 0 0 10">
                 <StackPanel>
                     <ComboBox x:Name="materialTextureSelection" DropDownClosed="MaterialTextureSelected" Margin="10 10 10 0"></ComboBox>
-                    <TextBlock x:Name="materialTextureName" Margin="10 10 10 0">text</TextBlock>
+                    <WrapPanel  Margin="10 10 10 0">
+                        <ComboBox x:Name="textureFile" DropDownClosed="textureFile_DropDownClosed" Width="363"></ComboBox>
+                        <CheckBox x:Name="textureUseGlobal" Checked="textureUseGlobal_Checked" Unchecked="textureUseGlobal_Checked" VerticalAlignment="Center">Global</CheckBox>
+                    </WrapPanel>
                     <Image x:Name="materialTexturePreview" Source="Images/axel-bg.jpg" Stretch="Uniform" Margin="10" MaxHeight="450" />
                 </StackPanel>
             </GroupBox>
