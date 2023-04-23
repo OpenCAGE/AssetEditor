@@ -58,24 +58,52 @@ namespace AlienPAK
             PopulateUI(material);
         }
 
+        //todo: this whole flow needs a bit of a refactor as i've changed quite a bit
         private void OnGlobalOptionChange(bool global)
         {
             Console.WriteLine("OnGlobalOptionChange");
+            UpdateTextureDropdown(global, !_doingSelection);
+        }
+
+        private void UpdateTextureDropdown(bool global, bool changeIndex = false)
+        {
+            Console.WriteLine("UpdateTextureDropdown");
             List<string> textures = new List<string>();
             Textures textureDB = global ? _texturesGlobal : _textures;
             for (int i = 0; i < textureDB.Entries.Count; i++) textures.Add(textureDB.Entries[i].Name);
+            textures.Add("NONE"); //temp holder for no texture
             _controls.PopulateTextureDropdown(textures);
+
+            if (!changeIndex) return;
+            Console.WriteLine(" --> UPDATING INDEX");
             _controls.textureFile.SelectedIndex = 0;
+            OnTextureIndexChange(0, global);
         }
 
         private void OnTextureIndexChange(int index, bool global)
         {
             Console.WriteLine("OnTextureIndexChange");
-            ShadersPAK.MaterialTextureContext mdlMetaDiff = _selectedMaterialMeta.textures[_controls.materialTextureSelection.SelectedIndex];
-            mdlMetaDiff.TextureInfo.Source = global ? Texture.TextureSource.GLOBAL : Texture.TextureSource.LEVEL;
+            _doingSelection = true;
             Textures texDB = (global ? _texturesGlobal : _textures);
-            mdlMetaDiff.TextureInfo.BinIndex = texDB.GetWriteIndex(texDB.Entries[index]);
-            materialList_SelectedIndexChanged(null, null);
+            ShadersPAK.MaterialTextureContext textureInfo = _selectedMaterialMeta.textures[_controls.materialTextureSelection.SelectedIndex];
+            if (textureInfo.TextureInfo == null)
+            {
+                Texture tex = new Texture();
+                textureInfo.TextureInfo = tex;
+                _sortedMaterials[materialList.SelectedIndex].TextureReferences[_controls.materialTextureSelection.SelectedIndex] = tex;
+            }
+            if (index >= texDB.Entries.Count)
+            {
+                textureInfo.TextureInfo = null;
+                _sortedMaterials[materialList.SelectedIndex].TextureReferences[_controls.materialTextureSelection.SelectedIndex] = null;
+            }
+            else
+            {
+                textureInfo.TextureInfo.BinIndex = texDB.GetWriteIndex(texDB.Entries[index]);
+                textureInfo.TextureInfo.Source = global ? Texture.TextureSource.GLOBAL : Texture.TextureSource.LEVEL;
+            }
+            ShowTextureForMaterial(_controls.materialTextureSelection.SelectedIndex);
+            _doingSelection = false;
         }
 
         private void PopulateUI(Materials.Material material = null)
@@ -128,12 +156,18 @@ namespace AlienPAK
             ShowTextureForMaterial(_controls.materialTextureSelection.SelectedIndex);
         }
 
+        bool _doingSelection = false; //temp hack for crap global implementation fix
         private void materialList_SelectedIndexChanged(object sender, EventArgs e)
         {
             Console.WriteLine("materialList_SelectedIndexChanged");
+            _doingSelection = true;
             _selectedMaterialMeta = null;
             _selectedMaterialShader = null;
-            if (materialList.SelectedIndex == -1) return;
+            if (materialList.SelectedIndex == -1)
+            {
+                _doingSelection = false;
+                return;
+            }
             _selectedMaterialMeta = _shaders.GetMaterialMetadataFromShader(_sortedMaterials[materialList.SelectedIndex], _shadersIDX);
 
             int shaderIndex = _shadersIDX.Datas[_sortedMaterials[materialList.SelectedIndex].UberShaderIndex].Index;
@@ -154,6 +188,7 @@ namespace AlienPAK
             _controls.shaderName.Text = _selectedMaterialShader.Index + " (" + _selectedMaterialMeta.shaderCategory.ToString() + ")";
 
             UpdateShaderCSTInfo(_selectedMaterialMeta.cstIndexes, _selectedMaterialShader, _sortedMaterials[materialList.SelectedIndex]);
+            _doingSelection = false;
         }
 
         private void UpdateShaderCSTInfo(ShadersPAK.MaterialPropertyIndex cstIndexes, ShadersPAK.ShaderEntry shader, Materials.Material InMaterial)
@@ -201,15 +236,23 @@ namespace AlienPAK
         {
             Console.WriteLine("ShowTextureForMaterial");
             _controls.materialTexturePreview.Source = null;
-            _controls.PopulateTextureDropdown(new List<string>());
             if (index == -1) return;
             ShadersPAK.MaterialTextureContext mdlMetaDiff = _selectedMaterialMeta.textures[index];
-            if (mdlMetaDiff == null || mdlMetaDiff.TextureInfo == null) return;
+            if (mdlMetaDiff == null || mdlMetaDiff.TextureInfo == null)
+            {
+                _controls.textureFile.SelectedItem = "NONE";
+                _controls.materialTexturePreview.Source = null;
+                return;
+            }
 
-            _controls.textureUseGlobal.IsChecked = mdlMetaDiff.TextureInfo.Source == Texture.TextureSource.GLOBAL;
-            OnGlobalOptionChange(mdlMetaDiff.TextureInfo.Source == Texture.TextureSource.GLOBAL);
+            bool isGlobal = mdlMetaDiff.TextureInfo.Source == Texture.TextureSource.GLOBAL;
+            if (isGlobal != _controls.textureUseGlobal.IsChecked || _controls.textureFile.Items.Count == 0)
+            {
+                _controls.textureUseGlobal.IsChecked = isGlobal;
+                UpdateTextureDropdown(isGlobal);
+            }
             Textures.TEX4 diff = (mdlMetaDiff.TextureInfo.Source == Texture.TextureSource.GLOBAL ? _texturesGlobal : _textures).GetAtWriteIndex(mdlMetaDiff.TextureInfo.BinIndex);
-            _controls.textureFile.SelectedItem = diff == null ? "" : diff.Name;
+            _controls.textureFile.SelectedItem = diff == null ? "NONE" : diff.Name;
             _controls.materialTexturePreview.Source = diff?.ToDDS()?.ToBitmap()?.ToImageSource();
         }
 
@@ -238,7 +281,7 @@ namespace AlienPAK
         {
             Materials.Material newMaterial = _sortedMaterials[materialList.SelectedIndex].Copy();
             newMaterial.Name += " Clone";
-            for (int i = 0; i < newMaterial.ConstantBuffers.Count; i++)
+            for (int i = 0; i < newMaterial.ConstantBuffers.Length; i++)
             {
                 if (newMaterial.ConstantBuffers == null) continue;
                 byte[] cstData = null;

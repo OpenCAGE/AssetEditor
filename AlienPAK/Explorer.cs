@@ -686,8 +686,9 @@ namespace AlienPAK
             List<Textures.TEX4> materialTextures = new List<Textures.TEX4>();
             for (int i = 0; i < materials.Entries.Count; i++)
             {
-                for (int x = 0; x < materials.Entries[i].TextureReferences.Count; x++)
+                for (int x = 0; x < materials.Entries[i].TextureReferences.Length; x++)
                 {
+                    if (materials.Entries[i].TextureReferences[x] == null) continue;
                     switch (materials.Entries[i].TextureReferences[x].Source)
                     {
                         case Materials.Material.Texture.TextureSource.LEVEL:
@@ -704,8 +705,9 @@ namespace AlienPAK
             int y = 0;
             for (int i = 0; i < materials.Entries.Count; i++)
             {
-                for (int x = 0; x < materials.Entries[i].TextureReferences.Count; x++)
+                for (int x = 0; x < materials.Entries[i].TextureReferences.Length; x++)
                 {
+                    if (materials.Entries[i].TextureReferences[x] == null) continue;
                     switch (materials.Entries[i].TextureReferences[x].Source)
                     {
                         case Materials.Material.Texture.TextureSource.LEVEL:
