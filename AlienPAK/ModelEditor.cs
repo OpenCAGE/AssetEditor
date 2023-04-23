@@ -162,7 +162,7 @@ namespace AlienPAK
             {
                 using (AssimpContext importer = new AssimpContext())
                 {
-                    Scene model = importer.ImportFile(filePicker.FileName, PostProcessSteps.Triangulate | PostProcessSteps.FindDegenerates | PostProcessSteps.LimitBoneWeights | PostProcessSteps.GenerateBoundingBoxes); //PostProcessSteps.PreTransformVertices
+                    Scene model = importer.ImportFile(filePicker.FileName, PostProcessSteps.Triangulate | PostProcessSteps.FindDegenerates | PostProcessSteps.LimitBoneWeights | PostProcessSteps.GenerateBoundingBoxes | PostProcessSteps.FlipUVs | PostProcessSteps.FlipWindingOrder | PostProcessSteps.MakeLeftHanded); //PostProcessSteps.PreTransformVertices
                     submesh = model.Meshes[0].ToSubmesh();
                 }
             }
@@ -226,7 +226,7 @@ namespace AlienPAK
             Models.CS2.Component.LOD.Submesh submesh = null;
             using (AssimpContext importer = new AssimpContext())
             {
-                Scene model = importer.ImportFile(filePicker.FileName, PostProcessSteps.Triangulate | PostProcessSteps.FindDegenerates | PostProcessSteps.LimitBoneWeights | PostProcessSteps.GenerateBoundingBoxes); //PostProcessSteps.PreTransformVertices
+                Scene model = importer.ImportFile(filePicker.FileName, PostProcessSteps.Triangulate | PostProcessSteps.FindDegenerates | PostProcessSteps.LimitBoneWeights | PostProcessSteps.GenerateBoundingBoxes | PostProcessSteps.FlipUVs | PostProcessSteps.FlipWindingOrder | PostProcessSteps.MakeLeftHanded); //PostProcessSteps.PreTransformVertices
                 submesh = model.Meshes[0].ToSubmesh();
             }
             if (submesh == null)

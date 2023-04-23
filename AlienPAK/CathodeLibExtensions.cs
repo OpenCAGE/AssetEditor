@@ -495,14 +495,13 @@ namespace AlienPAK
                                         {
                                             case VBFE_InputSlot.UV:
                                                 Vector2 v = new Vector2(mesh.TextureCoordinateChannels[format.VariantIndex][x].X, mesh.TextureCoordinateChannels[format.VariantIndex][x].Y);
+                                                v *= 2048.0f;
 
-                                                if (v.X > 1 || v.Y > 1)
+                                                if (v.X > Int16.MaxValue || v.Y > Int16.MaxValue)
                                                 {
-                                                    //TODO: uv scaling?
-                                                    //throw new Exception("Unexpected UV");
+                                                    string sdfdf = "";
                                                 }
 
-                                                v *= (float)Int16.MaxValue;
                                                 reader.Write((Int16)v.X);
                                                 reader.Write((Int16)v.Y);
                                                 break;

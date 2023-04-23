@@ -302,7 +302,10 @@ namespace AlienPAK
                         cs2.Components[0].LODs.Add(new Models.CS2.Component.LOD(newFileName));
                         using (AssimpContext importer = new AssimpContext())
                         {
-                            Scene model = importer.ImportFile(FilePicker.FileName, PostProcessSteps.Triangulate | PostProcessSteps.FindDegenerates | PostProcessSteps.LimitBoneWeights | PostProcessSteps.GenerateBoundingBoxes);
+                            //TODO: utilise aiProcess_SplitLargeMeshes to avoid passing our vert limit
+                            Scene model = importer.ImportFile(FilePicker.FileName,
+                                PostProcessSteps.Triangulate | PostProcessSteps.FindDegenerates | PostProcessSteps.LimitBoneWeights | 
+                                PostProcessSteps.GenerateBoundingBoxes | PostProcessSteps.FlipUVs | PostProcessSteps.FlipWindingOrder | PostProcessSteps.MakeLeftHanded);
                             ushort biggestSF = 0;
                             for (int i = 0; i < model.Meshes.Count; i++)
                             {
@@ -312,13 +315,19 @@ namespace AlienPAK
                             for (int i = 0; i < model.Meshes.Count; i++)
                             {
                                 Models.CS2.Component.LOD.Submesh submesh = model.Meshes[i].ToSubmesh(biggestSF);
+                                if (submesh == null)
+                                {
+                                    MessageBox.Show("Failed to generate CS2 submesh from imported model submesh " + i + ".\nPlease check your submesh polycount - each may not exceed " + Int16.MaxValue + " verts.", "Import failed", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                    return;
+                                }
                                 if (i == 0) submesh.Unknown2_ = 134282240;
                                 else submesh.Unknown2_ = 134239232;
                                 cs2.Components[0].LODs[0].Submeshes.Add(submesh);
                             }
                             for (int i = 0; i < model.Meshes.Count; i++)
                             {
-                                cs2.Components[0].LODs[0].Submeshes[i].ScaleFactor = (ushort)(cs2.Components[0].LODs[0].Submeshes[i].ScaleFactor / 1.5f);
+                                cs2.Components[0].LODs[0].Submeshes[i].ScaleFactor = 100;
+                                cs2.Components[0].LODs[0].Submeshes[i].MaterialLibraryIndex = materials.GetWriteIndex(materials.Entries.FirstOrDefault(o => o.Name == "FALLBACK_MATERIAL " + i));
                             }
                         }
                         modelsPAK.Entries.Add(cs2);
