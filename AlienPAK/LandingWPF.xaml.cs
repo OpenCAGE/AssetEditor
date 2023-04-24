@@ -1,4 +1,6 @@
-﻿using System;
+﻿using OpenCAGE;
+using System;
+using System.Configuration;
 using System.Diagnostics;
 using System.Windows;
 using System.Windows.Controls;
@@ -54,7 +56,8 @@ namespace AlienPAK
         private void LaunchEditor(PAKType type)
         {
             //TODO: it'd be great to *not* need this warning in future, and handle file locks & editor reloading gracefully. Maybe even force close A:I.
-            MessageBox.Show("Please ensure that Alien: Isolation is closed while making edits to assets.\nYou will also need to reload your script editor after any changes.", "Information", MessageBoxButton.OK, MessageBoxImage.Information);
+            if (!SettingsManager.GetBool("CONFIG_HideAssetWarning"))
+                MessageBox.Show("Ensure Alien: Isolation is closed while making edits to assets.\nYou'll also need to reload the script editor after any changes.\n\nYou can disable this warning in the OpenCAGE settings.", "Information", MessageBoxButton.OK, MessageBoxImage.Information);
 
             Explorer interfaceTool = new Explorer(type);
             interfaceTool.FormClosed += InterfaceTool_FormClosed;
