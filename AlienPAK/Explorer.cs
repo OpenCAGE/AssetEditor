@@ -326,8 +326,6 @@ namespace AlienPAK
         /* Export all files in the PAK */
         private void ExportAllFiles()
         {
-            return;
-
             //TODO: perhaps give a "convert to usable formats" checkbox on this export which converts to OBJ and PNG or something?
             Cursor.Current = Cursors.WaitCursor;
             FolderBrowserDialog FolderToExportTo = new FolderBrowserDialog();
@@ -421,7 +419,7 @@ namespace AlienPAK
         private void ModelEditor_FormClosed(object sender, FormClosedEventArgs e)
         {
             SaveModelsAndUpdateREDS();
-            Thread.Sleep(1500); //todo: temp hack 
+            //Thread.Sleep(1500); //todo: temp hack 
             SaveTexturesAndUpdateMaterials(textures, materials);
             UpdateSelectedFilePreview();
             this.BringToFront();
