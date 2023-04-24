@@ -118,46 +118,10 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <assembly alias="System.Windows.Forms" name="System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" />
-  <data name="ALIEN_DOORWAY_min" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\sharedassets\images\alien_doorway-min.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
-  <data name="ANDROID_DOORWAY_min" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\sharedassets\images\android_doorway-min.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
-  <data name="CONNOR_min" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\sharedassets\images\connor-min.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
   <data name="DirectXTexNet" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\DirectXTexNet.dll;System.Byte[], mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="DirectXTexNetImpl_64" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\resources\directxtexnetimpl_64.dll;System.Byte[], mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
-  <data name="Isolation_Isolation" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\sharedassets\fonts\isolation_isolation.ttf;System.Byte[], mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
-  <data name="JixellationBold_Jixellation" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\sharedassets\fonts\jixellationbold_jixellation.ttf;System.Byte[], mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
-  <data name="KUHLMAN_DEATH_min" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\sharedassets\images\kuhlman_death-min.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
-  <data name="landing_min" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\sharedassets\images\landing-min.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
-  <data name="loading_content" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\sharedassets\images\loading_content.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
-  <data name="NostromoBoldCond_Nostromo_Cond" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\sharedassets\fonts\nostromoboldcond_nostromo cond.ttf;System.Byte[], mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
-  <data name="NPC_DOOR_min" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\sharedassets\images\npc_door-min.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
-  <data name="SEEGSON_MAGAZINEMAN_min" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\sharedassets\images\seegson_magazineman-min.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
-  <data name="TAYLOR_min" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\sharedassets\images\taylor-min.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
 </root>

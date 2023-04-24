@@ -1,0 +1,92 @@
+﻿<UserControl x:Class="AlienPAK.MaterialEditorControlsWPF"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:HelixToolkit="clr-namespace:HelixToolkit.Wpf;assembly=HelixToolkit.Wpf"
+             xmlns:local="clr-namespace:AlienPAK"
+             mc:Ignorable="d" 
+             d:DesignHeight="676" d:DesignWidth="450">
+    <Grid Height="676" Width="450">
+
+        <StackPanel>
+            <GroupBox x:Name="materialPreviewGroup" Header="Selected Material Texture Preview" Margin="0 0 0 10">
+                <StackPanel>
+                    <ComboBox x:Name="materialTextureSelection" DropDownClosed="MaterialTextureSelected" Margin="10 10 10 0"></ComboBox>
+                    <WrapPanel  Margin="10 10 10 0">
+                        <ComboBox x:Name="textureFile" DropDownClosed="textureFile_DropDownClosed" Width="363"></ComboBox>
+                        <CheckBox x:Name="textureUseGlobal" Checked="textureUseGlobal_Checked" Unchecked="textureUseGlobal_Checked" VerticalAlignment="Center">Global</CheckBox>
+                    </WrapPanel>
+                    <Image x:Name="materialTexturePreview" Source="Images/axel-bg.jpg" Stretch="Uniform" Margin="10" MaxHeight="450" />
+                </StackPanel>
+            </GroupBox>
+
+            <GroupBox x:Name="fileInfoGroup" Header="Selected Material Info" Margin="0 0 0 10">
+                <StackPanel>
+                    <WrapPanel Margin="10">
+                        <StackPanel>
+                            <WrapPanel>
+                                <TextBlock FontWeight="Bold" Margin="0 0 5 0">Name:</TextBlock>
+                            </WrapPanel>
+                            <WrapPanel>
+                                <TextBlock FontWeight="Bold" Margin="0 0 5 0">Shader:</TextBlock>
+                            </WrapPanel>
+                        </StackPanel>
+                        <StackPanel>
+                            <WrapPanel>
+                                <TextBox x:Name="fileNameText" Width="350" TextChanged="fileNameText_TextChanged">text</TextBox>
+                            </WrapPanel>
+                            <WrapPanel>
+                                <TextBlock x:Name="shaderName">text</TextBlock>
+                            </WrapPanel>
+                        </StackPanel>
+                    </WrapPanel>
+                    
+                    <!-- TODO: we could implement editing for these! -->
+                    <WrapPanel Margin="10 0 10 10">
+                        <StackPanel Width="209">
+                            <WrapPanel>
+                                <StackPanel>
+                                    <WrapPanel Height="18" VerticalAlignment="Center">
+                                        <TextBlock x:Name="matColourLabel" FontWeight="Bold" Margin="0 0 5 0">Tint:</TextBlock>
+                                    </WrapPanel>
+                                    <WrapPanel Height="18" VerticalAlignment="Center">
+                                        <TextBlock x:Name="matNormalScaleLabel" FontWeight="Bold" Margin="0 0 5 0">Normal Scale:</TextBlock>
+                                    </WrapPanel>
+                                </StackPanel>
+                                <StackPanel>
+                                    <WrapPanel Height="18" VerticalAlignment="Center">
+                                        <Button x:Name="matColour" Background="Red" Width="100" Height="18" Click="matColour_Click"></Button>
+                                    </WrapPanel>
+                                    <WrapPanel Height="18" VerticalAlignment="Center">
+                                        <TextBox x:Name="matNormalScale" Width="50" TextChanged="matNormalScale_TextChanged">1</TextBox>
+                                    </WrapPanel>
+                                </StackPanel>
+                            </WrapPanel>
+                        </StackPanel>
+                        <StackPanel Width="209">
+                            <WrapPanel>
+                                <StackPanel>
+                                    <WrapPanel Height="18" VerticalAlignment="Center">
+                                        <TextBlock x:Name="matDiffuseScaleLabel" FontWeight="Bold" Margin="0 0 5 0">Diffuse Scale:</TextBlock>
+                                    </WrapPanel>
+                                    <WrapPanel Height="18" VerticalAlignment="Center">
+                                        <TextBlock x:Name="matDiffuseOffsetLabel" FontWeight="Bold" Margin="0 0 5 0">Diffuse Offset:</TextBlock>
+                                    </WrapPanel>
+                                </StackPanel>
+                                <StackPanel>
+                                    <WrapPanel Height="18" VerticalAlignment="Center">
+                                        <TextBox x:Name="matDiffuseScale" Width="50" TextChanged="matDiffuseScale_TextChanged">1</TextBox>
+                                    </WrapPanel>
+                                    <WrapPanel Height="18" VerticalAlignment="Center">
+                                        <TextBox x:Name="matDiffuseOffset" Width="50" TextChanged="matDiffuseOffset_TextChanged">1</TextBox>
+                                    </WrapPanel>
+                                </StackPanel>
+                            </WrapPanel>
+                        </StackPanel>
+                    </WrapPanel>
+                </StackPanel>
+            </GroupBox>
+        </StackPanel>
+    </Grid>
+</UserControl>

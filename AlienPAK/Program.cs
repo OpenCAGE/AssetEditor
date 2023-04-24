@@ -1,4 +1,5 @@
-﻿using System;
+using Assimp;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -11,7 +12,6 @@ namespace AlienPAK
     {
         public static string pathToAI = "";
     }
-    public enum AlienContentType { TEXTURE, MODEL, UI, SCRIPT, ANIMATION, NONE_SPECIFIED };
 
     static class Program
     {
@@ -21,6 +21,13 @@ namespace AlienPAK
         [STAThread]
         static void Main(string[] args)
         {
+#if DEBUG
+            LogStream logstream = new LogStream(delegate (String msg, String userData) {
+                Console.WriteLine(msg);
+            });
+            logstream.Attach();
+#endif
+
             //Need DLLs in directory for image previews to work :(
             if (!File.Exists(AppDomain.CurrentDomain.BaseDirectory + "DirectXTexNet.dll")) File.WriteAllBytes(AppDomain.CurrentDomain.BaseDirectory + "DirectXTexNet.dll", Properties.Resources.DirectXTexNet);
             Directory.CreateDirectory(AppDomain.CurrentDomain.BaseDirectory + "x64");
@@ -34,16 +41,11 @@ namespace AlienPAK
             //Verify location
             if (args.Length != 0 && args[0] == "-opencage" && !File.Exists(SharedData.pathToAI + "/AI.exe")) throw new Exception("This tool was launched incorrectly, or was not placed within the Alien: Isolation directory.");
 
-            //Add font resources for use
-            FontManager.AddFont(Properties.Resources.Isolation_Isolation);
-            FontManager.AddFont(Properties.Resources.JixellationBold_Jixellation);
-            FontManager.AddFont(Properties.Resources.NostromoBoldCond_Nostromo_Cond);
-
             //Launch application
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(true);
             if (args.Length != 0 && args[0] == "-opencage") Application.Run(new Landing());
-            else Application.Run(new Explorer(args, AlienContentType.NONE_SPECIFIED));
+            else Application.Run(new Explorer());
         }
     }
 }
