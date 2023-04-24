@@ -10,6 +10,7 @@ namespace AlienPAK
     /// </summary>
     public partial class LandingWPF : UserControl
     {
+        public Action DoHide;
         public Action DoFocus;
 
         public LandingWPF()
@@ -19,7 +20,6 @@ namespace AlienPAK
         public void SetVersionInfo(string version)
         {
             VersionText.Content = "Version " + version;
-            LaunchEditor(PAKType.MODELS);
         }
 
         private void OpenTextures(object sender, RoutedEventArgs e)
@@ -53,9 +53,13 @@ namespace AlienPAK
 
         private void LaunchEditor(PAKType type)
         {
+            //TODO: it'd be great to *not* need this warning in future, and handle file locks & editor reloading gracefully. Maybe even force close A:I.
+            MessageBox.Show("Please ensure that Alien: Isolation is closed while making edits to assets.\nYou will also need to reload your script editor after any changes.", "Information", MessageBoxButton.OK, MessageBoxImage.Information);
+
             Explorer interfaceTool = new Explorer(type);
             interfaceTool.FormClosed += InterfaceTool_FormClosed;
             interfaceTool.Show();
+            DoHide?.Invoke();
         }
         private void InterfaceTool_FormClosed(object sender, System.Windows.Forms.FormClosedEventArgs e)
         {

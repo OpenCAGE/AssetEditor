@@ -121,7 +121,7 @@ namespace AlienPAK
         }
 
         /* Toggle available buttons given the functionality of the current PAK */
-        public void ShowFunctionButtons(PAKFunction function, bool isModelPAK) 
+        public void ShowFunctionButtons(PAKFunction function, bool isModelPAK, bool hasSelectedFile) 
         {
             imagePreviewGroup.Visibility = Visibility.Collapsed;
             modelPreviewGroup.Visibility = Visibility.Collapsed;
@@ -130,18 +130,18 @@ namespace AlienPAK
             //TODO: this is a temp hack to show the model button before i implement a nicer method when textures have a window too
             replaceBtn.Content = isModelPAK ? "Modify Selected" : "Replace Selected";
 
-            exportBtn.Visibility = FlagToVisibility(function, PAKFunction.CAN_EXPORT_FILES);
-            replaceBtn.Visibility = FlagToVisibility(function, PAKFunction.CAN_REPLACE_FILES);
-            deleteBtn.Visibility = FlagToVisibility(function, PAKFunction.CAN_DELETE_FILES);
-            fileUtiltiesGroup.Visibility = FlagToVisibility(function, PAKFunction.CAN_EXPORT_FILES | PAKFunction.CAN_REPLACE_FILES | PAKFunction.CAN_DELETE_FILES);
+            exportBtn.Visibility = FlagToVisibility(function, PAKFunction.CAN_EXPORT_FILES, hasSelectedFile);
+            replaceBtn.Visibility = FlagToVisibility(function, PAKFunction.CAN_REPLACE_FILES, hasSelectedFile);
+            deleteBtn.Visibility = FlagToVisibility(function, PAKFunction.CAN_DELETE_FILES, hasSelectedFile);
+            fileUtiltiesGroup.Visibility = FlagToVisibility(function, PAKFunction.CAN_EXPORT_FILES | PAKFunction.CAN_REPLACE_FILES | PAKFunction.CAN_DELETE_FILES, hasSelectedFile);
 
             importBtn.Visibility = FlagToVisibility(function, PAKFunction.CAN_IMPORT_FILES);
-            exportAllBtn.Visibility = FlagToVisibility(function, PAKFunction.CAN_EXPORT_FILES);
+            exportAllBtn.Visibility = FlagToVisibility(function, PAKFunction.CAN_EXPORT_ALL);
             archiveUtilitiesGroup.Visibility = FlagToVisibility(function, PAKFunction.CAN_IMPORT_FILES | PAKFunction.CAN_EXPORT_FILES);
         }
-        private Visibility FlagToVisibility(PAKFunction function, PAKFunction flag)
+        private Visibility FlagToVisibility(PAKFunction function, PAKFunction flag, bool? hasSelectedFile = null)
         {
-            return function.HasFlag(flag) ? Visibility.Visible : Visibility.Collapsed;
+            return function.HasFlag(flag) && ((hasSelectedFile != null && hasSelectedFile == true) || hasSelectedFile == null) ? Visibility.Visible : Visibility.Collapsed;
         }
 
         /* Button event triggers */

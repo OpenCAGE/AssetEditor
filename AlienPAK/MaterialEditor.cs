@@ -63,6 +63,7 @@ namespace AlienPAK
         {
             if (materialList.SelectedIndex == -1) return;
             _sortedMaterials[materialList.SelectedIndex].Name = name;
+            materialList.Items[materialList.SelectedIndex] = name;
         }
 
         //todo: this whole flow needs a bit of a refactor as i've changed quite a bit

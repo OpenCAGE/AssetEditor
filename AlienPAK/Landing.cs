@@ -17,10 +17,17 @@ namespace AlienPAK
             LandingWPF wpf = (LandingWPF)elementHost1.Child;
             wpf.SetVersionInfo(ProductVersion);
             wpf.DoFocus += DoFocus;
+            wpf.DoHide += DoHide;
+        }
+
+        private void DoHide()
+        {
+            this.Hide();
         }
 
         private void DoFocus()
         {
+            this.Show();
             this.BringToFront();
             this.Focus();
         }

@@ -31,48 +31,48 @@
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MaterialEditor));
             this.materialList = new System.Windows.Forms.ListBox();
             this.selectMaterial = new System.Windows.Forms.Button();
+            this.duplicateMaterial = new System.Windows.Forms.Button();
             this.elementHost1 = new System.Windows.Forms.Integration.ElementHost();
             this.materialEditorControlsWPF1 = new AlienPAK.MaterialEditorControlsWPF();
-            this.duplicateMaterial = new System.Windows.Forms.Button();
             this.SuspendLayout();
             // 
             // materialList
             // 
             this.materialList.FormattingEnabled = true;
-            this.materialList.Location = new System.Drawing.Point(1, 0);
+            this.materialList.Location = new System.Drawing.Point(1, 6);
             this.materialList.Name = "materialList";
-            this.materialList.Size = new System.Drawing.Size(384, 680);
+            this.materialList.Size = new System.Drawing.Size(384, 641);
             this.materialList.TabIndex = 21;
             this.materialList.SelectedIndexChanged += new System.EventHandler(this.materialList_SelectedIndexChanged);
             // 
             // selectMaterial
             // 
-            this.selectMaterial.Location = new System.Drawing.Point(714, 638);
+            this.selectMaterial.Location = new System.Drawing.Point(693, 639);
             this.selectMaterial.Name = "selectMaterial";
-            this.selectMaterial.Size = new System.Drawing.Size(119, 31);
+            this.selectMaterial.Size = new System.Drawing.Size(140, 30);
             this.selectMaterial.TabIndex = 22;
-            this.selectMaterial.Text = "Select Material";
+            this.selectMaterial.Text = "Use This Material";
             this.selectMaterial.UseVisualStyleBackColor = true;
             this.selectMaterial.Click += new System.EventHandler(this.selectMaterial_Click);
             // 
+            // duplicateMaterial
+            // 
+            this.duplicateMaterial.Location = new System.Drawing.Point(1, 652);
+            this.duplicateMaterial.Name = "duplicateMaterial";
+            this.duplicateMaterial.Size = new System.Drawing.Size(384, 24);
+            this.duplicateMaterial.TabIndex = 23;
+            this.duplicateMaterial.Text = "Duplicate Selected  Material";
+            this.duplicateMaterial.UseVisualStyleBackColor = true;
+            this.duplicateMaterial.Click += new System.EventHandler(this.duplicateMaterial_Click);
+            // 
             // elementHost1
             // 
-            this.elementHost1.Location = new System.Drawing.Point(391, 0);
+            this.elementHost1.Location = new System.Drawing.Point(391, 2);
             this.elementHost1.Name = "elementHost1";
             this.elementHost1.Size = new System.Drawing.Size(450, 676);
             this.elementHost1.TabIndex = 20;
             this.elementHost1.Text = "elementHost1";
             this.elementHost1.Child = this.materialEditorControlsWPF1;
-            // 
-            // duplicateMaterial
-            // 
-            this.duplicateMaterial.Location = new System.Drawing.Point(589, 638);
-            this.duplicateMaterial.Name = "duplicateMaterial";
-            this.duplicateMaterial.Size = new System.Drawing.Size(119, 31);
-            this.duplicateMaterial.TabIndex = 23;
-            this.duplicateMaterial.Text = "Duplicate Material";
-            this.duplicateMaterial.UseVisualStyleBackColor = true;
-            this.duplicateMaterial.Click += new System.EventHandler(this.duplicateMaterial_Click);
             // 
             // MaterialEditor
             // 

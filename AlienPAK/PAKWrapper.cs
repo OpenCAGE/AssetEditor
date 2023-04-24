@@ -190,12 +190,14 @@ namespace AlienPAK
             {
                 switch (_type)
                 {
-                    case PAKType.SHADERS:
-                    case PAKType.COMMANDS:
-                    case PAKType.NONE:
-                        return PAKFunction.NONE;
-                    default:
+                    case PAKType.MODELS:
                         return PAKFunction.CAN_EXPORT_FILES | PAKFunction.CAN_IMPORT_FILES | PAKFunction.CAN_REPLACE_FILES | PAKFunction.CAN_DELETE_FILES;
+                    case PAKType.ANIMATIONS:
+                    case PAKType.UI:
+                    case PAKType.TEXTURES:
+                        return PAKFunction.CAN_EXPORT_FILES | PAKFunction.CAN_IMPORT_FILES | PAKFunction.CAN_REPLACE_FILES | PAKFunction.CAN_DELETE_FILES | PAKFunction.CAN_EXPORT_ALL;
+                    default:
+                        return PAKFunction.NONE;
                 }
             }
         }
@@ -222,5 +224,6 @@ namespace AlienPAK
         CAN_IMPORT_FILES = 2,
         CAN_REPLACE_FILES = 4,
         CAN_DELETE_FILES = 8,
+        CAN_EXPORT_ALL = 16,
     }
 }

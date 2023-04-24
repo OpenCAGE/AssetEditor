@@ -83,85 +83,8 @@ namespace AlienPAK
             preview.OnReplaceRequested += ReplaceSelectedFile;
             preview.OnDeleteRequested += DeleteSelectedFile;
             preview.OnExportAllRequested += ExportAllFiles;
-            preview.ShowFunctionButtons(PAKFunction.NONE, LaunchMode == PAKType.MODELS);
+            preview.ShowFunctionButtons(PAKFunction.NONE, LaunchMode == PAKType.MODELS, false);
             preview.ShowLevelSelect(LaunchMode != PAKType.NONE && LaunchMode != PAKType.ANIMATIONS && LaunchMode != PAKType.UI, LaunchMode);
-            return;
-
-            LoadModePAK("SOLACE");
-            Models.CS2 cs21 = ((Models)pak.File).Entries.FirstOrDefault(o => o.Name == "AYZ\\_PROPS_\\PHYSICS\\CARDBOARD_BOX_TEMPLATE\\CARDBOARD_BOX_TEMPLATE_DISPLAY.cs2");
-            int index = ((Models)pak.File).GetWriteIndex(cs21.Components[0].LODs[0].Submeshes[0]);
-            int index1 = ((Models)pak.File).GetWriteIndex(cs21.Components[0].LODs[1].Submeshes[0]);
-
-            Movers mvr = new Movers("G:\\SteamLibrary\\steamapps\\common\\Alien Isolation\\DATA\\ENV\\PRODUCTION\\SOLACE\\WORLD\\MODELS.MVR");
-            Console.WriteLine(mvr.Entries.Count);
-            int highest = 0;
-            RenderableElements reds = new RenderableElements(extraPath);
-            for (int i = 0; i < reds.Entries.Count; i++)
-            {
-                RenderableElements.Element element = reds.Entries[i];
-                if (element.LODIndex > highest) highest = element.LODIndex;
-                //Console.WriteLine(element.ModelLODIndex + " -> " + element.ModelLODPrimitiveCount);
-                //continue;
-                if (reds.Entries[i].ModelIndex == index)
-                {
-                    element.LODIndex = i;
-                    //element.ModelLODPrimitiveCount = 0;
-                    Console.WriteLine(element.LODIndex + " -> " + element.LODCount);
-                    //Models.CS2 lod22 = ((Models)pak.File).FindModelForSubmesh(((Models)pak.File).GetAtWriteIndex(element.ModelLODIndex));
-                    string sdfgdf = "";
-                }
-                Models.CS2.Component.LOD lod = ((Models)pak.File).FindModelLODForSubmesh(((Models)pak.File).GetAtWriteIndex(element.ModelIndex));
-                if (reds.Entries[i].LODIndex != -1 && (lod == null || lod.Submeshes.Count != reds.Entries[i].LODCount))
-                {
-                    string sdf = "";
-                }
-            }
-            //Console.WriteLine(((Models)pak.File).Entries.Count);
-            reds.Save();
-            return;
-
-            string lvlPath = "G:\\SteamLibrary\\steamapps\\common\\Alien Isolation\\DATA\\ENV\\PRODUCTION\\SOLACE";
-            File.Copy(lvlPath + "\\RENDERABLE\\orig\\LEVEL_MODELS.PAK", lvlPath + "\\RENDERABLE\\LEVEL_MODELS.PAK", true);
-            File.Copy(lvlPath + "\\RENDERABLE\\orig\\MODELS_LEVEL.BIN", lvlPath + "\\RENDERABLE\\MODELS_LEVEL.BIN", true);
-            File.Copy(lvlPath + "\\RENDERABLE\\orig\\REDS.BIN", lvlPath + "\\RENDERABLE\\REDS.BIN", true);
-            File.Copy(lvlPath + "\\RENDERABLE\\orig\\REDS.BIN", lvlPath + "\\WORLD\\REDS.BIN", true);
-            Level lvl = new Level(lvlPath);
-
-            AssimpContext importer = new AssimpContext();
-            //"C:\\Users\\mattf\\Documents\\CUBE.fbx"
-            //"C:\\Users\\mattf\\Downloads\\40-low-poly-cars-free_blender\\Low Poly Cars (Free)_blender\\LowPolyCars.obj"
-            //"C:\\Users\\mattf\\Downloads\\de_dust2-cs-map\\source\\de_dust2\\de_dust2.obj"
-            //"G:\\SteamLibrary\\steamapps\\common\\Alien Isolation\\DATA\\ENV\\PRODUCTION\\BSP_TORRENS\\WORLD\\ACID_DECAL_DISPLAY.fbx"
-            //"C:\\Users\\mattf\\Downloads\\low-poly-dog\\source\\0eb7870dd86a4cfca6bbbce1d8afd42a.fbx.fbx"
-            Scene model = importer.ImportFile("C:\\Users\\mattf\\Downloads\\low-poly-dog\\source\\0eb7870dd86a4cfca6bbbce1d8afd42a.fbx.fbx", PostProcessSteps.Triangulate | PostProcessSteps.FindDegenerates);
-            importer.Dispose();
-            Models.CS2.Component.LOD.Submesh car = model.Meshes[0].ToSubmesh();
-
-            //"AYZ\\SCIENCE\\FEATURE_MED\\AMBULANCEDOCK_AIRLOCK\\AMBULANCEDOCK_AIRLOCK_DISPLAY.cs2"
-            //"AYZ\\_PROPS_\\PHYSICS\\CARDBOARD_BOX_TEMPLATE\\CARDBOARD_BOX_TEMPLATE_DISPLAY.cs2"
-            Models.CS2 cs2 = lvl.Models.Entries.FirstOrDefault(o => o.Name == "..\\CHARACTERS\\MARLOW_GP\\model0.cs2");
-            cs2.Components[0].LODs[0].Submeshes[0].content = car.content;
-            cs2.Components[0].LODs[0].Submeshes[0].IndexCount = car.IndexCount;
-            cs2.Components[0].LODs[0].Submeshes[0].VertexCount = car.VertexCount;
-            cs2.Components[0].LODs[0].Submeshes[0].VertexFormat = car.VertexFormat;
-            cs2.Components[0].LODs[0].Submeshes[0].VertexFormatLowDetail = car.VertexFormatLowDetail;
-            cs2.Components[0].LODs[0].Submeshes[0].ScaleFactor = 1;
-            cs2.Components[0].LODs[0].Submeshes[0].MaterialLibraryIndex = 244/*lvl.Materials.Entries.IndexOf(lvl.Materials.Entries.FirstOrDefault(o => o.Name == "DEBUG_REPLACE_ME"))*/;
-            for (int i = 1; i < cs2.Components.Count; i++)
-            {
-                cs2.Components[i].LODs[0].Submeshes[0].IndexCount = 0;
-                cs2.Components[i].LODs[0].Submeshes[0].VertexCount = 0 ;
-            }
-            cs2.Name = "new";
-
-            lvl.Save();
-
-            //ProcessStartInfo alienProcess = new ProcessStartInfo();
-            //alienProcess.WorkingDirectory = "G:\\SteamLibrary\\steamapps\\common\\Alien Isolation";
-            //alienProcess.FileName = "G:\\SteamLibrary\\steamapps\\common\\Alien Isolation/AI.exe";
-            //Process.Start(alienProcess);
-
-            LoadModePAK("SOLACE");
         }
 
         /* Load the appropriate PAK for the given launch mode */
@@ -323,11 +246,6 @@ namespace AlienPAK
                                 if (i == 0) submesh.Unknown2_ = 134282240;
                                 else submesh.Unknown2_ = 134239232;
                                 cs2.Components[0].LODs[0].Submeshes.Add(submesh);
-                            }
-                            for (int i = 0; i < model.Meshes.Count; i++)
-                            {
-                                cs2.Components[0].LODs[0].Submeshes[i].ScaleFactor = 100;
-                                cs2.Components[0].LODs[0].Submeshes[i].MaterialLibraryIndex = materials.GetWriteIndex(materials.Entries.FirstOrDefault(o => o.Name == "FALLBACK_MATERIAL " + i));
                             }
                         }
                         modelsPAK.Entries.Add(cs2);
@@ -608,7 +526,7 @@ namespace AlienPAK
         /* Update file preview */
         private void UpdateSelectedFilePreview()
         {
-            preview.ShowFunctionButtons(pak.Functionality, pak.Type == PAKType.MODELS);
+            preview.ShowFunctionButtons(pak.Functionality, pak.Type == PAKType.MODELS, FileTree.SelectedNode != null && ((TreeItem)FileTree.SelectedNode.Tag).Item_Type == TreeItemType.EXPORTABLE_FILE);
             if (FileTree.SelectedNode == null) return;
             TreeItemType nodeType = ((TreeItem)FileTree.SelectedNode.Tag).Item_Type;
             string nodeVal = ((TreeItem)FileTree.SelectedNode.Tag).String_Value;
