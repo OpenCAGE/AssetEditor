@@ -334,3 +334,5 @@ Build/AlienPAK.exe.config
 Build/AlienPAK.conf
 Build/DirectXTexNet.dll
 Build/DirectXTexNet.xml
+Build/runtimes/*
+Build/*.xml

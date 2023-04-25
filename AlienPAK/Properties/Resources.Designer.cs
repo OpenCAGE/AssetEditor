@@ -63,6 +63,26 @@ namespace AlienPAK.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Byte[].
         /// </summary>
+        internal static byte[] assimp {
+            get {
+                object obj = ResourceManager.GetObject("assimp", resourceCulture);
+                return ((byte[])(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Byte[].
+        /// </summary>
+        internal static byte[] assimp_64 {
+            get {
+                object obj = ResourceManager.GetObject("assimp_64", resourceCulture);
+                return ((byte[])(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Byte[].
+        /// </summary>
         internal static byte[] DirectXTexNet {
             get {
                 object obj = ResourceManager.GetObject("DirectXTexNet", resourceCulture);
