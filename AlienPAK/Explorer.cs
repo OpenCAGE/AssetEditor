@@ -248,6 +248,11 @@ namespace AlienPAK
                                 cs2.Components[0].LODs[0].Submeshes.Add(submesh);
                             }
                         }
+                        if (cs2.Components[0].LODs[0].Submeshes.Count == 0)
+                        {
+                            MessageBox.Show("Failed to generate CS2 from selected model: could not find any mesh data! Please ensure all meshes are children of the scene's root node.", "Import failed", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                            return;
+                        }
                         modelsPAK.Entries.Add(cs2);
                         SaveModelsAndUpdateREDS();
                         break;
