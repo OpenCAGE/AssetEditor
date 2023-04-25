@@ -38,6 +38,9 @@ namespace AlienPAK
             if (!File.Exists(AppDomain.CurrentDomain.BaseDirectory + "/runtimes/win-x86/assimp.dll")) File.WriteAllBytes(AppDomain.CurrentDomain.BaseDirectory + "/runtimes/win-x86/assimp.dll", Properties.Resources.assimp);
             Directory.CreateDirectory(AppDomain.CurrentDomain.BaseDirectory + "/runtimes/win-x64/");
             if (!File.Exists(AppDomain.CurrentDomain.BaseDirectory + "/runtimes/win-x64/assimp.dll")) File.WriteAllBytes(AppDomain.CurrentDomain.BaseDirectory + "/runtimes/win-x64/assimp.dll", Properties.Resources.assimp_64);
+            if (!File.Exists(AppDomain.CurrentDomain.BaseDirectory + "assimp.dll")) File.WriteAllBytes(AppDomain.CurrentDomain.BaseDirectory + "assimp.dll", Properties.Resources.assimp_64);
+
+            //TODO: remove the need for the above!
 
 
             //Set paths
