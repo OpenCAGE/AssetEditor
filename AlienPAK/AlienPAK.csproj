@@ -205,6 +205,8 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="icon.ico" />
+    <EmbeddedResource Include="Resources\assimp.dll" />
+    <EmbeddedResource Include="Resources\assimp_64.dll" />
     <Resource Include="Images\axel-bg.jpg" />
     <EmbeddedResource Include="Resources\DirectXTexNetImpl_64.dll" />
     <EmbeddedResource Include="Resources\DirectXTexNet.dll" />
