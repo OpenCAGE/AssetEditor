@@ -193,6 +193,7 @@ namespace AlienPAK
             string componentString = "";
             string lodString = "";
             string submeshString = "";
+            _treeLookup.Add(new StringMeshLookup() { String = Path.GetFileName(_model.Name), cs2 = _model });
             for (int i = 0; i < _model.Components.Count; i++)
             {
                 componentString = Path.GetFileName(_model.Name) + "\\Component " + i;
