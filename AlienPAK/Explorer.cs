@@ -554,6 +554,7 @@ namespace AlienPAK
                         case PAKType.MODELS:
                             Models.CS2 cs2 = ((Models)pak.File).Entries.FirstOrDefault(o => o.Name.Replace('\\', '/') == nodeVal.Replace('\\', '/'));
                             Model3DGroup model = new Model3DGroup();
+                            int verts = 0;
                             foreach (Models.CS2.Component component in cs2.Components)
                             {
                                 foreach (Models.CS2.Component.LOD lod in component.LODs)
@@ -561,6 +562,7 @@ namespace AlienPAK
                                     foreach (Models.CS2.Component.LOD.Submesh submesh in lod.Submeshes)
                                     {
                                         GeometryModel3D mdl = submesh.ToGeometryModel3D();
+                                        verts += submesh.VertexCount;
                                         try
                                         {
                                             ShadersPAK.ShaderMaterialMetadata mdlMeta = shaders.GetMaterialMetadataFromShader(materials.GetAtWriteIndex(submesh.MaterialLibraryIndex), shadersIDX);
@@ -582,6 +584,7 @@ namespace AlienPAK
                                     }
                                 }
                             }
+                            preview.SetFileInfo(Path.GetFileName(nodeVal), verts.ToString(), true);
                             preview.SetModelPreview(model); //TODO: perhaps we should just pass the CS2 object to the model previewer and let that pick what to render
                             break;
                     }

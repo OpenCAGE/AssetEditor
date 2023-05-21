@@ -55,12 +55,12 @@ namespace AlienPAK
         }
 
         /* Set the information for the currently selected file in UI */
-        public void SetFileInfo(string name, string size)
+        public void SetFileInfo(string name, string size, bool modelMode = false)
         {
             fileInfoGroup.Visibility = Visibility.Visible;
             fileNameText.Text = name;
 
-            fileSizeText.Text = size + " bytes";
+            fileSizeText.Text = size + (modelMode ? " verts" : " bytes");
             fileSizeLabel.Visibility = size == null || size == "" ? Visibility.Collapsed : Visibility.Visible;
             fileSizeText.Visibility = fileSizeLabel.Visibility;
 

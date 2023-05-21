@@ -1,6 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="packages\Costura.Fody.4.1.0\build\Costura.Fody.props" Condition="Exists('packages\Costura.Fody.4.1.0\build\Costura.Fody.props')" />
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
@@ -72,9 +71,6 @@
   <ItemGroup>
     <Reference Include="AssimpNet, Version=5.0.0.0, Culture=neutral, PublicKeyToken=0d51b391f59f42a6, processorArchitecture=MSIL">
       <HintPath>packages\AssimpNet.5.0.0-beta1\lib\net40\AssimpNet.dll</HintPath>
-    </Reference>
-    <Reference Include="Costura, Version=4.1.0.0, Culture=neutral, PublicKeyToken=9919ef960d84173d, processorArchitecture=MSIL">
-      <HintPath>packages\Costura.Fody.4.1.0\lib\net40\Costura.dll</HintPath>
     </Reference>
     <Reference Include="DirectXTexNet, Version=1.0.1.0, Culture=neutral, PublicKeyToken=67e4f5ed452a4f5d, processorArchitecture=MSIL">
       <HintPath>packages\DirectXTexNet.1.0.1\lib\netstandard2.0\DirectXTexNet.dll</HintPath>
@@ -205,11 +201,7 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="icon.ico" />
-    <EmbeddedResource Include="Resources\assimp.dll" />
-    <EmbeddedResource Include="Resources\assimp_64.dll" />
     <Resource Include="Images\axel-bg.jpg" />
-    <EmbeddedResource Include="Resources\DirectXTexNetImpl_64.dll" />
-    <EmbeddedResource Include="Resources\DirectXTexNet.dll" />
   </ItemGroup>
   <ItemGroup>
     <Page Include="MaterialEditorControlsWPF.xaml">
@@ -234,10 +226,7 @@
     <PropertyGroup>
       <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
     </PropertyGroup>
-    <Error Condition="!Exists('packages\Fody.6.0.0\build\Fody.targets')" Text="$([System.String]::Format('$(ErrorText)', 'packages\Fody.6.0.0\build\Fody.targets'))" />
-    <Error Condition="!Exists('packages\Costura.Fody.4.1.0\build\Costura.Fody.props')" Text="$([System.String]::Format('$(ErrorText)', 'packages\Costura.Fody.4.1.0\build\Costura.Fody.props'))" />
     <Error Condition="!Exists('packages\AssimpNet.5.0.0-beta1\build\AssimpNet.targets')" Text="$([System.String]::Format('$(ErrorText)', 'packages\AssimpNet.5.0.0-beta1\build\AssimpNet.targets'))" />
   </Target>
-  <Import Project="packages\Fody.6.0.0\build\Fody.targets" Condition="Exists('packages\Fody.6.0.0\build\Fody.targets')" />
   <Import Project="packages\AssimpNet.5.0.0-beta1\build\AssimpNet.targets" Condition="Exists('packages\AssimpNet.5.0.0-beta1\build\AssimpNet.targets')" />
 </Project>

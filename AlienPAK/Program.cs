@@ -28,21 +28,6 @@ namespace AlienPAK
             logstream.Attach();
 #endif
 
-            //Need DLLs in directory for image previews to work :(
-            if (!File.Exists(AppDomain.CurrentDomain.BaseDirectory + "DirectXTexNet.dll")) File.WriteAllBytes(AppDomain.CurrentDomain.BaseDirectory + "DirectXTexNet.dll", Properties.Resources.DirectXTexNet);
-            Directory.CreateDirectory(AppDomain.CurrentDomain.BaseDirectory + "x64");
-            if (!File.Exists(AppDomain.CurrentDomain.BaseDirectory + "x64/DirectXTexNetImpl.dll")) File.WriteAllBytes(AppDomain.CurrentDomain.BaseDirectory + "x64/DirectXTexNetImpl.dll", Properties.Resources.DirectXTexNetImpl_64);
-
-            //...and now for model import/export too...
-            Directory.CreateDirectory(AppDomain.CurrentDomain.BaseDirectory + "/runtimes/win-x86/");
-            if (!File.Exists(AppDomain.CurrentDomain.BaseDirectory + "/runtimes/win-x86/assimp.dll")) File.WriteAllBytes(AppDomain.CurrentDomain.BaseDirectory + "/runtimes/win-x86/assimp.dll", Properties.Resources.assimp);
-            Directory.CreateDirectory(AppDomain.CurrentDomain.BaseDirectory + "/runtimes/win-x64/");
-            if (!File.Exists(AppDomain.CurrentDomain.BaseDirectory + "/runtimes/win-x64/assimp.dll")) File.WriteAllBytes(AppDomain.CurrentDomain.BaseDirectory + "/runtimes/win-x64/assimp.dll", Properties.Resources.assimp_64);
-            if (!File.Exists(AppDomain.CurrentDomain.BaseDirectory + "assimp.dll")) File.WriteAllBytes(AppDomain.CurrentDomain.BaseDirectory + "assimp.dll", Properties.Resources.assimp_64);
-
-            //TODO: remove the need for the above!
-
-
             //Set paths
             if (args.Length > 0 && args[0] == "-opencage") for (int i = 1; i < args.Length; i++) SharedData.pathToAI += args[i] + " ";
             else SharedData.pathToAI = Environment.CurrentDirectory + " ";

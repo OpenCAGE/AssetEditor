@@ -36,6 +36,11 @@ namespace AlienPAK
             InitializeComponent();
         }
 
+        public void ShowTexturePreview(bool show)
+        {
+            materialPreviewGroup.Visibility = show ? Visibility.Visible : Visibility.Collapsed;
+        }
+
         private void textureUseGlobal_Checked(object sender, RoutedEventArgs e)
         {
             OnGlobalOptionChange?.Invoke(textureUseGlobal.IsChecked == true);
