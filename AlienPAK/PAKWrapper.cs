@@ -91,6 +91,12 @@ namespace AlienPAK
                     for (int i = 0; i < ((PAK2)_file).Entries.Count; i++)
                         _contents.Add(((PAK2)_file).Entries[i].Filename);
                     break;
+                case "CHR_INFO.PAK":
+                    _file = new PAK2(path);
+                    _type = PAKType.CHR_INFO;
+                    for (int i = 0; i < ((PAK2)_file).Entries.Count; i++)
+                        _contents.Add(((PAK2)_file).Entries[i].Filename);
+                    break;
                 default:
                     _file = null;
                     _type = PAKType.NONE;
@@ -125,6 +131,7 @@ namespace AlienPAK
                 */
                 case PAKType.ANIMATIONS:
                 case PAKType.UI:
+                case PAKType.CHR_INFO:
                     ((PAK2)_file).Entries.Clear();
                     break;
             }
@@ -177,6 +184,7 @@ namespace AlienPAK
                     return null;
                 case PAKType.ANIMATIONS:
                 case PAKType.UI:
+                case PAKType.CHR_INFO:
                     return ((PAK2)_file).Entries.FirstOrDefault(o => o.Filename.Replace('\\', '/') == FileName.Replace('\\', '/'))?.Content;
                 default:
                     return null;
@@ -194,6 +202,7 @@ namespace AlienPAK
                         return PAKFunction.CAN_EXPORT_FILES | PAKFunction.CAN_IMPORT_FILES | PAKFunction.CAN_REPLACE_FILES | PAKFunction.CAN_DELETE_FILES;
                     case PAKType.ANIMATIONS:
                     case PAKType.UI:
+                    case PAKType.CHR_INFO:
                     case PAKType.TEXTURES:
                         return PAKFunction.CAN_EXPORT_FILES | PAKFunction.CAN_IMPORT_FILES | PAKFunction.CAN_REPLACE_FILES | PAKFunction.CAN_DELETE_FILES | PAKFunction.CAN_EXPORT_ALL;
                     default:
@@ -212,6 +221,7 @@ namespace AlienPAK
         ANIMATIONS,
         MATERIAL_MAPPINGS,
         SHADERS,
+        CHR_INFO,
 
         NONE
     };
