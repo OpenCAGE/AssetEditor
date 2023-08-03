@@ -189,6 +189,7 @@ namespace AlienPAK
                 _controls.materialTextureSelection.Items.Add(_selectedMaterialMeta.textures[i].Type.ToString());
                 if (_selectedMaterialMeta.textures[i].Type == ShadersPAK.ShaderSlot.DIFFUSE_MAP) _controls.materialTextureSelection.SelectedIndex = i;
             }
+            _controls.ShowTexturePreview(_selectedMaterialMeta.textures.Count != 0);
             if (_controls.materialTextureSelection.SelectedIndex == -1 && _selectedMaterialMeta.textures.Count != 0)
                 _controls.materialTextureSelection.SelectedIndex = 0;
             ShowTextureForMaterial(_controls.materialTextureSelection.SelectedIndex);

@@ -60,6 +60,9 @@ namespace AlienPAK
                     case PAKType.UI:
                         baseTitle += " - UI";
                         break;
+                    case PAKType.CHR_INFO:
+                        baseTitle += " - Character Info";
+                        break;
                     case PAKType.MODELS:
                         baseTitle += " - Models";
                         break;
@@ -104,6 +107,9 @@ namespace AlienPAK
                     break;
                 case PAKType.UI:
                     path += "GLOBAL/UI.PAK";
+                    break;
+                case PAKType.CHR_INFO:
+                    path += "CHR_INFO.PAK";
                     break;
                 case PAKType.TEXTURES:
                     if (level == "GLOBAL")
@@ -170,6 +176,7 @@ namespace AlienPAK
             {
                 case PAKType.ANIMATIONS:
                 case PAKType.UI:
+                case PAKType.CHR_INFO:
                     FilePicker.Filter = "All Files|*.*";
                     break;
                 case PAKType.TEXTURES:
@@ -192,6 +199,7 @@ namespace AlienPAK
                 {
                     case PAKType.ANIMATIONS:
                     case PAKType.UI:
+                    case PAKType.CHR_INFO:
                         PAK2 pak2PAK = (PAK2)pak.File;
                         newFileName = Path.GetFileName(FilePicker.FileName);
                         pak2PAK.Entries.Add(new PAK2.File() { Filename = newFileName, Content = File.ReadAllBytes(FilePicker.FileName) });
@@ -292,6 +300,7 @@ namespace AlienPAK
                         {
                             case PAKType.ANIMATIONS:
                             case PAKType.UI:
+                            case PAKType.CHR_INFO:
                                 ((PAK2)pak.File).Entries.RemoveAll(o => o.Filename.Replace('\\', '/') == nodeVal.Replace('\\', '/'));
                                 pak.File.Save();
                                 break;
@@ -384,6 +393,7 @@ namespace AlienPAK
                         {
                             case PAKType.ANIMATIONS:
                             case PAKType.UI:
+                            case PAKType.CHR_INFO:
                                 ((PAK2)pak.File).Entries.FirstOrDefault(o => o.Filename.Replace('\\', '/') == nodeVal.Replace('\\', '/')).Content = File.ReadAllBytes(FilePicker.FileName);
                                 pak.File.Save();
                                 break;
@@ -460,6 +470,7 @@ namespace AlienPAK
                         {
                             case PAKType.ANIMATIONS:
                             case PAKType.UI:
+                            case PAKType.CHR_INFO:
                                 File.WriteAllBytes(picker.FileName, ((PAK2)pak.File).Entries.FirstOrDefault(o => o.Filename.Replace('\\', '/') == nodeVal.Replace('\\', '/'))?.Content);
                                 break;
                             case PAKType.TEXTURES:
@@ -541,6 +552,7 @@ namespace AlienPAK
                     {
                         //case PAKType.ANIMATIONS:
                         case PAKType.UI:
+                        case PAKType.CHR_INFO:
                             PAK2.File file = ((PAK2)pak.File).Entries.FirstOrDefault(o => o.Filename.Replace('\\', '/') == nodeVal.Replace('\\', '/'));
                             preview.SetFileInfo(Path.GetFileName(nodeVal), file?.Content.Length.ToString());
                             preview.SetImagePreview(file.Content);
@@ -554,6 +566,7 @@ namespace AlienPAK
                         case PAKType.MODELS:
                             Models.CS2 cs2 = ((Models)pak.File).Entries.FirstOrDefault(o => o.Name.Replace('\\', '/') == nodeVal.Replace('\\', '/'));
                             Model3DGroup model = new Model3DGroup();
+                            int verts = 0;
                             foreach (Models.CS2.Component component in cs2.Components)
                             {
                                 foreach (Models.CS2.Component.LOD lod in component.LODs)
@@ -561,6 +574,7 @@ namespace AlienPAK
                                     foreach (Models.CS2.Component.LOD.Submesh submesh in lod.Submeshes)
                                     {
                                         GeometryModel3D mdl = submesh.ToGeometryModel3D();
+                                        verts += submesh.VertexCount;
                                         try
                                         {
                                             ShadersPAK.ShaderMaterialMetadata mdlMeta = shaders.GetMaterialMetadataFromShader(materials.GetAtWriteIndex(submesh.MaterialLibraryIndex), shadersIDX);
@@ -582,6 +596,7 @@ namespace AlienPAK
                                     }
                                 }
                             }
+                            preview.SetFileInfo(Path.GetFileName(nodeVal), verts.ToString(), true);
                             preview.SetModelPreview(model); //TODO: perhaps we should just pass the CS2 object to the model previewer and let that pick what to render
                             break;
                     }

@@ -11,6 +11,7 @@ using System.Windows;
 using System.Drawing.Imaging;
 using CATHODE;
 using System.Windows.Media.Media3D;
+using CathodeLib;
 
 namespace AlienPAK
 {
@@ -55,12 +56,12 @@ namespace AlienPAK
         }
 
         /* Set the information for the currently selected file in UI */
-        public void SetFileInfo(string name, string size)
+        public void SetFileInfo(string name, string size, bool modelMode = false)
         {
             fileInfoGroup.Visibility = Visibility.Visible;
             fileNameText.Text = name;
 
-            fileSizeText.Text = size + " bytes";
+            fileSizeText.Text = size + (modelMode ? " verts" : " bytes");
             fileSizeLabel.Visibility = size == null || size == "" ? Visibility.Collapsed : Visibility.Visible;
             fileSizeText.Visibility = fileSizeLabel.Visibility;
 
@@ -96,24 +97,9 @@ namespace AlienPAK
             if (show)
             {
                 levelSelectDropdown.Items.Clear();
-                List<string> mapList = Directory.GetFiles(SharedData.pathToAI + "/DATA/ENV/PRODUCTION/", "COMMANDS.PAK", SearchOption.AllDirectories).ToList<string>();
-                //if (type == PAKType.TEXTURES/* || type == PAKType.MODELS*/)
-                //    levelSelectDropdown.Items.Add("GLOBAL");      //TODO: currently not doing this for TEXTURES as we need to support GLOBAL index updating in ALL maps
-                for (int i = 0; i < mapList.Count; i++)
-                {
-                    string[] fileSplit = mapList[i].Split(new[] { "PRODUCTION" }, StringSplitOptions.None);
-                    levelSelectDropdown.Items.Add(fileSplit[fileSplit.Length - 1].Substring(1, fileSplit[fileSplit.Length - 1].Length - 20));
-                }
-                if (type == PAKType.COMMANDS || type == PAKType.MATERIAL_MAPPINGS)
-                {
-                    levelSelectDropdown.Items.Remove("DLC\\BSPNOSTROMO_RIPLEY");
-                    levelSelectDropdown.Items.Remove("DLC\\BSPNOSTROMO_TWOTEAMS");
-                }
-                else
-                {
-                    levelSelectDropdown.Items.Remove("DLC\\BSPNOSTROMO_RIPLEY_PATCH");
-                    levelSelectDropdown.Items.Remove("DLC\\BSPNOSTROMO_TWOTEAMS_PATCH");
-                }
+                List<string> levels = Level.GetLevels(SharedData.pathToAI, (type == PAKType.COMMANDS || type == PAKType.MATERIAL_MAPPINGS));
+                for (int i = 0; i < levels.Count; i++) levelSelectDropdown.Items.Add(levels[i]);
+                //if (type == PAKType.TEXTURES || type == PAKType.MODELS) levelSelectDropdown.Items.Add("GLOBAL");
                 levelSelectDropdown.SelectedIndex = 0;
             }
 

@@ -363,7 +363,7 @@ namespace AlienPAK
                 mesh.Vertices.Add(new Assimp.Vector3D((float)model.Positions[i].X, (float)model.Positions[i].Y, (float)model.Positions[i].Z));
             mesh.HasTextureCoords(0);
             for (int i = 0; i < model.TextureCoordinates.Count; i++)
-                mesh.TextureCoordinateChannels[0].Add(new Assimp.Vector3D((float)model.TextureCoordinates[i].X, (float)model.Positions[i].Y, 0));
+                mesh.TextureCoordinateChannels[0].Add(new Assimp.Vector3D((float)model.TextureCoordinates[i].X, (float)model.TextureCoordinates[i].Y, 0));
             for (int i = 0; i < model.Normals.Count; i++)
                 mesh.Normals.Add(new Assimp.Vector3D((float)model.Normals[i].X, (float)model.Normals[i].Y, (float)model.Normals[i].Z));
             bool worked = mesh.SetIndices(model.TriangleIndices.ToArray(), 3);

@@ -83,6 +83,10 @@ namespace AlienPAK
             string fileName = Path.GetFileName(FileTree.SelectedNode.Text);
             while (Path.GetExtension(fileName).Length != 0) fileName = fileName.Substring(0, fileName.Length - Path.GetExtension(fileName).Length); //Remove extensions from output filename
 
+            //Hotfix for empty part names
+            if ((fileName == " " || fileName == "") && FileTree.SelectedNode.Text.Substring(FileTree.SelectedNode.Text.Length - 2) == ": ") 
+                fileName = FileTree.SelectedNode.Text.Substring(0, FileTree.SelectedNode.Text.Length - 2);
+
             SaveFileDialog picker = new SaveFileDialog();
             picker.Filter = _fileFilter;
             picker.FileName = fileName;
@@ -193,6 +197,7 @@ namespace AlienPAK
             string componentString = "";
             string lodString = "";
             string submeshString = "";
+            _treeLookup.Add(new StringMeshLookup() { String = Path.GetFileName(_model.Name), cs2 = _model });
             for (int i = 0; i < _model.Components.Count; i++)
             {
                 componentString = Path.GetFileName(_model.Name) + "\\Component " + i;

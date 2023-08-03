@@ -17,8 +17,6 @@
 [Dd]ebugPublic/
 [Rr]elease/
 [Rr]eleases/
-x64/
-x86/
 bld/
 [Bb]in/
 [Oo]bj/
@@ -328,11 +326,3 @@ ASALocalRun/
 
 # MFractors (Xamarin productivity tool) working folder 
 .mfractor/
-
-!Build/AlienPAK.exe
-Build/AlienPAK.exe.config
-Build/AlienPAK.conf
-Build/DirectXTexNet.dll
-Build/DirectXTexNet.xml
-Build/runtimes/*
-Build/*.xml
