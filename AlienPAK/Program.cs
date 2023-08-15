@@ -41,19 +41,36 @@ namespace AlienPAK
 
             //TODO: remove the need for the above!
 
-            //Set paths
-            if (args.Length > 0 && args[0] == "-opencage") for (int i = 1; i < args.Length; i++) SharedData.pathToAI += args[i] + " ";
-            else SharedData.pathToAI = Environment.CurrentDirectory + " ";
-            SharedData.pathToAI = SharedData.pathToAI.Substring(0, SharedData.pathToAI.Length - 1);
+            //Set path to AI
+            if (GetArgument("pathToAI") != null)
+                SharedData.pathToAI = GetArgument("pathToAI");
+            else
+                SharedData.pathToAI = Environment.CurrentDirectory;
 
             //Verify location
-            if (args.Length != 0 && args[0] == "-opencage" && !File.Exists(SharedData.pathToAI + "/AI.exe")) throw new Exception("This tool was launched incorrectly, or was not placed within the Alien: Isolation directory.");
+            if (args.Length != 0 && args[0] == "-opencage" && !File.Exists(SharedData.pathToAI + "/AI.exe")) 
+                throw new Exception("This tool was launched incorrectly, or was not placed within the Alien: Isolation directory.");
 
             //Launch application
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(true);
-            if (args.Length != 0 && args[0] == "-opencage") Application.Run(new Landing());
-            else Application.Run(new Explorer());
+            if (GetArgument("pathToAI") != null && (GetArgument("level") == null || GetArgument("mode") == null))
+                Application.Run(new Landing());
+            else 
+                Application.Run(new Explorer(GetArgument("level"), GetArgument("mode")));
+        }
+
+        static string GetArgument(string name)
+        {
+            string[] args = Environment.GetCommandLineArgs();
+            for (int i = 0; i < args.Length; i++)
+            {
+                if (args[i].Contains(name))
+                {
+                    return args[i + 1];
+                }
+            }
+            return null;
         }
     }
 }

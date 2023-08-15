@@ -39,7 +39,25 @@ namespace AlienPAK
         PAKType LaunchMode;
         string baseTitle;
 
+        public Explorer(string level = null, string mode = null)
+        {
+            if (level == null || mode == null)
+            {
+                Launch();
+                return;
+            }
+
+            Enum.TryParse<PAKType>(mode, out PAKType modeEnum);
+            Launch(modeEnum);
+            LoadModePAK(level);
+        }
+
         public Explorer(PAKType LaunchAs = PAKType.NONE)
+        {
+            Launch(LaunchAs);
+        }
+
+        private void Launch(PAKType LaunchAs = PAKType.NONE)
         {
             LaunchMode = LaunchAs;
             InitializeComponent();
