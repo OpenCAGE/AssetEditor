@@ -48,7 +48,7 @@ namespace AlienPAK
                 SharedData.pathToAI = Environment.CurrentDirectory;
 
             //Verify location
-            if (args.Length != 0 && args[0] == "-opencage" && !File.Exists(SharedData.pathToAI + "/AI.exe")) 
+            if (!File.Exists(SharedData.pathToAI + "/AI.exe")) 
                 throw new Exception("This tool was launched incorrectly, or was not placed within the Alien: Isolation directory.");
 
             //Launch application
