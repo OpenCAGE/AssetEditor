@@ -50,6 +50,7 @@ namespace AlienPAK
             Enum.TryParse<PAKType>(mode, out PAKType modeEnum);
             Launch(modeEnum);
             LoadModePAK(level);
+            explorerControlsWPF1.levelSelectDropdown.Text = level;
         }
 
         public Explorer(PAKType LaunchAs = PAKType.NONE)
@@ -104,7 +105,8 @@ namespace AlienPAK
             preview.OnReplaceRequested += ReplaceSelectedFile;
             preview.OnDeleteRequested += DeleteSelectedFile;
             preview.OnExportAllRequested += ExportAllFiles;
-            preview.ShowFunctionButtons(PAKFunction.NONE, LaunchMode == PAKType.MODELS, false);
+            preview.OnPortRequested += PortSelectedFile;
+            preview.ShowFunctionButtons(PAKFunction.NONE, LaunchMode, false);
             preview.ShowLevelSelect(LaunchMode != PAKType.NONE && LaunchMode != PAKType.ANIMATIONS && LaunchMode != PAKType.UI, LaunchMode);
         }
 
@@ -377,6 +379,12 @@ namespace AlienPAK
             Cursor.Current = Cursors.Default;
         }
 
+        /* Port a file to another level */
+        private void PortSelectedFile()
+        {
+            
+        }
+
         /* Import a file to replace the selected PAK entry */
         private void ReplaceSelectedFile()
         {
@@ -558,7 +566,7 @@ namespace AlienPAK
         /* Update file preview */
         private void UpdateSelectedFilePreview()
         {
-            preview.ShowFunctionButtons(pak.Functionality, pak.Type == PAKType.MODELS, FileTree.SelectedNode != null && ((TreeItem)FileTree.SelectedNode.Tag).Item_Type == TreeItemType.EXPORTABLE_FILE);
+            preview.ShowFunctionButtons(pak.Functionality, pak.Type, FileTree.SelectedNode != null && ((TreeItem)FileTree.SelectedNode.Tag).Item_Type == TreeItemType.EXPORTABLE_FILE);
             if (FileTree.SelectedNode == null) return;
             TreeItemType nodeType = ((TreeItem)FileTree.SelectedNode.Tag).Item_Type;
             string nodeVal = ((TreeItem)FileTree.SelectedNode.Tag).String_Value;
