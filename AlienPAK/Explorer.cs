@@ -27,11 +27,11 @@ namespace AlienPAK
         string extraPath = "";
 
         //TODO: having implemented all this to get textured models, we might as well just use the CathodeLib Level func instead of the above PAK stuff
-        private Textures textures = null;
-        private Textures texturesGlobal = null;
-        private Materials materials = null;
-        private ShadersPAK shaders = null;
-        private IDXRemap shadersIDX = null;
+        public Textures textures = null;
+        public Textures texturesGlobal = null;
+        public Materials materials = null;
+        public ShadersPAK shaders = null;
+        public IDXRemap shadersIDX = null;
 
         TreeUtility treeHelper;
         ExplorerControlsWPF preview;
@@ -395,7 +395,7 @@ namespace AlienPAK
                 portPopup = new PortContent();
                 portPopup.FormClosed += Popup_FormClosed;
             }
-            portPopup.Setup(pak.Type, pak.File, nodeVal.Replace('\\', '/'), explorerControlsWPF1.levelSelectDropdown.Text);
+            portPopup.Setup(this, nodeVal.Replace('\\', '/'), explorerControlsWPF1.levelSelectDropdown.Text);
             portPopup.Show();
         }
         private void Popup_FormClosed(object sender, FormClosedEventArgs e)

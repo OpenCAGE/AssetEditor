@@ -1,5 +1,6 @@
 ﻿using CATHODE;
 using CathodeLib;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -10,14 +11,12 @@ using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 
 namespace AlienPAK
 {
     public partial class PortContent : Form
     {
-        PAKType _pakType;
-        CathodeFile _file;
+        Explorer _explorer;
 
         Models.CS2 _model;
         Textures.TEX4 _texture;
@@ -27,7 +26,7 @@ namespace AlienPAK
             InitializeComponent();
         }
 
-        public void Setup(PAKType type, CathodeFile file, string entryName, string level)
+        public void Setup(Explorer explorer, string entryName, string level)
         {
             levelList.BeginUpdate();
             levelList.Items.AddRange(Level.GetLevels(SharedData.pathToAI, true).ToArray());
@@ -36,18 +35,17 @@ namespace AlienPAK
 
             levelList.SelectedIndex = 0;
 
-            _pakType = type;
-            _file = file;
+            _explorer = explorer;
 
-            switch (_pakType)
+            switch (_explorer.pak.Type)
             {
                 case PAKType.MODELS:
-                    _model = ((Models)_file).Entries.FirstOrDefault(o => o.Name.Replace('\\', '/') == entryName.Replace('\\', '/'));
+                    _model = ((Models)_explorer.pak.File).Entries.FirstOrDefault(o => o.Name.Replace('\\', '/') == entryName.Replace('\\', '/')).Copy();
                     this.Text = "Port \"" + _model.Name + "\"";
                     label1.Text = "Port model to level:";
                     break;
                 case PAKType.TEXTURES:
-                    _texture = ((Textures)_file).Entries.FirstOrDefault(o => o.Name.Replace('\\', '/') == entryName.Replace('\\', '/'));
+                    _texture = ((Textures)_explorer.pak.File).Entries.FirstOrDefault(o => o.Name.Replace('\\', '/') == entryName.Replace('\\', '/')).Copy();
                     this.Text = "Port \"" + _texture.Name + "\"";
                     label1.Text = "Port texture to level:";
                     copyAll.Visible = false;
@@ -61,39 +59,124 @@ namespace AlienPAK
 
             //TODO: This highlights that the logic inside Explorer should be split into a separate non-GUI class...
 
-            Explorer explorer = new Explorer(levelList.SelectedItem.ToString(), _pakType.ToString());
-            explorer.Hide();
-            switch (_pakType)
+            Level destinationLevel = new Level(SharedData.pathToAI + "/DATA/ENV/PRODUCTION/" + levelList.SelectedItem.ToString());
+            destinationLevel.Save();
+
+            //return;
+            switch (_explorer.pak.Type)
             {
                 case PAKType.MODELS:
-                    //TODO: there are some indexes in the CS2 that will need patching
-                    Models modelPAK = (Models)explorer.pak.File;
-                    Models.CS2 existingModel = modelPAK.Entries.FirstOrDefault(o => o.Name == _model.Name);
-                    if (existingModel != null && overwrite.Checked)
                     {
-                        modelPAK.Entries[modelPAK.Entries.IndexOf(existingModel)] = _model;
+                        if (copyAll.Checked)
+                        {
+                            //Copy resources
+                            foreach (Models.CS2.Component component in _model.Components)
+                            {
+                                foreach (Models.CS2.Component.LOD lod in component.LODs)
+                                {
+                                    foreach (Models.CS2.Component.LOD.Submesh submesh in lod.Submeshes)
+                                    {
+                                        //Copy material
+                                        Materials.Material originalMat = _explorer.materials.GetAtWriteIndex(submesh.MaterialLibraryIndex);
+                                        Materials.Material existingMat = destinationLevel.Materials.Entries.FirstOrDefault(o => o.Name == originalMat.Name);
+                                        if (existingMat != null && overwrite.Checked)
+                                        {
+                                            destinationLevel.Materials.Entries[destinationLevel.Materials.Entries.IndexOf(existingMat)] = originalMat.Copy();
+                                        }
+                                        else if (existingMat == null)
+                                        {
+                                            destinationLevel.Materials.Entries.Add(originalMat.Copy());
+                                        }
+
+                                        //Copy shader
+                                        // TODO
+
+                                        //Copy textures
+                                        foreach (Materials.Material.Texture textureRef in originalMat.TextureReferences)
+                                        {
+                                            if (textureRef == null) continue;
+                                            if (textureRef.Source == Materials.Material.Texture.TextureSource.GLOBAL) continue;
+
+                                            Textures.TEX4 originalTex = _explorer.textures.GetAtWriteIndex(textureRef.BinIndex);
+                                            Textures.TEX4 existingTex = destinationLevel.Textures.Entries.FirstOrDefault(o => o.Name == originalTex.Name);
+                                            if (existingTex != null && overwrite.Checked)
+                                            {
+                                                destinationLevel.Textures.Entries[destinationLevel.Textures.Entries.IndexOf(existingTex)] = originalTex.Copy();
+                                            }
+                                            else if (existingTex == null)
+                                            {
+                                                destinationLevel.Textures.Entries.Add(originalTex.Copy());
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
+                            //Save now to recalculate the write indexes
+                            destinationLevel.Save();
+
+                            //Update the indexes 
+                            foreach (Models.CS2.Component component in _model.Components)
+                            {
+                                foreach (Models.CS2.Component.LOD lod in component.LODs)
+                                {
+                                    foreach (Models.CS2.Component.LOD.Submesh submesh in lod.Submeshes)
+                                    {
+                                        //Update index of material 
+                                        Materials.Material originalMaterial = _explorer.materials.GetAtWriteIndex(submesh.MaterialLibraryIndex);
+                                        Materials.Material copiedMaterial = destinationLevel.Materials.Entries.FirstOrDefault(o => o.Name == originalMaterial.Name);
+                                        submesh.MaterialLibraryIndex = destinationLevel.Materials.GetWriteIndex(copiedMaterial);
+
+                                        //Update index of shader
+                                        // TODO
+
+                                        //Update indexes of textures
+                                        for (int i = 0; i < originalMaterial.TextureReferences.Length; i++)
+                                        {
+                                            if (originalMaterial.TextureReferences[i] == null) continue;
+                                            if (originalMaterial.TextureReferences[i].Source == Materials.Material.Texture.TextureSource.GLOBAL) continue;
+
+                                            //TODO: update cst
+                                            
+                                            Textures.TEX4 originalTex = _explorer.textures.GetAtWriteIndex(originalMaterial.TextureReferences[i].BinIndex);
+                                            Textures.TEX4 copiedTex = destinationLevel.Textures.Entries.FirstOrDefault(o => o.Name == originalTex.Name);
+                                            copiedMaterial.TextureReferences[i].BinIndex = destinationLevel.Textures.GetWriteIndex(copiedTex);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        //TODO: there are some hierarchy indexes in the CS2 that will probs need patching
+                        Models.CS2 existingModel = destinationLevel.Models.Entries.FirstOrDefault(o => o.Name == _model.Name);
+                        if (existingModel != null && overwrite.Checked)
+                        {
+                            destinationLevel.Models.Entries[destinationLevel.Models.Entries.IndexOf(existingModel)] = _model;
+                        }
+                        else if (existingModel == null)
+                        {
+                            destinationLevel.Models.Entries.Add(_model);
+                        }
+                        break;
                     }
-                    else if (existingModel == null)
-                    {
-                        modelPAK.Entries.Add(_model);
-                    }
-                    explorer.SaveModelsAndUpdateREDS();
-                    break;
+                    
                 case PAKType.TEXTURES:
-                    Textures texturePAK = (Textures)explorer.pak.File;
-                    Textures.TEX4 existingTexture = texturePAK.Entries.FirstOrDefault(o => o.Name == _model.Name);
-                    if (existingTexture != null && overwrite.Checked)
                     {
-                        texturePAK.Entries[texturePAK.Entries.IndexOf(existingTexture)] = _texture;
+                        Textures.TEX4 existingTex = destinationLevel.Textures.Entries.FirstOrDefault(o => o.Name == _model.Name);
+                        if (existingTex != null && overwrite.Checked)
+                        {
+                            destinationLevel.Textures.Entries[destinationLevel.Textures.Entries.IndexOf(existingTex)] = _texture;
+                        }
+                        else if (existingTex == null)
+                        {
+                            destinationLevel.Textures.Entries.Add(_texture);
+                        }
+                        break;
                     }
-                    else if (existingTexture == null)
-                    {
-                        texturePAK.Entries.Add(_texture);
-                    }
-                    Explorer.SaveTexturesAndUpdateMaterials(texturePAK, new Materials(SharedData.pathToAI + "/DATA/ENV/PRODUCTION/" + levelList.SelectedItem.ToString() + "/RENDERABLE/LEVEL_MODELS.MTL"));
-                    break;
             }
-            explorer.Close();
+            destinationLevel.Save();
+
+            this.Close();
         }
     }
 }
