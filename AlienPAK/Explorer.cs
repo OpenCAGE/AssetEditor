@@ -23,7 +23,7 @@ namespace AlienPAK
 {
     public partial class Explorer : Form
     {
-        PAKWrapper pak = new PAKWrapper();
+        public PAKWrapper pak = new PAKWrapper();
         string extraPath = "";
 
         //TODO: having implemented all this to get textured models, we might as well just use the CathodeLib Level func instead of the above PAK stuff
@@ -180,6 +180,8 @@ namespace AlienPAK
         {
             if (!allowReload && pak.File != null && pak.File.Filepath == filename)
                 return;
+
+            if (portPopup != null) portPopup.Close();
 
             Cursor.Current = Cursors.WaitCursor;
             List<string> files = pak.Load(filename);
@@ -379,10 +381,28 @@ namespace AlienPAK
             Cursor.Current = Cursors.Default;
         }
 
-        /* Port a file to another level */
+        /* Show window to port the selected file to another level */
+        PortContent portPopup = null;
         private void PortSelectedFile()
         {
-            
+            if (FileTree.SelectedNode == null) return;
+            TreeItemType nodeType = ((TreeItem)FileTree.SelectedNode.Tag).Item_Type;
+            if (nodeType != TreeItemType.EXPORTABLE_FILE) return;
+            string nodeVal = ((TreeItem)FileTree.SelectedNode.Tag).String_Value;
+
+            if (portPopup == null)
+            {
+                portPopup = new PortContent();
+                portPopup.FormClosed += Popup_FormClosed;
+            }
+            portPopup.Setup(pak.Type, pak.File, nodeVal.Replace('\\', '/'), explorerControlsWPF1.levelSelectDropdown.Text);
+            portPopup.Show();
+        }
+        private void Popup_FormClosed(object sender, FormClosedEventArgs e)
+        {
+            portPopup = null;
+            this.BringToFront();
+            this.Focus();
         }
 
         /* Import a file to replace the selected PAK entry */
@@ -675,10 +695,11 @@ namespace AlienPAK
         /* Item selected (show preview info) */
         private void FileTree_AfterSelect(object sender, TreeViewEventArgs e)
         {
+            if (portPopup != null) portPopup.Close();
             UpdateSelectedFilePreview();
         }
 
-        private void SaveModelsAndUpdateREDS()
+        public void SaveModelsAndUpdateREDS()
         {
             Models modelsPAK = ((Models)pak.File);
             if (extraPath == "")
