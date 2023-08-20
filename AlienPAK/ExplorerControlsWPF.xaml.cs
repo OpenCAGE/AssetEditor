@@ -117,7 +117,7 @@ namespace AlienPAK
             //TODO: this is a temp hack to show the model button before i implement a nicer method when textures have a window too
             replaceBtn.Content = type == PAKType.MODELS ? "Modify Selected" : "Replace Selected";
 
-            portBtn.Visibility = SharedData.openedViaOpenCAGE && (type == PAKType.MODELS || type == PAKType.TEXTURES) ? Visibility.Visible : Visibility.Collapsed;
+            portBtn.Visibility = SharedData.openedViaOpenCAGE && (/*type == PAKType.MODELS || */type == PAKType.TEXTURES) ? Visibility.Visible : Visibility.Collapsed;
 
             exportBtn.Visibility = FlagToVisibility(function, PAKFunction.CAN_EXPORT_FILES, hasSelectedFile);
             replaceBtn.Visibility = FlagToVisibility(function, PAKFunction.CAN_REPLACE_FILES, hasSelectedFile);

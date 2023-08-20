@@ -57,12 +57,7 @@ namespace AlienPAK
         {
             if (levelList.SelectedIndex == -1) return;
 
-            //TODO: This highlights that the logic inside Explorer should be split into a separate non-GUI class...
-
             Level destinationLevel = new Level(SharedData.pathToAI + "/DATA/ENV/PRODUCTION/" + levelList.SelectedItem.ToString());
-            destinationLevel.Save();
-
-            //return;
             switch (_explorer.pak.Type)
             {
                 case PAKType.MODELS:
@@ -162,7 +157,7 @@ namespace AlienPAK
                     
                 case PAKType.TEXTURES:
                     {
-                        Textures.TEX4 existingTex = destinationLevel.Textures.Entries.FirstOrDefault(o => o.Name == _model.Name);
+                        Textures.TEX4 existingTex = destinationLevel.Textures.Entries.FirstOrDefault(o => o.Name == _texture.Name);
                         if (existingTex != null && overwrite.Checked)
                         {
                             destinationLevel.Textures.Entries[destinationLevel.Textures.Entries.IndexOf(existingTex)] = _texture;
