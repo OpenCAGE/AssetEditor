@@ -12,6 +12,7 @@ namespace AlienPAK
     public static class SharedData
     {
         public static string pathToAI = "";
+        public static bool openedViaOpenCAGE = false;
     }
 
     static class Program
@@ -62,9 +63,14 @@ namespace AlienPAK
 
             //Set path to AI
             if (GetArgument("pathToAI") != null)
+            {
                 SharedData.pathToAI = GetArgument("pathToAI");
+                SharedData.openedViaOpenCAGE = true;
+            }
             else
+            {
                 SharedData.pathToAI = Environment.CurrentDirectory;
+            }
 
             //Verify location
             if (!File.Exists(SharedData.pathToAI + "/AI.exe")) 

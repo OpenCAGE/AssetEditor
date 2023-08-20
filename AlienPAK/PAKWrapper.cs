@@ -12,7 +12,7 @@ using System.Windows.Forms;
 
 namespace AlienPAK
 {
-    internal class PAKWrapper
+    public class PAKWrapper
     {
         //PAK file
         CathodeFile _file = null;
