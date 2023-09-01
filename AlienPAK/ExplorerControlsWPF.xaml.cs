@@ -25,6 +25,7 @@ namespace AlienPAK
         public Action OnImportRequested;
         public Action OnExportRequested;
         public Action OnDeleteRequested;
+        public Action OnPortRequested;
         public Action OnReplaceRequested;
         public Action OnExportAllRequested;
 
@@ -107,14 +108,16 @@ namespace AlienPAK
         }
 
         /* Toggle available buttons given the functionality of the current PAK */
-        public void ShowFunctionButtons(PAKFunction function, bool isModelPAK, bool hasSelectedFile) 
+        public void ShowFunctionButtons(PAKFunction function, PAKType type, bool hasSelectedFile) 
         {
             imagePreviewGroup.Visibility = Visibility.Collapsed;
             modelPreviewGroup.Visibility = Visibility.Collapsed;
             fileInfoGroup.Visibility = Visibility.Collapsed;
 
             //TODO: this is a temp hack to show the model button before i implement a nicer method when textures have a window too
-            replaceBtn.Content = isModelPAK ? "Modify Selected" : "Replace Selected";
+            replaceBtn.Content = type == PAKType.MODELS ? "Modify Selected" : "Replace Selected";
+
+            portBtn.Visibility = SharedData.openedViaOpenCAGE && (/*type == PAKType.MODELS || */type == PAKType.TEXTURES) ? Visibility.Visible : Visibility.Collapsed;
 
             exportBtn.Visibility = FlagToVisibility(function, PAKFunction.CAN_EXPORT_FILES, hasSelectedFile);
             replaceBtn.Visibility = FlagToVisibility(function, PAKFunction.CAN_REPLACE_FILES, hasSelectedFile);
@@ -142,6 +145,10 @@ namespace AlienPAK
         private void DeleteBtn(object sender, RoutedEventArgs e)
         {
             OnDeleteRequested?.Invoke();
+        }
+        private void PortBtn(object sender, RoutedEventArgs e)
+        {
+            OnPortRequested?.Invoke();
         }
         private void ReplaceBtn(object sender, RoutedEventArgs e)
         {

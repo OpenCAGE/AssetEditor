@@ -58,6 +58,7 @@
                     <Button x:Name="exportBtn" Click="ExportBtn">Export Selected</Button>
                     <Button x:Name="replaceBtn" Click="ReplaceBtn" Margin="0 5 0 0">Replace Selected</Button>
                     <Button x:Name="deleteBtn" Click="DeleteBtn" Margin="0 5 0 0">Delete Selected</Button>
+                    <Button x:Name="portBtn" Click="PortBtn" Margin="0 5 0 0">Port Selected</Button>
                 </StackPanel>
             </GroupBox>
 

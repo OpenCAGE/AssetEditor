@@ -23,15 +23,15 @@ namespace AlienPAK
 {
     public partial class Explorer : Form
     {
-        PAKWrapper pak = new PAKWrapper();
+        public PAKWrapper pak = new PAKWrapper();
         string extraPath = "";
 
         //TODO: having implemented all this to get textured models, we might as well just use the CathodeLib Level func instead of the above PAK stuff
-        private Textures textures = null;
-        private Textures texturesGlobal = null;
-        private Materials materials = null;
-        private ShadersPAK shaders = null;
-        private IDXRemap shadersIDX = null;
+        public Textures textures = null;
+        public Textures texturesGlobal = null;
+        public Materials materials = null;
+        public ShadersPAK shaders = null;
+        public IDXRemap shadersIDX = null;
 
         TreeUtility treeHelper;
         ExplorerControlsWPF preview;
@@ -39,7 +39,26 @@ namespace AlienPAK
         PAKType LaunchMode;
         string baseTitle;
 
+        public Explorer(string level = null, string mode = null)
+        {
+            if (level == null || mode == null)
+            {
+                Launch();
+                return;
+            }
+
+            Enum.TryParse<PAKType>(mode, out PAKType modeEnum);
+            Launch(modeEnum);
+            LoadModePAK(level);
+            explorerControlsWPF1.levelSelectDropdown.Text = level;
+        }
+
         public Explorer(PAKType LaunchAs = PAKType.NONE)
+        {
+            Launch(LaunchAs);
+        }
+
+        private void Launch(PAKType LaunchAs = PAKType.NONE)
         {
             LaunchMode = LaunchAs;
             InitializeComponent();
@@ -86,7 +105,8 @@ namespace AlienPAK
             preview.OnReplaceRequested += ReplaceSelectedFile;
             preview.OnDeleteRequested += DeleteSelectedFile;
             preview.OnExportAllRequested += ExportAllFiles;
-            preview.ShowFunctionButtons(PAKFunction.NONE, LaunchMode == PAKType.MODELS, false);
+            preview.OnPortRequested += PortSelectedFile;
+            preview.ShowFunctionButtons(PAKFunction.NONE, LaunchMode, false);
             preview.ShowLevelSelect(LaunchMode != PAKType.NONE && LaunchMode != PAKType.ANIMATIONS && LaunchMode != PAKType.UI, LaunchMode);
         }
 
@@ -160,6 +180,8 @@ namespace AlienPAK
         {
             if (!allowReload && pak.File != null && pak.File.Filepath == filename)
                 return;
+
+            if (portPopup != null) portPopup.Close();
 
             Cursor.Current = Cursors.WaitCursor;
             List<string> files = pak.Load(filename);
@@ -359,6 +381,30 @@ namespace AlienPAK
             Cursor.Current = Cursors.Default;
         }
 
+        /* Show window to port the selected file to another level */
+        PortContent portPopup = null;
+        private void PortSelectedFile()
+        {
+            if (FileTree.SelectedNode == null) return;
+            TreeItemType nodeType = ((TreeItem)FileTree.SelectedNode.Tag).Item_Type;
+            if (nodeType != TreeItemType.EXPORTABLE_FILE) return;
+            string nodeVal = ((TreeItem)FileTree.SelectedNode.Tag).String_Value;
+
+            if (portPopup == null)
+            {
+                portPopup = new PortContent();
+                portPopup.FormClosed += Popup_FormClosed;
+            }
+            portPopup.Setup(this, nodeVal.Replace('\\', '/'), explorerControlsWPF1.levelSelectDropdown.Text);
+            portPopup.Show();
+        }
+        private void Popup_FormClosed(object sender, FormClosedEventArgs e)
+        {
+            portPopup = null;
+            this.BringToFront();
+            this.Focus();
+        }
+
         /* Import a file to replace the selected PAK entry */
         private void ReplaceSelectedFile()
         {
@@ -540,7 +586,7 @@ namespace AlienPAK
         /* Update file preview */
         private void UpdateSelectedFilePreview()
         {
-            preview.ShowFunctionButtons(pak.Functionality, pak.Type == PAKType.MODELS, FileTree.SelectedNode != null && ((TreeItem)FileTree.SelectedNode.Tag).Item_Type == TreeItemType.EXPORTABLE_FILE);
+            preview.ShowFunctionButtons(pak.Functionality, pak.Type, FileTree.SelectedNode != null && ((TreeItem)FileTree.SelectedNode.Tag).Item_Type == TreeItemType.EXPORTABLE_FILE);
             if (FileTree.SelectedNode == null) return;
             TreeItemType nodeType = ((TreeItem)FileTree.SelectedNode.Tag).Item_Type;
             string nodeVal = ((TreeItem)FileTree.SelectedNode.Tag).String_Value;
@@ -649,10 +695,11 @@ namespace AlienPAK
         /* Item selected (show preview info) */
         private void FileTree_AfterSelect(object sender, TreeViewEventArgs e)
         {
+            if (portPopup != null) portPopup.Close();
             UpdateSelectedFilePreview();
         }
 
-        private void SaveModelsAndUpdateREDS()
+        public void SaveModelsAndUpdateREDS()
         {
             Models modelsPAK = ((Models)pak.File);
             if (extraPath == "")
