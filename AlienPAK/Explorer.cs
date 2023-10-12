@@ -126,7 +126,7 @@ namespace AlienPAK
                     path += "GLOBAL/ANIMATION.PAK";
                     break;
                 case PAKType.UI:
-                    path += "GLOBAL/UI.PAK";
+                    path += "UI.PAK";
                     break;
                 case PAKType.CHR_INFO:
                     path += "CHR_INFO.PAK";
