@@ -84,7 +84,13 @@ namespace AlienPAK
                 List<byte> contentList = content.ToList();
                 contentList.RemoveRange(0, 148);
                 part.Content = contentList.ToArray();
-                switch (((Pfim.Dds)image).Header10.DxgiFormat)
+                Pfim.DdsHeaderDxt10 header = ((Pfim.Dds)image).Header10;
+                if (header == null)
+                {
+                    format = (TextureFormat)0;
+                    return null;
+                }
+                switch (header.DxgiFormat)
                 {
                     //TODO: should the other non-UNORM formats redirect to these too?
                     case Pfim.DxgiFormat.BC1_UNORM:
