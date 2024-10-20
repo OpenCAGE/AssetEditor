@@ -235,6 +235,11 @@ namespace AlienPAK
                             byte[] content = File.ReadAllBytes(FilePicker.FileName);
                             //TODO: perhaps we need a custom UI for this to allow swapping high/low res assets individually
                             Textures.TEX4.Part part = content?.ToTEX4Part(out texture.Format);
+                            if (part == null)
+                            {
+                                MessageBox.Show("Please select a DX10 DDS image!\nIf you have converted this DDS yourself, you've converted it wrong - try using a tool like Nvidia Texture Tools Exporter.", "Import failed", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                break;
+                            }
                             part.unk3 = 4294967295;
                             texture.Type = Textures.AlienTextureType.DIFFUSE; //todo: ui to allow selection of this
                             texture.tex_HighRes = part.Copy();
@@ -450,6 +455,11 @@ namespace AlienPAK
                                     byte[] content = File.ReadAllBytes(FilePicker.FileName);
                                     Textures.TEX4.Part part = texture?.tex_HighRes?.Content != null ? texture.tex_HighRes : texture?.tex_LowRes?.Content != null ? texture.tex_LowRes : null;
                                     part = content?.ToTEX4Part(out texture.Format, part);
+                                    if (part == null)
+                                    {
+                                        MessageBox.Show("Please select a DX10 DDS image!\nIf you have converted this DDS yourself, you've converted it wrong - try using a tool like Nvidia Texture Tools Exporter.", "Import failed", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                        break;
+                                    }
                                     if (texture?.tex_HighRes?.Content != null) texture.tex_HighRes = part;
                                     else texture.tex_LowRes = part;
                                     SaveTexturesAndUpdateMaterials((Textures)pak.File, new Materials(extraPath));
