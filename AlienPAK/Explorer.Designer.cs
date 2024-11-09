@@ -47,6 +47,8 @@
             this.menuStrip1 = new System.Windows.Forms.MenuStrip();
             this.elementHost1 = new System.Windows.Forms.Integration.ElementHost();
             this.explorerControlsWPF1 = new AlienPAK.ExplorerControlsWPF();
+            this.toolStripSeparator1 = new System.Windows.Forms.ToolStripSeparator();
+            this.exportAllToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.fileContextMenu.SuspendLayout();
             this.menuStrip1.SuspendLayout();
             this.SuspendLayout();
@@ -96,7 +98,9 @@
             this.openToolStripMenuItem,
             this.toolStripSeparator2,
             this.importFileToolStripMenuItem,
-            this.exportFileToolStripMenuItem});
+            this.exportFileToolStripMenuItem,
+            this.toolStripSeparator1,
+            this.exportAllToolStripMenuItem});
             this.fileToolStripMenuItem.Name = "fileToolStripMenuItem";
             this.fileToolStripMenuItem.Size = new System.Drawing.Size(37, 20);
             this.fileToolStripMenuItem.Text = "File";
@@ -104,26 +108,26 @@
             // openToolStripMenuItem
             // 
             this.openToolStripMenuItem.Name = "openToolStripMenuItem";
-            this.openToolStripMenuItem.Size = new System.Drawing.Size(178, 22);
+            this.openToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
             this.openToolStripMenuItem.Text = "Open PAK";
             this.openToolStripMenuItem.Click += new System.EventHandler(this.openToolStripMenuItem_Click);
             // 
             // toolStripSeparator2
             // 
             this.toolStripSeparator2.Name = "toolStripSeparator2";
-            this.toolStripSeparator2.Size = new System.Drawing.Size(175, 6);
+            this.toolStripSeparator2.Size = new System.Drawing.Size(177, 6);
             // 
             // importFileToolStripMenuItem
             // 
             this.importFileToolStripMenuItem.Name = "importFileToolStripMenuItem";
-            this.importFileToolStripMenuItem.Size = new System.Drawing.Size(178, 22);
+            this.importFileToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
             this.importFileToolStripMenuItem.Text = "Import Selected File";
             this.importFileToolStripMenuItem.Click += new System.EventHandler(this.importFileToolStripMenuItem_Click);
             // 
             // exportFileToolStripMenuItem
             // 
             this.exportFileToolStripMenuItem.Name = "exportFileToolStripMenuItem";
-            this.exportFileToolStripMenuItem.Size = new System.Drawing.Size(178, 22);
+            this.exportFileToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
             this.exportFileToolStripMenuItem.Text = "Export Selected File";
             this.exportFileToolStripMenuItem.Click += new System.EventHandler(this.exportFileToolStripMenuItem_Click);
             // 
@@ -170,6 +174,18 @@
             this.elementHost1.Text = "elementHost1";
             this.elementHost1.Child = this.explorerControlsWPF1;
             // 
+            // toolStripSeparator1
+            // 
+            this.toolStripSeparator1.Name = "toolStripSeparator1";
+            this.toolStripSeparator1.Size = new System.Drawing.Size(177, 6);
+            // 
+            // exportAllToolStripMenuItem
+            // 
+            this.exportAllToolStripMenuItem.Name = "exportAllToolStripMenuItem";
+            this.exportAllToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.exportAllToolStripMenuItem.Text = "Export All";
+            this.exportAllToolStripMenuItem.Click += new System.EventHandler(this.exportAllToolStripMenuItem_Click);
+            // 
             // Explorer
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -211,6 +227,8 @@
         private System.Windows.Forms.ToolStripMenuItem expandAllDirectoriesToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem shrinkAllDirectoriesToolStripMenuItem;
         private System.Windows.Forms.MenuStrip menuStrip1;
+        private System.Windows.Forms.ToolStripSeparator toolStripSeparator1;
+        private System.Windows.Forms.ToolStripMenuItem exportAllToolStripMenuItem;
     }
 }
 

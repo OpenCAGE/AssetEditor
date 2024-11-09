@@ -17,6 +17,7 @@ using CATHODE;
 using CATHODE.LEGACY;
 using CathodeLib;
 using DirectXTexNet;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement.Window;
 using static CATHODE.Materials.Material;
 
 namespace AlienPAK
@@ -496,28 +497,46 @@ namespace AlienPAK
             this.BringToFront();
             this.Focus();
         }
-
-        /* Export the selected PAK entry as a standalone file */
+        
         private void ExportSelectedFile()
         {
-            if (FileTree.SelectedNode == null) return;
-            TreeItemType nodeType = ((TreeItem)FileTree.SelectedNode.Tag).Item_Type;
-            string nodeVal = ((TreeItem)FileTree.SelectedNode.Tag).String_Value;
+            ExportNode(FileTree.SelectedNode);
+        }
+
+        /* Export the selected PAK entry as a standalone file */
+        private void ExportNode(TreeNode node, string outputFolder = "") //If you set outputFolder, the user won't get a filepicker
+        {
+            if (node == null) return;
+            TreeItemType nodeType = ((TreeItem)node.Tag).Item_Type;
+            string nodeVal = ((TreeItem)node.Tag).String_Value;
 
             switch (nodeType)
             {
                 case TreeItemType.EXPORTABLE_FILE:
-                    string filter = "File|*" + Path.GetExtension(FileTree.SelectedNode.Text);
+                    string filter = "File|*" + Path.GetExtension(node.Text);
                     if (preview.FilePreviewVisible && preview.FilePreviewBitmap != null) filter = "PNG Image|*.png|JPG Image|*.jpg|DDS Image|*.dds";
                     if (preview.ModelPreviewVisible) filter = "FBX Model|*.fbx|GLTF Model|*.gltf|OBJ Model|*.obj"; //TODO: we can support loads here with assimp (importer.GetSupportedExportFormats())
 
-                    string fileName = Path.GetFileName(FileTree.SelectedNode.Text);
+                    string fileName = Path.GetFileName(node.Text);
                     while (Path.GetExtension(fileName).Length != 0) fileName = fileName.Substring(0, fileName.Length - Path.GetExtension(fileName).Length); //Remove extensions from output filename
 
-                    SaveFileDialog picker = new SaveFileDialog();
-                    picker.Filter = filter;
-                    picker.FileName = fileName;
-                    if (picker.ShowDialog() != DialogResult.OK) break;
+                    string pickedFileName = "";
+                    if (outputFolder == "")
+                    {
+                        SaveFileDialog picker = new SaveFileDialog();
+                        picker.Filter = filter;
+                        picker.FileName = fileName;
+                        if (picker.ShowDialog() != DialogResult.OK) break;
+                        pickedFileName = picker.FileName;
+                    }
+                    else
+                    {
+                        pickedFileName = outputFolder + "/" + node.FullPath; //todo: the "TGA" dds might encounter issues with this
+
+                        string dir = pickedFileName.Substring(0, pickedFileName.Length - Path.GetFileName(pickedFileName).Length);
+                        if (!Directory.Exists(dir))
+                            Directory.CreateDirectory(dir);
+                    }
 
                     Cursor.Current = Cursors.WaitCursor;
                     try
@@ -527,17 +546,17 @@ namespace AlienPAK
                             case PAKType.ANIMATIONS:
                             case PAKType.UI:
                             case PAKType.CHR_INFO:
-                                File.WriteAllBytes(picker.FileName, ((PAK2)pak.File).Entries.FirstOrDefault(o => o.Filename.Replace('\\', '/') == nodeVal.Replace('\\', '/'))?.Content);
+                                File.WriteAllBytes(pickedFileName, ((PAK2)pak.File).Entries.FirstOrDefault(o => o.Filename.Replace('\\', '/') == nodeVal.Replace('\\', '/'))?.Content);
                                 break;
                             case PAKType.TEXTURES:
                                 Textures.TEX4 texture = ((Textures)pak.File).Entries.FirstOrDefault(o => o.Name.Replace('\\', '/') == nodeVal.Replace('\\', '/'));
                                 byte[] content = texture?.ToDDS();
-                                if (Path.GetExtension(picker.FileName).ToUpper() == ".DDS")
+                                if (Path.GetExtension(pickedFileName).ToUpper() == ".DDS")
                                 {
-                                    File.WriteAllBytes(picker.FileName, content);
+                                    File.WriteAllBytes(pickedFileName, content);
                                     break;
                                 }
-                                preview.FilePreviewBitmap.Save(picker.FileName); //TODO: this is a temp hacky workflow that should be avoided - need to move the bitmap conversion to the extension methods
+                                preview.FilePreviewBitmap.Save(pickedFileName); //TODO: this is a temp hacky workflow that should be avoided - need to move the bitmap conversion to the extension methods
                                 break;
                             case PAKType.MODELS:
                                 Scene scene = new Scene();
@@ -565,18 +584,21 @@ namespace AlienPAK
                                     }
                                 }
                                 AssimpContext exp = new AssimpContext();
-                                exp.ExportFile(scene, picker.FileName, Path.GetExtension(picker.FileName).Replace(".", ""));
+                                exp.ExportFile(scene, pickedFileName, Path.GetExtension(pickedFileName).Replace(".", ""));
                                 exp.Dispose();
                                 break;
                             default:
-                                MessageBox.Show("This PAK type does not support file exporting!", "Export failed", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                if (outputFolder == "")
+                                    MessageBox.Show("This PAK type does not support file exporting!", "Export failed", MessageBoxButtons.OK, MessageBoxIcon.Error);
                                 return;
                         }
-                        MessageBox.Show("Successfully exported file!", "Export complete", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        if (outputFolder == "")
+                            MessageBox.Show("Successfully exported file!", "Export complete", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     }
                     catch (Exception ex)
                     {
-                        MessageBox.Show(ex.ToString(), "Export failed", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        if (outputFolder == "")
+                            MessageBox.Show(ex.ToString(), "Export failed", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     }
                     Cursor.Current = Cursors.Default;
                     break;
@@ -767,6 +789,34 @@ namespace AlienPAK
                 }
             }
             materials.Save();
+        }
+
+        private void exportAllToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            using (var dialog = new FolderBrowserDialog())
+            {
+                dialog.Description = "Select output folder";
+                dialog.ShowNewFolderButton = true;
+
+                if (dialog.ShowDialog() == DialogResult.OK)
+                {
+                    foreach (TreeNode node in FileTree.Nodes)
+                    {
+                        RecursiveExport(node, dialog.SelectedPath);
+                    }
+
+                    MessageBox.Show("Export complete", "Exported!", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+            }
+        }
+        private void RecursiveExport(TreeNode node, string path)
+        {
+            ExportNode(node, path);
+
+            foreach (TreeNode n in node.Nodes)
+            {
+                RecursiveExport(n, path);
+            }
         }
     }
 }
