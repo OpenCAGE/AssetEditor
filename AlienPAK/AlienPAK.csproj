@@ -246,6 +246,12 @@
     <Reference Include="WindowsFormsIntegration" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="BulkExportTypeSelection.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="BulkExportTypeSelection.Designer.cs">
+      <DependentUpon>BulkExportTypeSelection.cs</DependentUpon>
+    </Compile>
     <Compile Include="CathodeLibExtensions.cs" />
     <Compile Include="DirectXTexUtility.cs" />
     <Compile Include="Explorer.cs">
@@ -301,6 +307,9 @@
     </Compile>
     <Compile Include="SettingsManager.cs" />
     <Compile Include="TreeUtility.cs" />
+    <EmbeddedResource Include="BulkExportTypeSelection.resx">
+      <DependentUpon>BulkExportTypeSelection.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="Explorer.resx">
       <DependentUpon>Explorer.cs</DependentUpon>
     </EmbeddedResource>

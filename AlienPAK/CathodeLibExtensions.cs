@@ -362,18 +362,22 @@ namespace AlienPAK
         public static Mesh ToMesh(this CS2.Component.LOD.Submesh submesh)
         {
             //TODO: we should just make a generic "to usable data" extension that spits out the verts etc, rather than relying on this - but doing it for testing for now
-            MeshGeometry3D model = (MeshGeometry3D)submesh.ToGeometryModel3D().Geometry;
+            GeometryModel3D modelGeo = submesh.ToGeometryModel3D();
+            MeshGeometry3D model = (MeshGeometry3D)modelGeo?.Geometry;
             Mesh mesh = new Mesh();
             mesh.MaterialIndex = 0; //todo
-            for (int i = 0; i < model.Positions.Count; i++)
-                mesh.Vertices.Add(new Assimp.Vector3D((float)model.Positions[i].X, (float)model.Positions[i].Y, (float)model.Positions[i].Z));
-            mesh.HasTextureCoords(0);
-            for (int i = 0; i < model.TextureCoordinates.Count; i++)
-                mesh.TextureCoordinateChannels[0].Add(new Assimp.Vector3D((float)model.TextureCoordinates[i].X, (float)model.TextureCoordinates[i].Y, 0));
-            for (int i = 0; i < model.Normals.Count; i++)
-                mesh.Normals.Add(new Assimp.Vector3D((float)model.Normals[i].X, (float)model.Normals[i].Y, (float)model.Normals[i].Z));
-            bool worked = mesh.SetIndices(model.TriangleIndices.ToArray(), 3);
-            if (!worked) throw new Exception("oops");
+            if (model != null)
+            {
+                for (int i = 0; i < model.Positions.Count; i++)
+                    mesh.Vertices.Add(new Assimp.Vector3D((float)model.Positions[i].X, (float)model.Positions[i].Y, (float)model.Positions[i].Z));
+                mesh.HasTextureCoords(0);
+                for (int i = 0; i < model.TextureCoordinates.Count; i++)
+                    mesh.TextureCoordinateChannels[0].Add(new Assimp.Vector3D((float)model.TextureCoordinates[i].X, (float)model.TextureCoordinates[i].Y, 0));
+                for (int i = 0; i < model.Normals.Count; i++)
+                    mesh.Normals.Add(new Assimp.Vector3D((float)model.Normals[i].X, (float)model.Normals[i].Y, (float)model.Normals[i].Z));
+                bool worked = mesh.SetIndices(model.TriangleIndices.ToArray(), 3);
+                if (!worked) throw new Exception("oops");
+            }
             return mesh;
         }
 
