@@ -531,7 +531,13 @@ namespace AlienPAK
                     }
                     else
                     {
-                        pickedFileName = outputFolder + "/" + node.FullPath; //todo: the "TGA" dds might encounter issues with this
+                        // This is hit when exporting all (the user has no filepicker) -> the exportBaseType and exportConvertedType are sometimes set by our conversion popup
+                        string filename = node.FullPath;
+                        if (Path.GetExtension(node.FullPath).ToUpper() == "." + _exportBaseType.ToUpper())
+                        {
+                            filename = node.FullPath.Substring(0, node.FullPath.Length - Path.GetExtension(node.FullPath).Length) + _exportConvertedType;
+                        }
+                        pickedFileName = outputFolder + "/" + filename; 
 
                         string dir = pickedFileName.Substring(0, pickedFileName.Length - Path.GetFileName(pickedFileName).Length);
                         if (!Directory.Exists(dir))
@@ -556,7 +562,7 @@ namespace AlienPAK
                                     File.WriteAllBytes(pickedFileName, content);
                                     break;
                                 }
-                                preview.FilePreviewBitmap.Save(pickedFileName); //TODO: this is a temp hacky workflow that should be avoided - need to move the bitmap conversion to the extension methods
+                                content?.ToBitmap()?.Save(pickedFileName);
                                 break;
                             case PAKType.MODELS:
                                 Scene scene = new Scene();
@@ -583,6 +589,7 @@ namespace AlienPAK
                                         }
                                     }
                                 }
+
                                 AssimpContext exp = new AssimpContext();
                                 exp.ExportFile(scene, pickedFileName, Path.GetExtension(pickedFileName).Replace(".", ""));
                                 exp.Dispose();
@@ -791,6 +798,11 @@ namespace AlienPAK
             materials.Save();
         }
 
+        //This is a hacked way of exporting all files - needs tidying up in future, bit of a proof of concept for now
+        BulkExportTypeSelection _exportTypeSelect = null;
+        string _exportPath = "";
+        string _exportBaseType = "";
+        string _exportConvertedType = "";
         private void exportAllToolStripMenuItem_Click(object sender, EventArgs e)
         {
             using (var dialog = new FolderBrowserDialog())
@@ -800,14 +812,57 @@ namespace AlienPAK
 
                 if (dialog.ShowDialog() == DialogResult.OK)
                 {
-                    foreach (TreeNode node in FileTree.Nodes)
+                    _exportPath = dialog.SelectedPath;
+
+                    List<string> types = new List<string>();
+                    _exportBaseType = "";
+                    switch (pak.Type)
                     {
-                        RecursiveExport(node, dialog.SelectedPath);
+                        case PAKType.MODELS:
+                            _exportBaseType = "CS2";
+                            types.Add(".fbx");
+                            types.Add(".obj");
+                            types.Add(".gltf");
+                            break;
+                        case PAKType.TEXTURES:
+                            _exportBaseType = "DDS";
+                            types.Add(".dds");
+                            types.Add(".png");
+                            types.Add(".jpg");
+                            break;
                     }
 
-                    MessageBox.Show("Export complete", "Exported!", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    if (_exportTypeSelect != null)
+                    {
+                        _exportTypeSelect.OnTypeSelected -= OnExportTypeSelected;
+                        _exportTypeSelect.Close();
+                        _exportTypeSelect = null;
+                    }
+                    if (types.Count != 0)
+                    {
+                        _exportTypeSelect = new BulkExportTypeSelection();
+                        _exportTypeSelect.SetTypes(types, _exportBaseType);
+                        _exportTypeSelect.Show();
+                        _exportTypeSelect.OnTypeSelected += OnExportTypeSelected;
+                    }
+                    else
+                    {
+                        OnExportTypeSelected("");
+                    }
                 }
             }
+        }
+        private void OnExportTypeSelected(string type)
+        {
+            _exportConvertedType = type;
+
+            foreach (TreeNode node in FileTree.Nodes)
+            {
+                RecursiveExport(node, _exportPath);
+            }
+
+            Process.Start(_exportPath);
+            MessageBox.Show("Export complete", "Exported!", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
         private void RecursiveExport(TreeNode node, string path)
         {
