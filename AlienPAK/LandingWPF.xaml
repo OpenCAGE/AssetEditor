@@ -68,6 +68,9 @@
             <Button Style="{StaticResource TextButton}" Click="OpenUI">
                 UI GFX
             </Button>
+            <Button Style="{StaticResource TextButton}" Click="OpenSounds">
+                Sounds
+            </Button>
             <Button Style="{StaticResource TextButton}" Click="OpenAnimations">
                 Animations
             </Button>
