@@ -61,7 +61,11 @@ namespace AlienPAK.Sounds
                     var newNode = new TreeNode(parts[i]);
 
                     if (i == parts.Length - 1)
+                    {
                         newNode.Tag = file;
+                        newNode.ImageIndex = 1;
+                        newNode.SelectedImageIndex = 1;
+                    }
 
                     currentNodeCollection.Add(newNode);
                     currentNodeCollection = newNode.Nodes;

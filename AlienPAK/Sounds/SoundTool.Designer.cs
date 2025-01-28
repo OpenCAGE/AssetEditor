@@ -28,6 +28,8 @@
         /// </summary>
         private void InitializeComponent()
         {
+            this.components = new System.ComponentModel.Container();
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(SoundTool));
             this.soundbanksReferenced = new System.Windows.Forms.ListBox();
             this.soundbanksIncluded = new System.Windows.Forms.ListBox();
             this.soundbanksIncludedPrefetch = new System.Windows.Forms.ListBox();
@@ -37,6 +39,7 @@
             this.treeView = new System.Windows.Forms.TreeView();
             this.exportWEM = new System.Windows.Forms.Button();
             this.importWEM = new System.Windows.Forms.Button();
+            this.imageList1 = new System.Windows.Forms.ImageList(this.components);
             this.SuspendLayout();
             // 
             // soundbanksReferenced
@@ -93,8 +96,11 @@
             // treeView
             // 
             this.treeView.BorderStyle = System.Windows.Forms.BorderStyle.None;
+            this.treeView.ImageIndex = 0;
+            this.treeView.ImageList = this.imageList1;
             this.treeView.Location = new System.Drawing.Point(12, 12);
             this.treeView.Name = "treeView";
+            this.treeView.SelectedImageIndex = 0;
             this.treeView.Size = new System.Drawing.Size(500, 679);
             this.treeView.TabIndex = 7;
             this.treeView.AfterSelect += new System.Windows.Forms.TreeViewEventHandler(this.FileTree_AfterSelect);
@@ -118,6 +124,13 @@
             this.importWEM.Text = "Import";
             this.importWEM.UseVisualStyleBackColor = true;
             this.importWEM.Click += new System.EventHandler(this.importWEM_Click);
+            // 
+            // imageList1
+            // 
+            this.imageList1.ImageStream = ((System.Windows.Forms.ImageListStreamer)(resources.GetObject("imageList1.ImageStream")));
+            this.imageList1.TransparentColor = System.Drawing.Color.Transparent;
+            this.imageList1.Images.SetKeyName(0, "directory_icon.png");
+            this.imageList1.Images.SetKeyName(1, "image_icon.ico");
             // 
             // SoundTool
             // 
@@ -151,5 +164,6 @@
         private System.Windows.Forms.TreeView treeView;
         private System.Windows.Forms.Button exportWEM;
         private System.Windows.Forms.Button importWEM;
+        private System.Windows.Forms.ImageList imageList1;
     }
 }

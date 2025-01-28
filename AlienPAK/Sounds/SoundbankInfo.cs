@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Xml.Linq;
+using static CATHODE.SoundEventData;
 
 namespace AlienPAK.Sounds
 {
@@ -18,7 +19,8 @@ namespace AlienPAK.Sounds
             byte[] content = Resources.soundbankinfo;
 #if DEBUG && REGEN_SOUNDBANK_INFO
             (List<DialogueEvent> DialogueEvents, List<SoundFile> StreamedFiles, List<SoundBank> SoundBanks) = ParseXML("M:\\Modding\\SoundbanksInfo.xml");
-            content = Serialize(CalcSoundFilesCombined(DialogueEvents, StreamedFiles, SoundBanks).OrderBy(o => o.SoundFile.Path).ToList());
+            List<SoundFileCombined> SoundFilesCombined = CalcSoundFilesCombined(DialogueEvents, StreamedFiles, SoundBanks).OrderBy(o => o.SoundFile.Path).ToList();
+            content = Serialize(SoundBanks, SoundFilesCombined);
             File.WriteAllBytes("../AlienPAK/Resources/soundbankinfo.bin", content);
 #endif
             Sounds = Read(content);
@@ -149,7 +151,7 @@ namespace AlienPAK.Sounds
             return dict.Values.ToList();
         }
 
-        private static byte[] Serialize(List<SoundFileCombined> SoundFilesCombined)
+        private static byte[] Serialize(List<SoundBank> SoundBanks, List<SoundFileCombined> SoundFilesCombined)
         {
             byte[] content;
             using (MemoryStream stream = new MemoryStream())
@@ -157,29 +159,36 @@ namespace AlienPAK.Sounds
                 using (BinaryWriter writer = new BinaryWriter(stream))
                 {
                     writer.BaseStream.SetLength(0);
+
+                    writer.Write(SoundBanks.Count);
+                    Dictionary<string, int> soundbankIndexes = new Dictionary<string, int>();
+                    for (int i = 0; i < SoundBanks.Count; i++)
+                    {
+                        soundbankIndexes.Add(SoundBanks[i].Path, i);
+                        writer.Write(Convert.ToUInt32(SoundBanks[i].Id));
+                        writer.Write(SoundBanks[i].Path);
+                    }
+
                     writer.Write(SoundFilesCombined.Count);
                     foreach (SoundFileCombined sfc in SoundFilesCombined)
                     {
                         writer.Write(Convert.ToUInt32(sfc.SoundFile.Id));
-                        writer.Write(sfc.SoundFile.Path);
+                        writer.Write(sfc.SoundFile.Language + "\\" + sfc.SoundFile.ShortName);
 
                         writer.Write(sfc.SoundBank_Referenced.Count);
                         foreach (SoundBank sb in sfc.SoundBank_Referenced)
                         {
-                            writer.Write(Convert.ToUInt32(sb.Id));
-                            writer.Write(sb.Path);
+                            writer.Write(soundbankIndexes[sb.Path]);
                         }
                         writer.Write(sfc.SoundBank_Included.Count);
                         foreach (SoundBank sb in sfc.SoundBank_Included)
                         {
-                            writer.Write(Convert.ToUInt32(sb.Id));
-                            writer.Write(sb.Path);
+                            writer.Write(soundbankIndexes[sb.Path]);
                         }
                         writer.Write(sfc.SoundBank_IncludedPrefetch.Count);
                         foreach (SoundBank sb in sfc.SoundBank_IncludedPrefetch)
                         {
-                            writer.Write(Convert.ToUInt32(sb.Id));
-                            writer.Write(sb.Path);
+                            writer.Write(soundbankIndexes[sb.Path]);
                         }
                     }
                 }
@@ -196,6 +205,13 @@ namespace AlienPAK.Sounds
                 using (BinaryReader reader = new BinaryReader(stream))
                 {
                     int count = reader.ReadInt32();
+                    List<Tuple<uint, string>> soundbankInfo = new List<Tuple<uint, string>>(count);
+                    for (int i = 0; i < count; i++)
+                    {
+                        soundbankInfo.Add(new Tuple<uint, string>(reader.ReadUInt32(), reader.ReadString()));
+                    }
+
+                    count = reader.ReadInt32();
                     sounds = new List<WwiseSound>(count);
 
                     for (int i = 0; i < count; i++)
@@ -207,17 +223,17 @@ namespace AlienPAK.Sounds
                         sound.SoundBank_Referenced = new List<Tuple<uint, string>>(reader.ReadInt32());
                         for (int x = 0; x < sound.SoundBank_Referenced.Capacity; x++)
                         {
-                            sound.SoundBank_Referenced.Add(new Tuple<uint, string>(reader.ReadUInt32(), reader.ReadString()));
+                            sound.SoundBank_Referenced.Add(soundbankInfo[reader.ReadInt32()]);
                         }
                         sound.SoundBank_Included = new List<Tuple<uint, string>>(reader.ReadInt32());
                         for (int x = 0; x < sound.SoundBank_Included.Capacity; x++)
                         {
-                            sound.SoundBank_Included.Add(new Tuple<uint, string>(reader.ReadUInt32(), reader.ReadString()));
+                            sound.SoundBank_Included.Add(soundbankInfo[reader.ReadInt32()]);
                         }
                         sound.SoundBank_IncludedPrefetch = new List<Tuple<uint, string>>(reader.ReadInt32());
                         for (int x = 0; x < sound.SoundBank_IncludedPrefetch.Capacity; x++)
                         {
-                            sound.SoundBank_IncludedPrefetch.Add(new Tuple<uint, string>(reader.ReadUInt32(), reader.ReadString()));
+                            sound.SoundBank_IncludedPrefetch.Add(soundbankInfo[reader.ReadInt32()]);
                         }
                         sounds.Add(sound);
                     }
