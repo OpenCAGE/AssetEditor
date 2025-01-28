@@ -99,5 +99,15 @@ namespace AlienPAK.Properties {
                 return ((byte[])(obj));
             }
         }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Byte[].
+        /// </summary>
+        internal static byte[] soundbankinfo {
+            get {
+                object obj = ResourceManager.GetObject("soundbankinfo", resourceCulture);
+                return ((byte[])(obj));
+            }
+        }
     }
 }

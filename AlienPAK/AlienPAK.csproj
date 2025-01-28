@@ -306,6 +306,14 @@
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
     <Compile Include="SettingsManager.cs" />
+    <Compile Include="Sounds\SoundbankInfo.cs" />
+    <Compile Include="Sounds\SoundEditor.cs" />
+    <Compile Include="Sounds\SoundTool.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Sounds\SoundTool.Designer.cs">
+      <DependentUpon>SoundTool.cs</DependentUpon>
+    </Compile>
     <Compile Include="TreeUtility.cs" />
     <EmbeddedResource Include="BulkExportTypeSelection.resx">
       <DependentUpon>BulkExportTypeSelection.cs</DependentUpon>
@@ -330,6 +338,10 @@
       <SubType>Designer</SubType>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
     </EmbeddedResource>
+    <EmbeddedResource Include="Sounds\SoundTool.resx">
+      <DependentUpon>SoundTool.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Resources\soundbankinfo.bin" />
     <Resource Include="Fonts\Isolation_Isolation.ttf" />
     <Resource Include="Fonts\JixellationBold_Jixellation.ttf" />
     <None Include="packages.config" />
