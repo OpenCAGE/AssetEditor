@@ -5,10 +5,12 @@ using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Runtime.Remoting.Metadata;
 using System.Threading;
 using System.Windows.Documents;
 using System.Windows.Forms;
+using System.Windows.Markup;
 using System.Windows.Media;
 using System.Windows.Media.Media3D;
 using Assimp;
@@ -503,6 +505,82 @@ namespace AlienPAK
             ExportNode(FileTree.SelectedNode);
         }
 
+        private PAK2.File getPAK2File(string pakFileName)
+        {
+            return (
+                (PAK2)pak.File).Entries.FirstOrDefault(
+                o => o.Filename.Replace('\\', '/') == pakFileName.Replace('\\', '/')
+                );
+        }
+
+        private bool hktHasMagicNumber(PAK2.File pakFile, out int startIndex)
+        {
+            startIndex = -1;
+
+            try
+            {
+                if (pakFile == null)
+                {
+                    return false;
+                }
+
+                if (pakFile.Content.Length == 0 || pakFile.Content.Length < 4)
+                {
+                    return false;
+                }
+
+                uint magic1 = 0x57E0E057;
+                uint magic2 = 0x10C0C010;
+
+                // Check only first 20 bytes, since
+                // the magic numbers appears after 12 bytes
+                for (int i = 0; i < 20; i++)
+                {
+                    uint num = BitConverter.ToUInt32(pakFile.Content, i);
+
+                    if (num == magic1 || num == magic2)
+                    {
+                        startIndex = i;
+                        return true;
+                    }
+                }
+
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.ToString());
+            }
+
+            return false;
+        }
+
+        private void extractHktFile(string pakFileName, string saveDestination)
+        {
+            try
+            {
+                var pakFile = this.getPAK2File(pakFileName);
+
+                if (pakFile == null)
+                {
+                    return;
+                }
+
+                if (this.hktHasMagicNumber(pakFile, out int startIdx))
+                {
+                    using (FileStream fs = new FileStream(saveDestination, FileMode.Create, FileAccess.Write))
+                    {
+                        fs.Write(pakFile.Content, startIdx, pakFile.Content.Length - startIdx);
+                    }
+                }
+
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.ToString());
+                MessageBox.Show(ex.ToString(), "Export failed", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
         /* Export the selected PAK entry as a standalone file */
         private void ExportNode(TreeNode node, string outputFolder = "") //If you set outputFolder, the user won't get a filepicker
         {
@@ -519,6 +597,11 @@ namespace AlienPAK
 
                     string fileName = Path.GetFileName(node.Text);
                     while (Path.GetExtension(fileName).Length != 0) fileName = fileName.Substring(0, fileName.Length - Path.GetExtension(fileName).Length); //Remove extensions from output filename
+
+                    if (this.hktHasMagicNumber(this.getPAK2File(nodeVal), out int startIndex))
+                    {
+                        filter += "|Havok file|*.hkt";
+                    }
 
                     string pickedFileName = "";
                     if (outputFolder == "")
@@ -545,6 +628,7 @@ namespace AlienPAK
                     }
 
                     Cursor.Current = Cursors.WaitCursor;
+
                     try
                     {
                         switch (pak.Type)
@@ -552,6 +636,11 @@ namespace AlienPAK
                             case PAKType.ANIMATIONS:
                             case PAKType.UI:
                             case PAKType.CHR_INFO:
+                                if (Path.GetExtension(pickedFileName).ToUpper() == ".HKT")
+                                {
+                                    this.extractHktFile(nodeVal, pickedFileName);
+                                    break;
+                                }
                                 File.WriteAllBytes(pickedFileName, ((PAK2)pak.File).Entries.FirstOrDefault(o => o.Filename.Replace('\\', '/') == nodeVal.Replace('\\', '/'))?.Content);
                                 break;
                             case PAKType.TEXTURES:
