@@ -1,25 +1,15 @@
+using Assimp;
+using CATHODE;
+using CATHODE.LEGACY;
+using DirectXTexNet;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Drawing;
 using System.IO;
 using System.Linq;
-using System.Reflection;
-using System.Runtime.CompilerServices;
-using System.Runtime.Remoting.Metadata;
-using System.Threading;
-using System.Windows.Documents;
 using System.Windows.Forms;
-using System.Windows.Markup;
 using System.Windows.Media;
 using System.Windows.Media.Media3D;
-using Assimp;
-using Assimp.Unmanaged;
-using CATHODE;
-using CATHODE.LEGACY;
-using CathodeLib;
-using DirectXTexNet;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement.Window;
 using static CATHODE.Materials.Material;
 
 namespace AlienPAK
