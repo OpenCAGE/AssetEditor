@@ -520,7 +520,7 @@ namespace AlienPAK
                 }
 
                 uint magic1 = 0x57E0E057;
-                uint magic2 = 0x10C0C010;
+                //uint magic2 = 0x10C0C010;
 
                 // Check only first 20 bytes, since
                 // the magic numbers appears after 12 bytes
@@ -528,7 +528,7 @@ namespace AlienPAK
                 {
                     uint num = BitConverter.ToUInt32(pakFile.Content, i);
 
-                    if (num == magic1 || num == magic2)
+                    if (num == magic1)
                     {
                         startIndex = i;
                         return true;
