@@ -590,7 +590,7 @@ namespace AlienPAK
 
                     if (this.hktHasMagicNumber(this.getPAK2File(nodeVal), out int startIndex))
                     {
-                        filter += "|Havok file|*.hkt";
+                        filter += "|Havok Packfile|*.hkx";
                     }
 
                     string pickedFileName = "";
@@ -626,7 +626,7 @@ namespace AlienPAK
                             case PAKType.ANIMATIONS:
                             case PAKType.UI:
                             case PAKType.CHR_INFO:
-                                if (Path.GetExtension(pickedFileName).ToUpper() == ".HKT")
+                                if (Path.GetExtension(pickedFileName).ToUpper() == ".HKX")
                                 {
                                     this.extractHktFile(nodeVal, pickedFileName);
                                     break;
