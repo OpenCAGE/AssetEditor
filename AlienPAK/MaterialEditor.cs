@@ -222,7 +222,7 @@ namespace AlienPAK
                 _controls.matDiffuseScale.Text = offset.ToString();
             }
 
-            _controls.matDiffuseOffsetLabel.Visibility = false;
+            _controls.matDiffuseOffsetLabel.Visibility = System.Windows.Visibility.Hidden;
             //_controls.matDiffuseOffsetLabel.Visibility = CSTIndexValid(cstIndexes.DiffuseMap0, ref shader) ? System.Windows.Visibility.Visible : System.Windows.Visibility.Collapsed;
             //_controls.matDiffuseOffset.Visibility = _controls.matDiffuseOffsetLabel.Visibility;
             //if (_controls.matDiffuseOffset.Visibility == System.Windows.Visibility.Visible)

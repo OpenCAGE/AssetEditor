@@ -873,5 +873,15 @@ namespace AlienPAK
                 RecursiveExport(n, path);
             }
         }
+
+        private void Explorer_Load(object sender, EventArgs e)
+        {
+            this.FormClosing += Explorer_Closing;
+        }
+        private void Explorer_Closing(object sender, EventArgs e)
+        {
+            treeHelper?.ForceClearTree();
+            treeHelper = null;
+        }
     }
 }
