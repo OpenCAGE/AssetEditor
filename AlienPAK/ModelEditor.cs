@@ -339,7 +339,7 @@ namespace AlienPAK
                             if (lookup?.submesh != null) materialInfo = material.Name;
                             if (_controls.renderMaterials.IsChecked == true)
                             {
-                                ShadersPAK.ShaderMaterialMetadata mdlMeta = _shaders.GetMaterialMetadataFromShader(material, _shadersIDX);
+                                ShadersPAK.ShaderMaterialMetadata mdlMeta = _shaders.GetMaterialMetadataFromShader(material);
                                 MaterialGroup mg = new MaterialGroup();
                                 ShadersPAK.MaterialTextureContext mdlMetaDiff = mdlMeta.textures.FirstOrDefault(o => o.Type == ShadersPAK.ShaderSlot.DIFFUSE_MAP);
                                 if (mdlMetaDiff?.TextureInfo != null)

@@ -139,16 +139,16 @@ namespace AlienPAK
             switch (property)
             {
                 case MaterialProperty.COLOUR:
-                    offset += _selectedMaterialShader.CSTLinks[2][_selectedMaterialMeta.cstIndexes.DiffuseIndex];
+                    offset += _selectedMaterialShader.CSTLinks[2][_selectedMaterialMeta.cstIndexes.Diffuse0];
                     break;
                 case MaterialProperty.DIFFUSE_SCALE:
-                    offset += _selectedMaterialShader.CSTLinks[2][_selectedMaterialMeta.cstIndexes.DiffuseUVMultiplierIndex];
+                    offset += _selectedMaterialShader.CSTLinks[2][_selectedMaterialMeta.cstIndexes.DiffuseMap0UVMultiplier];
                     break;
-                case MaterialProperty.DIFFUSE_OFFSET:
-                    offset += _selectedMaterialShader.CSTLinks[2][_selectedMaterialMeta.cstIndexes.DiffuseUVAdderIndex];
-                    break;
+                //case MaterialProperty.DIFFUSE_OFFSET:
+                //    offset += _selectedMaterialShader.CSTLinks[2][_selectedMaterialMeta.cstIndexes.DiffuseMap0];
+                //    break;
                 case MaterialProperty.NORMAL_SCALE:
-                    offset += _selectedMaterialShader.CSTLinks[2][_selectedMaterialMeta.cstIndexes.NormalUVMultiplierIndex];
+                    offset += _selectedMaterialShader.CSTLinks[2][_selectedMaterialMeta.cstIndexes.NormalMap0UVMultiplier];
                     break;
                 default:
                     return;
@@ -176,9 +176,9 @@ namespace AlienPAK
                 _doingSelection = false;
                 return;
             }
-            _selectedMaterialMeta = _shaders.GetMaterialMetadataFromShader(_sortedMaterials[materialList.SelectedIndex], _shadersIDX);
+            _selectedMaterialMeta = _shaders.GetMaterialMetadataFromShader(_sortedMaterials[materialList.SelectedIndex]);
 
-            int shaderIndex = _shadersIDX.Datas[_sortedMaterials[materialList.SelectedIndex].UberShaderIndex].Index;
+            int shaderIndex = _shadersIDX.Datas[_sortedMaterials[materialList.SelectedIndex].ShaderIndex].Index;
             _selectedMaterialShader = _shaders.Shaders[shaderIndex];
 
             _controls.fileNameText.Text = _sortedMaterials[materialList.SelectedIndex].Name;
@@ -205,36 +205,37 @@ namespace AlienPAK
             BinaryReader cstReader = new BinaryReader(new MemoryStream(_materials.CSTData[2]));
             int baseOffset = (InMaterial.ConstantBuffers[2].Offset * 4);
 
-            _controls.matColourLabel.Visibility = CSTIndexValid(cstIndexes.DiffuseIndex, ref shader) ? System.Windows.Visibility.Visible : System.Windows.Visibility.Collapsed;
+            _controls.matColourLabel.Visibility = CSTIndexValid(cstIndexes.Diffuse0, ref shader) ? System.Windows.Visibility.Visible : System.Windows.Visibility.Collapsed;
             _controls.matColour.Visibility = _controls.matColourLabel.Visibility;
             if (_controls.matColour.Visibility == System.Windows.Visibility.Visible)
             {
-                Vector4 colour = LoadFromCST<Vector4>(ref cstReader, baseOffset + (shader.CSTLinks[2][cstIndexes.DiffuseIndex] * 4));
+                Vector4 colour = LoadFromCST<Vector4>(ref cstReader, baseOffset + (shader.CSTLinks[2][cstIndexes.Diffuse0] * 4));
                 System.Windows.Media.Color colour_c = System.Windows.Media.Color.FromArgb((byte)(int)(colour.W * 255.0f), (byte)(int)(colour.X * 255.0f), (byte)(int)(colour.Y * 255.0f), (byte)(int)(colour.Z * 255.0f));
                 _controls.matColour.Background = new SolidColorBrush(colour_c);
             }
 
-            _controls.matDiffuseScaleLabel.Visibility = CSTIndexValid(cstIndexes.DiffuseUVMultiplierIndex, ref shader) ? System.Windows.Visibility.Visible : System.Windows.Visibility.Collapsed;
+            _controls.matDiffuseScaleLabel.Visibility = CSTIndexValid(cstIndexes.DiffuseMap0UVMultiplier, ref shader) ? System.Windows.Visibility.Visible : System.Windows.Visibility.Collapsed;
             _controls.matDiffuseScale.Visibility = _controls.matDiffuseScaleLabel.Visibility;
             if (_controls.matDiffuseScale.Visibility == System.Windows.Visibility.Visible)
             {
-                float offset = LoadFromCST<float>(ref cstReader, baseOffset + (shader.CSTLinks[2][cstIndexes.DiffuseUVMultiplierIndex] * 4));
+                float offset = LoadFromCST<float>(ref cstReader, baseOffset + (shader.CSTLinks[2][cstIndexes.DiffuseMap0UVMultiplier] * 4));
                 _controls.matDiffuseScale.Text = offset.ToString();
             }
 
-            _controls.matDiffuseOffsetLabel.Visibility = CSTIndexValid(cstIndexes.DiffuseUVAdderIndex, ref shader) ? System.Windows.Visibility.Visible : System.Windows.Visibility.Collapsed;
-            _controls.matDiffuseOffset.Visibility = _controls.matDiffuseOffsetLabel.Visibility;
-            if (_controls.matDiffuseOffset.Visibility == System.Windows.Visibility.Visible)
-            {
-                float offset = LoadFromCST<float>(ref cstReader, baseOffset + (shader.CSTLinks[2][cstIndexes.DiffuseUVAdderIndex] * 4));
-                _controls.matDiffuseOffset.Text = offset.ToString();
-            }
+            _controls.matDiffuseOffsetLabel.Visibility = false;
+            //_controls.matDiffuseOffsetLabel.Visibility = CSTIndexValid(cstIndexes.DiffuseMap0, ref shader) ? System.Windows.Visibility.Visible : System.Windows.Visibility.Collapsed;
+            //_controls.matDiffuseOffset.Visibility = _controls.matDiffuseOffsetLabel.Visibility;
+            //if (_controls.matDiffuseOffset.Visibility == System.Windows.Visibility.Visible)
+            //{
+            //    float offset = LoadFromCST<float>(ref cstReader, baseOffset + (shader.CSTLinks[2][cstIndexes.DiffuseMap0] * 4));
+            //    _controls.matDiffuseOffset.Text = offset.ToString();
+            //}
 
-            _controls.matNormalScaleLabel.Visibility = CSTIndexValid(cstIndexes.NormalUVMultiplierIndex, ref shader) ? System.Windows.Visibility.Visible : System.Windows.Visibility.Collapsed;
+            _controls.matNormalScaleLabel.Visibility = CSTIndexValid(cstIndexes.NormalMap0UVMultiplier, ref shader) ? System.Windows.Visibility.Visible : System.Windows.Visibility.Collapsed;
             _controls.matNormalScale.Visibility = _controls.matNormalScaleLabel.Visibility;
             if (_controls.matNormalScale.Visibility == System.Windows.Visibility.Visible)
             {
-                float offset = LoadFromCST<float>(ref cstReader, baseOffset + (shader.CSTLinks[2][cstIndexes.NormalUVMultiplierIndex] * 4));
+                float offset = LoadFromCST<float>(ref cstReader, baseOffset + (shader.CSTLinks[2][cstIndexes.NormalMap0UVMultiplier] * 4));
                 _controls.matNormalScale.Text = offset.ToString();
             }
 

@@ -57,7 +57,10 @@ namespace AlienPAK
         {
             if (levelList.SelectedIndex == -1) return;
 
-            Level destinationLevel = new Level(SharedData.pathToAI + "/DATA/ENV/PRODUCTION/" + levelList.SelectedItem.ToString());
+            Global global = new Global();
+            //todo populate anim strings
+
+            Level destinationLevel = new Level(SharedData.pathToAI + "/DATA/ENV/PRODUCTION/" + levelList.SelectedItem.ToString(), global);
             switch (_explorer.pak.Type)
             {
                 case PAKType.MODELS:

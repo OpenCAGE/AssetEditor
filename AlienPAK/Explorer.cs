@@ -662,7 +662,7 @@ namespace AlienPAK
                                         verts += submesh.VertexCount;
                                         try
                                         {
-                                            ShadersPAK.ShaderMaterialMetadata mdlMeta = shaders.GetMaterialMetadataFromShader(materials.GetAtWriteIndex(submesh.MaterialLibraryIndex), shadersIDX);
+                                            ShadersPAK.ShaderMaterialMetadata mdlMeta = shaders.GetMaterialMetadataFromShader(materials.GetAtWriteIndex(submesh.MaterialLibraryIndex));
                                             ShadersPAK.MaterialTextureContext mdlMetaDiff = mdlMeta.textures.FirstOrDefault(o => o.Type == ShadersPAK.ShaderSlot.DIFFUSE_MAP);
                                             if (mdlMetaDiff != null)
                                             {
