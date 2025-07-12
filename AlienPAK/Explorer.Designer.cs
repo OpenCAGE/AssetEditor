@@ -41,14 +41,14 @@ namespace AlienPAK
             this.toolStripSeparator2 = new System.Windows.Forms.ToolStripSeparator();
             this.importFileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.exportFileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.toolStripSeparator1 = new System.Windows.Forms.ToolStripSeparator();
+            this.exportAllToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.viewToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.expandAllDirectoriesToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.shrinkAllDirectoriesToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.menuStrip1 = new System.Windows.Forms.MenuStrip();
             this.elementHost1 = new System.Windows.Forms.Integration.ElementHost();
             this.explorerControlsWPF1 = new AlienPAK.ExplorerControlsWPF();
-            this.toolStripSeparator1 = new System.Windows.Forms.ToolStripSeparator();
-            this.exportAllToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.fileContextMenu.SuspendLayout();
             this.menuStrip1.SuspendLayout();
             this.SuspendLayout();
@@ -56,6 +56,7 @@ namespace AlienPAK
             // FileTree
             // 
             this.FileTree.BorderStyle = System.Windows.Forms.BorderStyle.None;
+            this.FileTree.HideSelection = false;
             this.FileTree.Location = new System.Drawing.Point(-1, 24);
             this.FileTree.Name = "FileTree";
             this.FileTree.Size = new System.Drawing.Size(500, 679);
@@ -108,28 +109,40 @@ namespace AlienPAK
             // openToolStripMenuItem
             // 
             this.openToolStripMenuItem.Name = "openToolStripMenuItem";
-            this.openToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.openToolStripMenuItem.Size = new System.Drawing.Size(178, 22);
             this.openToolStripMenuItem.Text = "Open PAK";
             this.openToolStripMenuItem.Click += new System.EventHandler(this.openToolStripMenuItem_Click);
             // 
             // toolStripSeparator2
             // 
             this.toolStripSeparator2.Name = "toolStripSeparator2";
-            this.toolStripSeparator2.Size = new System.Drawing.Size(177, 6);
+            this.toolStripSeparator2.Size = new System.Drawing.Size(175, 6);
             // 
             // importFileToolStripMenuItem
             // 
             this.importFileToolStripMenuItem.Name = "importFileToolStripMenuItem";
-            this.importFileToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.importFileToolStripMenuItem.Size = new System.Drawing.Size(178, 22);
             this.importFileToolStripMenuItem.Text = "Import Selected File";
             this.importFileToolStripMenuItem.Click += new System.EventHandler(this.importFileToolStripMenuItem_Click);
             // 
             // exportFileToolStripMenuItem
             // 
             this.exportFileToolStripMenuItem.Name = "exportFileToolStripMenuItem";
-            this.exportFileToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.exportFileToolStripMenuItem.Size = new System.Drawing.Size(178, 22);
             this.exportFileToolStripMenuItem.Text = "Export Selected File";
             this.exportFileToolStripMenuItem.Click += new System.EventHandler(this.exportFileToolStripMenuItem_Click);
+            // 
+            // toolStripSeparator1
+            // 
+            this.toolStripSeparator1.Name = "toolStripSeparator1";
+            this.toolStripSeparator1.Size = new System.Drawing.Size(175, 6);
+            // 
+            // exportAllToolStripMenuItem
+            // 
+            this.exportAllToolStripMenuItem.Name = "exportAllToolStripMenuItem";
+            this.exportAllToolStripMenuItem.Size = new System.Drawing.Size(178, 22);
+            this.exportAllToolStripMenuItem.Text = "Export All";
+            this.exportAllToolStripMenuItem.Click += new System.EventHandler(this.exportAllToolStripMenuItem_Click);
             // 
             // viewToolStripMenuItem
             // 
@@ -143,14 +156,14 @@ namespace AlienPAK
             // expandAllDirectoriesToolStripMenuItem
             // 
             this.expandAllDirectoriesToolStripMenuItem.Name = "expandAllDirectoriesToolStripMenuItem";
-            this.expandAllDirectoriesToolStripMenuItem.Size = new System.Drawing.Size(189, 22);
+            this.expandAllDirectoriesToolStripMenuItem.Size = new System.Drawing.Size(188, 22);
             this.expandAllDirectoriesToolStripMenuItem.Text = "Expand All Directories";
             this.expandAllDirectoriesToolStripMenuItem.Click += new System.EventHandler(this.expandAllDirectoriesToolStripMenuItem_Click);
             // 
             // shrinkAllDirectoriesToolStripMenuItem
             // 
             this.shrinkAllDirectoriesToolStripMenuItem.Name = "shrinkAllDirectoriesToolStripMenuItem";
-            this.shrinkAllDirectoriesToolStripMenuItem.Size = new System.Drawing.Size(189, 22);
+            this.shrinkAllDirectoriesToolStripMenuItem.Size = new System.Drawing.Size(188, 22);
             this.shrinkAllDirectoriesToolStripMenuItem.Text = "Shrink All Directories";
             this.shrinkAllDirectoriesToolStripMenuItem.Click += new System.EventHandler(this.shrinkAllDirectoriesToolStripMenuItem_Click);
             // 
@@ -173,18 +186,6 @@ namespace AlienPAK
             this.elementHost1.TabIndex = 17;
             this.elementHost1.Text = "elementHost1";
             this.elementHost1.Child = this.explorerControlsWPF1;
-            // 
-            // toolStripSeparator1
-            // 
-            this.toolStripSeparator1.Name = "toolStripSeparator1";
-            this.toolStripSeparator1.Size = new System.Drawing.Size(177, 6);
-            // 
-            // exportAllToolStripMenuItem
-            // 
-            this.exportAllToolStripMenuItem.Name = "exportAllToolStripMenuItem";
-            this.exportAllToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
-            this.exportAllToolStripMenuItem.Text = "Export All";
-            this.exportAllToolStripMenuItem.Click += new System.EventHandler(this.exportAllToolStripMenuItem_Click);
             // 
             // Explorer
             // 

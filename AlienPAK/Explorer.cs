@@ -235,17 +235,16 @@ namespace AlienPAK
                         {
                             byte[] content = File.ReadAllBytes(FilePicker.FileName);
                             //TODO: perhaps we need a custom UI for this to allow swapping high/low res assets individually
-                            Textures.TEX4.Part part = content?.ToTEX4Part(out texture.Format);
+                            Textures.TEX4.Texture part = content?.ToTEX4Part(out texture.Format);
                             if (part == null)
                             {
                                 MessageBox.Show("Please select a DX10 DDS image!\nIf you have converted this DDS yourself, you've converted it wrong - try using a tool like Nvidia Texture Tools Exporter.", "Import failed", MessageBoxButtons.OK, MessageBoxIcon.Error);
                                 break;
                             }
-                            part.unk3 = 4294967295;
-                            texture.Type = Textures.AlienTextureType.DIFFUSE; //todo: ui to allow selection of this
-                            texture.tex_HighRes = part.Copy();
-                            texture.tex_LowRes = part.Copy();
-                            texture.tex_LowRes.unk2 = 32768;
+                            texture.UsageFlags = Textures.TextureUsageFlag.DEFAULT | Textures.TextureUsageFlag.IS_LEVEL_PACK; //todo: ui to allow selection of this
+                            //texture.StateFlags = Textures.TextureStateFlag.
+                            texture.TextureStreamed = part.Copy();
+                            texture.TexturePersistent = part.Copy();
                             texturePAK.Entries.Add(texture);
                             SaveTexturesAndUpdateMaterials((Textures)pak.File, new Materials(extraPath));
                             break;
@@ -279,8 +278,6 @@ namespace AlienPAK
                                     MessageBox.Show("Failed to generate CS2 submesh from imported model submesh " + i + ".\nPlease check your submesh polycount - each may not exceed " + Int16.MaxValue + " verts.", "Import failed", MessageBoxButtons.OK, MessageBoxIcon.Error);
                                     return;
                                 }
-                                if (i == 0) submesh.Unknown2_ = 134282240;
-                                else submesh.Unknown2_ = 134239232;
                                 cs2.Components[0].LODs[0].Submeshes.Add(submesh);
                             }
                         }
@@ -454,15 +451,15 @@ namespace AlienPAK
                                 if (Path.GetExtension(FilePicker.FileName).ToUpper() == ".DDS")
                                 {
                                     byte[] content = File.ReadAllBytes(FilePicker.FileName);
-                                    Textures.TEX4.Part part = texture?.tex_HighRes?.Content != null ? texture.tex_HighRes : texture?.tex_LowRes?.Content != null ? texture.tex_LowRes : null;
+                                    Textures.TEX4.Texture part = texture?.TextureStreamed?.Content != null ? texture.TextureStreamed : texture?.TexturePersistent?.Content != null ? texture.TexturePersistent : null;
                                     part = content?.ToTEX4Part(out texture.Format, part);
                                     if (part == null)
                                     {
                                         MessageBox.Show("Please select a DX10 DDS image!\nIf you have converted this DDS yourself, you've converted it wrong - try using a tool like Nvidia Texture Tools Exporter.", "Import failed", MessageBoxButtons.OK, MessageBoxIcon.Error);
                                         break;
                                     }
-                                    if (texture?.tex_HighRes?.Content != null) texture.tex_HighRes = part;
-                                    else texture.tex_LowRes = part;
+                                    if (texture?.TextureStreamed?.Content != null) texture.TextureStreamed = part;
+                                    else texture.TexturePersistent = part;
                                     SaveTexturesAndUpdateMaterials((Textures)pak.File, new Materials(extraPath));
                                     break;
                                 }

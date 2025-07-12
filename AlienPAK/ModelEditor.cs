@@ -239,7 +239,6 @@ namespace AlienPAK
                 MessageBox.Show("An error occurred while generating the CS2 submesh!\nPlease try again, or use a different model.\nYour model must contain a single mesh in the root node.", "Error!", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
-            submesh.Unknown2_ = 134282240;
 
             switch (type)
             {
@@ -263,10 +262,7 @@ namespace AlienPAK
                     break;
                 case SelectedModelType.SUBMESH:
                     if (lookup.lod != null)
-                    {
-                        submesh.Unknown2_ = lookup.lod.Submeshes.Count == 0 ? (uint)134282240 : (uint)134239232; 
                         lookup.lod.Submeshes.Add(submesh);
-                    }
                     break;
             }
             RefreshTree();

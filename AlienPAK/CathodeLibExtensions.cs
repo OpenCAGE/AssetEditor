@@ -23,7 +23,6 @@ using System.Runtime.InteropServices;
 using System.Drawing.Imaging;
 using PixelFormat = System.Drawing.Imaging.PixelFormat;
 using Color = System.Windows.Media.Color;
-using static CATHODE.Textures;
 using System.Windows.Interop;
 using static CATHODE.Models.CS2.Component.LOD;
 
@@ -34,32 +33,59 @@ namespace AlienPAK
         /* Convert a TEX4 to DDS */
         public static byte[] ToDDS(this Textures.TEX4 texture, bool forceLowRes = false)
         {
-            Textures.TEX4.Part part = texture?.tex_HighRes?.Content != null && !forceLowRes ? texture.tex_HighRes : texture?.tex_LowRes?.Content != null ? texture.tex_LowRes : null;
+            Textures.TEX4.Texture part = texture?.TextureStreamed?.Content != null && !forceLowRes ? texture.TextureStreamed : texture?.TexturePersistent?.Content != null ? texture.TexturePersistent : null;
             if (part == null) return null;
             DirectXTexUtility.DXGIFormat format;
             switch (texture.Format)
             {
-                case Textures.TextureFormat.DXGI_FORMAT_BC5_UNORM:
-                    format = DirectXTexUtility.DXGIFormat.BC5UNORM;
+                case Textures.TextureFormat.A32R32G32B32F:
+                    format = DirectXTexUtility.DXGIFormat.R32G32B32A32FLOAT;
                     break;
-                case Textures.TextureFormat.DXGI_FORMAT_BC1_UNORM:
-                    format = DirectXTexUtility.DXGIFormat.BC1UNORM;
+                case Textures.TextureFormat.A16R16G16B16:
+                    format = DirectXTexUtility.DXGIFormat.R16G16B16A16UNORM;
                     break;
-                case Textures.TextureFormat.DXGI_FORMAT_BC3_UNORM:
-                    format = DirectXTexUtility.DXGIFormat.BC3UNORM;
+                case Textures.TextureFormat.A8R8G8B8:
+                    format = DirectXTexUtility.DXGIFormat.R8G8B8A8UNORM;
                     break;
-                case Textures.TextureFormat.DXGI_FORMAT_B8G8R8A8_UNORM:
-                    format = DirectXTexUtility.DXGIFormat.B8G8R8A8UNORM;
+                case Textures.TextureFormat.X8R8G8B8:
+                    format = DirectXTexUtility.DXGIFormat.B8G8R8X8UNORM;
                     break;
-                case Textures.TextureFormat.SIGNED_DISTANCE_FIELD:
+                case Textures.TextureFormat.A8:
+                    format = DirectXTexUtility.DXGIFormat.A8UNORM;
+                    break;
+                case Textures.TextureFormat.L8:
                     format = DirectXTexUtility.DXGIFormat.R8UNORM;
                     break;
-                default:
+                case Textures.TextureFormat.DXT1:
+                    format = DirectXTexUtility.DXGIFormat.BC1UNORM;
+                    break;
+                case Textures.TextureFormat.DXT3:
+                    format = DirectXTexUtility.DXGIFormat.BC2UNORM;
+                    break;
+                case Textures.TextureFormat.DXT5:
+                    format = DirectXTexUtility.DXGIFormat.BC3UNORM;
+                    break;
+                case Textures.TextureFormat.DXN:
+                    format = DirectXTexUtility.DXGIFormat.BC5UNORM;
+                    break;
+                case Textures.TextureFormat.A4R4G4B4:
+                    format = DirectXTexUtility.DXGIFormat.B4G4R4A4UNORM;
+                    break;
+                case Textures.TextureFormat.BC6H:
+                    format = DirectXTexUtility.DXGIFormat.BC6HUF16;
+                    break;
+                case Textures.TextureFormat.BC7:
                     format = DirectXTexUtility.DXGIFormat.BC7UNORM;
+                    break;
+                case Textures.TextureFormat.R16F:
+                    format = DirectXTexUtility.DXGIFormat.R16FLOAT;
+                    break;
+                default:
+                    format = DirectXTexUtility.DXGIFormat.UNKNOWN;
                     break;
             }
             DirectXTexUtility.GenerateDDSHeader(
-                DirectXTexUtility.GenerateMataData(part.Width, part.Height, part.MipLevels, format, texture.Type == Textures.AlienTextureType.ENVIRONMENT_MAP),
+                DirectXTexUtility.GenerateMataData(part.Width, part.Height, part.MipLevels, format, texture.StateFlags.HasFlag(Textures.TextureStateFlag.CUBE)),
                 DirectXTexUtility.DDSFlags.FORCEDX10EXT, out DirectXTexUtility.DDSHeader ddsHeader, out DirectXTexUtility.DX10Header dx10Header);
             MemoryStream ms = new MemoryStream();
             using (BinaryWriter bw = new BinaryWriter(ms))
@@ -71,9 +97,9 @@ namespace AlienPAK
         }
 
         /* Convert DDS to a TEX4 Part */
-        public static Textures.TEX4.Part ToTEX4Part(this byte[] content, out TextureFormat format, Textures.TEX4.Part part = null) //Optionally pass a part to start from
+        public static Textures.TEX4.Texture ToTEX4Part(this byte[] content, out Textures.TextureFormat format, Textures.TEX4.Texture part = null) //Optionally pass a part to start from
         {
-            if (part == null) part = new Textures.TEX4.Part();
+            if (part == null) part = new Textures.TEX4.Texture();
             MemoryStream imageStream = new MemoryStream(content);
             using (Pfim.IImage image = Pfim.Pfim.FromStream(imageStream))
             {
@@ -87,33 +113,55 @@ namespace AlienPAK
                 Pfim.DdsHeaderDxt10 header = ((Pfim.Dds)image).Header10;
                 if (header == null)
                 {
-                    format = (TextureFormat)0;
+                    format = (Textures.TextureFormat)0;
                     return null;
                 }
                 switch (header.DxgiFormat)
                 {
-                    //TODO: should the other non-UNORM formats redirect to these too?
-                    case Pfim.DxgiFormat.BC1_UNORM:
-                        format = TextureFormat.DXGI_FORMAT_BC1_UNORM;
+                    case Pfim.DxgiFormat.R32G32B32A32_FLOAT:
+                        format = Textures.TextureFormat.A32R32G32B32F;
                         break;
-                    case Pfim.DxgiFormat.BC3_UNORM:
-                        format = TextureFormat.DXGI_FORMAT_BC3_UNORM;
+                    case Pfim.DxgiFormat.R16G16B16A16_UNORM:
+                        format = Textures.TextureFormat.A16R16G16B16;
                         break;
-                    case Pfim.DxgiFormat.BC5_UNORM:
-                        format = TextureFormat.DXGI_FORMAT_BC5_UNORM;
+                    case Pfim.DxgiFormat.R8G8B8A8_UNORM:
+                        format = Textures.TextureFormat.A8R8G8B8;
                         break;
-                    case Pfim.DxgiFormat.B8G8R8A8_UNORM:
-                        format = TextureFormat.DXGI_FORMAT_B8G8R8A8_UNORM;
+                    case Pfim.DxgiFormat.B8G8R8X8_UNORM:
+                        format = Textures.TextureFormat.X8R8G8B8;
                         break;
-                    case Pfim.DxgiFormat.B8G8R8X8_UNORM: //unsure if this is correct
-                        format = TextureFormat.DXGI_FORMAT_B8G8R8_UNORM;
+                    case Pfim.DxgiFormat.A8_UNORM:
+                        format = Textures.TextureFormat.A8;
                         break;
                     case Pfim.DxgiFormat.R8_UNORM:
-                        format = TextureFormat.SIGNED_DISTANCE_FIELD;
+                        format = Textures.TextureFormat.L8;
+                        break;
+                    case Pfim.DxgiFormat.BC1_UNORM:
+                        format = Textures.TextureFormat.DXT1;
+                        break;
+                    case Pfim.DxgiFormat.BC2_UNORM:
+                        format = Textures.TextureFormat.DXT3;
+                        break;
+                    case Pfim.DxgiFormat.BC3_UNORM:
+                        format = Textures.TextureFormat.DXT5;
+                        break;
+                    case Pfim.DxgiFormat.BC5_UNORM:
+                        format = Textures.TextureFormat.DXN;
+                        break;
+                    case Pfim.DxgiFormat.B4G4R4A4_UNORM:
+                        format = Textures.TextureFormat.A4R4G4B4;
+                        break;
+                    case Pfim.DxgiFormat.BC6H_UF16:
+                        format = Textures.TextureFormat.BC6H;
                         break;
                     case Pfim.DxgiFormat.BC7_UNORM:
+                        format = Textures.TextureFormat.BC7;
+                        break;
+                    case Pfim.DxgiFormat.R16_FLOAT:
+                        format = Textures.TextureFormat.R16F;
+                        break;
                     default:
-                        format = TextureFormat.DXGI_FORMAT_BC7_UNORM;
+                        format = Textures.TextureFormat.BC7;
                         break;
                 }
             }
