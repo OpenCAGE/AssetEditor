@@ -100,16 +100,25 @@ namespace AlienPAK
         public static Textures.TEX4.Texture ToTEX4Part(this byte[] content, out Textures.TextureFormat format, Textures.TEX4.Texture part = null) //Optionally pass a part to start from
         {
             if (part == null) part = new Textures.TEX4.Texture();
-            MemoryStream imageStream = new MemoryStream(content);
+            using (MemoryStream imageStream = new MemoryStream(content))
             using (Pfim.IImage image = Pfim.Pfim.FromStream(imageStream))
             {
-                part.Depth = 1; //todo
+                part.Depth = (short)image.BitsPerPixel; // is this right
                 part.MipLevels = (short)image.MipMaps.Length;
                 part.Width = (short)image.Width;
                 part.Height = (short)image.Height;
-                List<byte> contentList = content.ToList();
-                contentList.RemoveRange(0, 148);
-                part.Content = contentList.ToArray();
+                byte[] contentTrimmed;
+                using (MemoryStream readerStream = new MemoryStream(content))
+                using (BinaryReader reader = new BinaryReader(readerStream))
+                {
+                    reader.BaseStream.Position = 84;
+                    if (reader.ReadChar() == 'D' && reader.ReadChar() == 'X' && reader.ReadChar() == '1' && reader.ReadChar() == '0')
+                        reader.BaseStream.Position = 148;
+                    else
+                        reader.BaseStream.Position = 128;
+                    contentTrimmed = reader.ReadBytes((int)(reader.BaseStream.Length - reader.BaseStream.Position));
+                }
+                part.Content = contentTrimmed;
                 Pfim.DdsHeaderDxt10 header = ((Pfim.Dds)image).Header10;
                 if (header == null)
                 {

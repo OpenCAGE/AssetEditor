@@ -377,6 +377,21 @@ namespace DirectXTex
             }
 
             /// <summary>
+            /// DDS Cubemap Flags for Caps2 Field
+            /// </summary>
+            public enum CubemapFlags : uint
+            {
+                CUBEMAP = 0x00000200, // DDSCAPS2_CUBEMAP
+                POSITIVEX = 0x00000400, // DDSCAPS2_CUBEMAP_POSITIVEX
+                NEGATIVEX = 0x00000800, // DDSCAPS2_CUBEMAP_NEGATIVEX
+                POSITIVEY = 0x00001000, // DDSCAPS2_CUBEMAP_POSITIVEY
+                NEGATIVEY = 0x00002000, // DDSCAPS2_CUBEMAP_NEGATIVEY
+                POSITIVEZ = 0x00004000, // DDSCAPS2_CUBEMAP_POSITIVEZ
+                NEGATIVEZ = 0x00008000, // DDSCAPS2_CUBEMAP_NEGATIVEZ
+                ALLFACES = 0x0000FE00, // DDSCAPS2_CUBEMAP | All face flags
+            }
+
+            /// <summary>
             /// DDS Magic/Four CC
             /// </summary>
             public const uint DDSMagic = 0x20534444;
@@ -916,6 +931,7 @@ namespace DirectXTex
             // Check for DX10 Ext
             if (flags.HasFlag(DDSFlags.FORCEDX10EXTMISC2))
                 flags |= DDSFlags.FORCEDX10EXT;
+            
             // Create DDS Header
             header = new DDSHeader
             {
@@ -927,109 +943,123 @@ namespace DirectXTex
             };
             // Create DX10 Header
             dx10Header = new DX10Header();
-            // Switch format
-            switch (metaData.Format)
+            
+            // --- REFACTORED LOGIC ---
+            // If the user forces a DX10 header, respect that above all else.
+            // Otherwise, try to find a legacy format mapping.
+            if (flags.HasFlag(DDSFlags.FORCEDX10EXT))
             {
-                case DXGIFormat.R8G8B8A8UNORM:
-                    header.PixelFormat = PixelFormats.A8B8G8R8;
-                    break;
-                case DXGIFormat.R16G16UNORM:
-                    header.PixelFormat = PixelFormats.G16R16;
-                    break;
-                case DXGIFormat.R8G8UNORM:
-                    header.PixelFormat = PixelFormats.A8L8;
-                    break;
-                case DXGIFormat.R16UNORM:
-                    header.PixelFormat = PixelFormats.L16;
-                    break;
-                case DXGIFormat.R8UNORM:
-                    header.PixelFormat = PixelFormats.L8;
-                    break;
-                case DXGIFormat.A8UNORM:
-                    header.PixelFormat = PixelFormats.A8;
-                    break;
-                case DXGIFormat.R8G8B8G8UNORM:
-                    header.PixelFormat = PixelFormats.R8G8B8G8;
-                    break;
-                case DXGIFormat.G8R8G8B8UNORM:
-                    header.PixelFormat = PixelFormats.G8R8G8B8;
-                    break;
-                case DXGIFormat.BC1UNORM:
-                    header.PixelFormat = PixelFormats.DXT1;
-                    break;
-                case DXGIFormat.BC2UNORM:
-                    header.PixelFormat = metaData.IsPMAlpha() ? (PixelFormats.DXT2) : (PixelFormats.DXT3);
-                    break;
-                case DXGIFormat.BC3UNORM:
-                    header.PixelFormat = metaData.IsPMAlpha() ? (PixelFormats.DXT4) : (PixelFormats.DXT5);
-                    break;
-                case DXGIFormat.BC4UNORM:
-                    header.PixelFormat = PixelFormats.BC4UNORM;
-                    break;
-                case DXGIFormat.BC4SNORM:
-                    header.PixelFormat = PixelFormats.BC4SNORM;
-                    break;
-                case DXGIFormat.BC5UNORM:
-                    header.PixelFormat = PixelFormats.BC5UNORM;
-                    break;
-                case DXGIFormat.BC5SNORM:
-                    header.PixelFormat = PixelFormats.BC5SNORM;
-                    break;
-                case DXGIFormat.B5G6R5UNORM:
-                    header.PixelFormat = PixelFormats.R5G6B5;
-                    break;
-                case DXGIFormat.B5G5R5A1UNORM:
-                    header.PixelFormat = PixelFormats.A1R5G5B5;
-                    break;
-                case DXGIFormat.R8G8SNORM:
-                    header.PixelFormat = PixelFormats.V8U8;
-                    break;
-                case DXGIFormat.R8G8B8A8SNORM:
-                    header.PixelFormat = PixelFormats.Q8W8V8U8;
-                    break;
-                case DXGIFormat.R16G16SNORM:
-                    header.PixelFormat = PixelFormats.V16U16;
-                    break;
-                case DXGIFormat.B8G8R8A8UNORM:
-                    header.PixelFormat = PixelFormats.A8R8G8B8;
-                    break;
-                case DXGIFormat.B8G8R8X8UNORM:
-                    header.PixelFormat = PixelFormats.X8R8G8B8;
-                    break;
-                case DXGIFormat.B4G4R4A4UNORM:
-                    header.PixelFormat = PixelFormats.A4R4G4B4;
-                    break;
-                case DXGIFormat.YUY2:
-                    header.PixelFormat = PixelFormats.YUY2;
-                    break;
-                // Legacy D3DX formats using D3DFMT enum value as FourCC
-                case DXGIFormat.R32G32B32A32FLOAT:
-                    header.PixelFormat.Flags = PixelFormats.DDSFOURCC; header.PixelFormat.FourCC = 116;  // D3DFMTA32B32G32R32F
-                    break;
-                case DXGIFormat.R16G16B16A16FLOAT:
-                    header.PixelFormat.Flags = PixelFormats.DDSFOURCC; header.PixelFormat.FourCC = 113;  // D3DFMTA16B16G16R16F
-                    break;
-                case DXGIFormat.R16G16B16A16UNORM:
-                    header.PixelFormat.Flags = PixelFormats.DDSFOURCC; header.PixelFormat.FourCC = 36;  // D3DFMTA16B16G16R16
-                    break;
-                case DXGIFormat.R16G16B16A16SNORM:
-                    header.PixelFormat.Flags = PixelFormats.DDSFOURCC; header.PixelFormat.FourCC = 110;  // D3DFMTQ16W16V16U16
-                    break;
-                case DXGIFormat.R32G32FLOAT:
-                    header.PixelFormat.Flags = PixelFormats.DDSFOURCC; header.PixelFormat.FourCC = 115;  // D3DFMTG32R32F
-                    break;
-                case DXGIFormat.R16G16FLOAT:
-                    header.PixelFormat.Flags = PixelFormats.DDSFOURCC; header.PixelFormat.FourCC = 112;  // D3DFMTG16R16F
-                    break;
-                case DXGIFormat.R32FLOAT:
-                    header.PixelFormat.Flags = PixelFormats.DDSFOURCC; header.PixelFormat.FourCC = 114;  // D3DFMTR32F
-                    break;
-                case DXGIFormat.R16FLOAT:
-                    header.PixelFormat.Flags = PixelFormats.DDSFOURCC; header.PixelFormat.FourCC = 111;  // D3DFMTR16F
-                    break;
-                default:
-                    break;
+                header.PixelFormat = PixelFormats.DX10;
             }
+            else
+            {
+                // Switch format to find a legacy mapping
+                switch (metaData.Format)
+                {
+                    case DXGIFormat.R8G8B8A8UNORM:
+                        header.PixelFormat = PixelFormats.A8B8G8R8;
+                        break;
+                    case DXGIFormat.R16G16UNORM:
+                        header.PixelFormat = PixelFormats.G16R16;
+                        break;
+                    case DXGIFormat.R8G8UNORM:
+                        header.PixelFormat = PixelFormats.A8L8;
+                        break;
+                    case DXGIFormat.R16UNORM:
+                        header.PixelFormat = PixelFormats.L16;
+                        break;
+                    case DXGIFormat.R8UNORM:
+                        header.PixelFormat = PixelFormats.L8;
+                        break;
+                    case DXGIFormat.A8UNORM:
+                        header.PixelFormat = PixelFormats.A8;
+                        break;
+                    case DXGIFormat.R8G8B8G8UNORM:
+                        header.PixelFormat = PixelFormats.R8G8B8G8;
+                        break;
+                    case DXGIFormat.G8R8G8B8UNORM:
+                        header.PixelFormat = PixelFormats.G8R8G8B8;
+                        break;
+                    case DXGIFormat.BC1UNORM:
+                        header.PixelFormat = PixelFormats.DXT1;
+                        break;
+                    case DXGIFormat.BC2UNORM:
+                        header.PixelFormat = metaData.IsPMAlpha() ? (PixelFormats.DXT2) : (PixelFormats.DXT3);
+                        break;
+                    case DXGIFormat.BC3UNORM:
+                        header.PixelFormat = metaData.IsPMAlpha() ? (PixelFormats.DXT4) : (PixelFormats.DXT5);
+                        break;
+                    case DXGIFormat.BC4UNORM:
+                        header.PixelFormat = PixelFormats.BC4UNORM;
+                        break;
+                    case DXGIFormat.BC4SNORM:
+                        header.PixelFormat = PixelFormats.BC4SNORM;
+                        break;
+                    case DXGIFormat.BC5UNORM:
+                        header.PixelFormat = PixelFormats.BC5UNORM;
+                        break;
+                    case DXGIFormat.BC5SNORM:
+                        header.PixelFormat = PixelFormats.BC5SNORM;
+                        break;
+                    case DXGIFormat.B5G6R5UNORM:
+                        header.PixelFormat = PixelFormats.R5G6B5;
+                        break;
+                    case DXGIFormat.B5G5R5A1UNORM:
+                        header.PixelFormat = PixelFormats.A1R5G5B5;
+                        break;
+                    case DXGIFormat.R8G8SNORM:
+                        header.PixelFormat = PixelFormats.V8U8;
+                        break;
+                    case DXGIFormat.R8G8B8A8SNORM:
+                        header.PixelFormat = PixelFormats.Q8W8V8U8;
+                        break;
+                    case DXGIFormat.R16G16SNORM:
+                        header.PixelFormat = PixelFormats.V16U16;
+                        break;
+                    case DXGIFormat.B8G8R8A8UNORM:
+                        header.PixelFormat = PixelFormats.A8R8G8B8;
+                        break;
+                    case DXGIFormat.B8G8R8X8UNORM:
+                        header.PixelFormat = PixelFormats.X8R8G8B8;
+                        break;
+                    case DXGIFormat.B4G4R4A4UNORM:
+                        header.PixelFormat = PixelFormats.A4R4G4B4;
+                        break;
+                    case DXGIFormat.YUY2:
+                        header.PixelFormat = PixelFormats.YUY2;
+                        break;
+                    // Legacy D3DX formats using D3DFMT enum value as FourCC
+                    case DXGIFormat.R32G32B32A32FLOAT:
+                        header.PixelFormat.Flags = PixelFormats.DDSFOURCC; header.PixelFormat.FourCC = 116;  // D3DFMTA32B32G32R32F
+                        break;
+                    case DXGIFormat.R16G16B16A16FLOAT:
+                        header.PixelFormat.Flags = PixelFormats.DDSFOURCC; header.PixelFormat.FourCC = 113;  // D3DFMTA16B16G16R16F
+                        break;
+                    case DXGIFormat.R16G16B16A16UNORM:
+                        header.PixelFormat.Flags = PixelFormats.DDSFOURCC; header.PixelFormat.FourCC = 36;  // D3DFMTA16B16G16R16
+                        break;
+                    case DXGIFormat.R16G16B16A16SNORM:
+                        header.PixelFormat.Flags = PixelFormats.DDSFOURCC; header.PixelFormat.FourCC = 110;  // D3DFMTQ16W16V16U16
+                        break;
+                    case DXGIFormat.R32G32FLOAT:
+                        header.PixelFormat.Flags = PixelFormats.DDSFOURCC; header.PixelFormat.FourCC = 115;  // D3DFMTG32R32F
+                        break;
+                    case DXGIFormat.R16G16FLOAT:
+                        header.PixelFormat.Flags = PixelFormats.DDSFOURCC; header.PixelFormat.FourCC = 112;  // D3DFMTG16R16F
+                        break;
+                    case DXGIFormat.R32FLOAT:
+                        header.PixelFormat.Flags = PixelFormats.DDSFOURCC; header.PixelFormat.FourCC = 114;  // D3DFMTR32F
+                        break;
+                    case DXGIFormat.R16FLOAT:
+                        header.PixelFormat.Flags = PixelFormats.DDSFOURCC; header.PixelFormat.FourCC = 111;  // D3DFMTR16F
+                        break;
+                    default:
+                        // This format has no legacy mapping, so it will require the DX10 header.
+                        // We leave the pixel format empty (Size = 0), which will force the DX10 path below.
+                        break;
+                }
+            }
+            
             // Check for mips
             if (metaData.MipLevels > 0)
             {
@@ -1115,14 +1145,14 @@ namespace DirectXTex
                 header.PitchOrLinearSize = (uint)rowPitch;
             }
 
-            // Check for do we need to create the DX10 Header
-            if (header.PixelFormat.Size == 0)
+            // If the pixel format has no legacy mapping (Size == 0) or if DX10 was forced, generate the DX10 header.
+            if (header.PixelFormat.Size == 0 || header.PixelFormat.FourCC == PixelFormats.DX10.FourCC)
             {
+                header.PixelFormat = PixelFormats.DX10;
+
                 // Check size
                 if (metaData.ArraySize > UInt16.MaxValue)
                     throw new ArgumentException(String.Format("Array Size too large: {0}. Max: {1}", metaData.ArraySize, UInt16.MaxValue));
-                // Set Pixel format
-                header.PixelFormat = PixelFormats.DX10;
                 // Set Data
                 dx10Header.Format = metaData.Format;
                 dx10Header.ResourceDimension = metaData.Dimension;
@@ -1134,11 +1164,15 @@ namespace DirectXTex
                     // Check array size, must be a multiple of 6 for cube maps
                     if ((metaData.ArraySize % 6) != 0)
                         throw new ArgumentException("Array size must be a multiple of 6");
-                    // Set Flag
+                    
                     dx10Header.MiscFlag |= TexMiscFlags.TEXTURECUBE;
                     dx10Header.ArraySize /= 6;
+
+                    // Set the mandatory cubemap flags in the main DDS header
+                    header.Caps |= (uint)DDSHeader.SurfaceFlags.CUBEMAP;
+                    header.Caps2 |= (uint)DDSHeader.CubemapFlags.ALLFACES;
                 }
-                // Check for mist flags
+                // Check for misc flags
                 if (flags.HasFlag(DDSFlags.FORCEDX10EXTMISC2))
                     // This was formerly 'reserved'. D3DX10 and D3DX11 will fail if this value is anything other than 0
                     dx10Header.MiscFlags2 = (uint)metaData.MiscFlags2;

@@ -43,7 +43,7 @@
   </PropertyGroup>
   <ItemGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'">
     <Reference Include="CathodeLib">
-      <HintPath>..\CathodeLib\CathodeLib\bin\Debug\netstandard2.0\CathodeLib.dll</HintPath>
+      <HintPath>..\CathodeLib\CathodeLib\obj\Debug\netstandard2.0\CathodeLib.dll</HintPath>
     </Reference>
     <Reference Include="HelixToolkit">
       <HintPath>lib\HelixToolkit\Debug\HelixToolkit.dll</HintPath>
