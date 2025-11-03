@@ -1,5 +1,6 @@
-﻿using CATHODE.LEGACY;
+﻿using Assimp;
 using CATHODE;
+using CATHODE.LEGACY;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -7,20 +8,20 @@ using System.Data;
 using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using static CATHODE.Materials.Material;
-using System.Windows.Media.Media3D;
 using System.Windows.Media;
-using static CATHODE.Models;
-using static CATHODE.Models.CS2.Component;
 using System.Windows.Media.Animation;
-using static CATHODE.Models.CS2.Component.LOD;
-using Assimp;
-using System.Runtime.InteropServices;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement.StartPanel;
+using System.Windows.Media.Media3D;
+using static CATHODE.Materials.Material;
+using static CATHODE.Models;
 using static CATHODE.Models.CS2;
+using static CATHODE.Models.CS2.Component;
+using static CATHODE.Models.CS2.Component.LOD;
+using static CATHODE.Shaders;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement.StartPanel;
 
 namespace AlienPAK
 {
@@ -33,21 +34,19 @@ namespace AlienPAK
         private Textures _textures = null;
         private Textures _texturesGlobal = null;
         private Materials _materials = null;
-        private ShadersPAK _shaders = null;
-        private IDXRemap _shadersIDX = null;
+        private Shaders _shaders = null;
 
         private const string _fileFilter = "FBX Model|*.fbx|GLTF Model|*.gltf|OBJ Model|*.obj"; //TODO: we can support loads here with assimp (importer.GetSupportedExportFormats())
 
         ModelEditorControlsWPF _controls;
 
-        public ModelEditor(CS2 model = null, Textures textures = null, Textures texturesGlobal = null, Materials materials = null, ShadersPAK shaders = null, IDXRemap shadersIDX = null)
+        public ModelEditor(CS2 model = null, Textures textures = null, Textures texturesGlobal = null, Materials materials = null, Shaders shaders = null)
         {
             _model = model;
             _textures = textures;
             _texturesGlobal = texturesGlobal;
             _materials = materials;
             _shaders = shaders;
-            _shadersIDX = shadersIDX;
 
             InitializeComponent();
             _treeHelper = new TreeUtility(FileTree);
@@ -72,7 +71,7 @@ namespace AlienPAK
         {
             StringMeshLookup lookup = _treeLookup.FirstOrDefault(o => o.String == FileTree.SelectedNode?.FullPath);
             if (lookup == null || lookup.submesh == null) return;
-            lookup.submesh.ScaleFactor = (ushort)scaleFactor;
+            lookup.submesh.VertexScale = (ushort)scaleFactor;
         }
 
         /* Export model by selected part */
@@ -176,14 +175,14 @@ namespace AlienPAK
                 MessageBox.Show("An error occurred while generating the CS2 submesh!\nPlease try again, or use a different model.\nYour model must contain a single mesh in the root node.", "Error!", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
-            lookup.submesh.content = submesh.content;
+            lookup.submesh.Data = submesh.Data;
             lookup.submesh.IndexCount = submesh.IndexCount;
             lookup.submesh.VertexCount = submesh.VertexCount;
-            lookup.submesh.VertexFormat = submesh.VertexFormat;
-            lookup.submesh.VertexFormatLowDetail = submesh.VertexFormatLowDetail;
-            lookup.submesh.ScaleFactor = submesh.ScaleFactor;
-            lookup.submesh.AABBMax = submesh.AABBMax;
-            lookup.submesh.AABBMin = submesh.AABBMin;
+            lookup.submesh.VertexFormatFull = submesh.VertexFormatFull;
+            lookup.submesh.VertexFormatPartial = submesh.VertexFormatPartial;
+            lookup.submesh.VertexScale = submesh.VertexScale;
+            lookup.submesh.MaxBounds = submesh.MaxBounds;
+            lookup.submesh.MinBounds = submesh.MinBounds;
             //lookup.submesh.LODMaxDistance_ = 99999999;
             //lookup.submesh.LODMinDistance_ = -99999999;
             RefreshTree();
@@ -274,10 +273,10 @@ namespace AlienPAK
             if (FileTree.SelectedNode == null) return;
             StringMeshLookup lookup = _treeLookup.FirstOrDefault(o => o.String == FileTree.SelectedNode.FullPath);
             if (lookup == null || lookup.submesh == null) return;
-            Materials.Material material = _materials.GetAtWriteIndex(lookup.submesh.MaterialLibraryIndex);
+            Materials.Material material = _materials.GetAtWriteIndex(lookup.submesh.MaterialIndex);
             if (material == null) return;
 
-            MaterialEditor materialEditor = new MaterialEditor(material, _materials, _shaders, _textures, _texturesGlobal, _shadersIDX);
+            MaterialEditor materialEditor = new MaterialEditor(material, _materials, _shaders, _textures, _texturesGlobal);
             materialEditor.OnMaterialSelected += OnMaterialSelected;
             materialEditor.Show();
         }
@@ -286,7 +285,7 @@ namespace AlienPAK
             StringMeshLookup lookup = _treeLookup.FirstOrDefault(o => o.String == FileTree.SelectedNode.FullPath);
             Submesh submesh = lookup?.submesh;
             if (submesh == null) return;
-            submesh.MaterialLibraryIndex = index;
+            submesh.MaterialIndex = index;
             RefreshSelectedModelPreview(false);
 
             this.Focus();
@@ -331,31 +330,12 @@ namespace AlienPAK
                         GeometryModel3D mdl = submesh.ToGeometryModel3D();
                         try
                         {
-                            Materials.Material material = _materials.GetAtWriteIndex(submesh.MaterialLibraryIndex);
+                            Materials.Material material = _materials.GetAtWriteIndex(submesh.MaterialIndex);
                             if (lookup?.submesh != null) materialInfo = material.Name;
                             if (_controls.renderMaterials.IsChecked == true)
                             {
-                                ShadersPAK.ShaderMaterialMetadata mdlMeta = _shaders.GetMaterialMetadataFromShader(material);
-                                MaterialGroup mg = new MaterialGroup();
-                                ShadersPAK.MaterialTextureContext mdlMetaDiff = mdlMeta.textures.FirstOrDefault(o => o.Type == ShadersPAK.ShaderSlot.DIFFUSE_MAP);
-                                if (mdlMetaDiff?.TextureInfo != null)
-                                {
-                                    Textures tex = mdlMetaDiff.TextureInfo.Source == Texture.TextureSource.GLOBAL ? _texturesGlobal : _textures;
-                                    Textures.TEX4 diff = tex.GetAtWriteIndex(mdlMetaDiff.TextureInfo.BinIndex);
-                                    mg.Children.Add(new DiffuseMaterial(new ImageBrush(diff?.ToDDS()?.ToBitmap()?.ToImageSource())));
-                                }
-                                /*
-                                mdlMetaDiff = mdlMeta.textures.FirstOrDefault(o => o.Type == ShadersPAK.ShaderSlot.SPECULAR_MAP);
-                                if (mdlMetaDiff?.TextureInfo != null)
-                                {
-                                    Textures tex = mdlMetaDiff.TextureInfo.Source == Texture.TextureSource.GLOBAL ? _texturesGlobal : _textures;
-                                    Textures.TEX4 diff = tex.GetAtWriteIndex(mdlMetaDiff.TextureInfo.BinIndex);
-                                    mg.Children.Add(new SpecularMaterial(new ImageBrush(diff?.ToDDS()?.ToBitmap()?.ToImageSource()), 1.0f)); //todo get specular from cst
-                                }
-                                */
-                                mg.Freeze();
-                                mdl.Material = mg;
-                                mdl.BackMaterial = null;
+                                Shaders.Shader shader = _shaders.Entries[material.ShaderIndex];
+                                MaterialApplier.ApplyMaterial(mdl, material, shader, _textures, _texturesGlobal);
                             }
                         }
                         catch (Exception ex2)
@@ -370,7 +350,7 @@ namespace AlienPAK
             }
 
             string[] nameContents = (FileTree.SelectedNode.FullPath + "\\").Split('\\');
-            _controls.SetModelPreview(model, nameContents[nameContents.Length - 2], vertCount, materialInfo, lookup?.submesh == null ? -1 : (int)lookup.submesh.ScaleFactor, doZoom); 
+            _controls.SetModelPreview(model, nameContents[nameContents.Length - 2], vertCount, materialInfo, lookup?.submesh == null ? -1 : (int)lookup.submesh.VertexScale, doZoom); 
         }
 
         private class StringMeshLookup

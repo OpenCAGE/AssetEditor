@@ -59,7 +59,7 @@ namespace AlienPAK
                     _file = new MaterialMappings(path);
                     _type = PAKType.MATERIAL_MAPPINGS;
                     for (int i = 0; i < ((MaterialMappings)_file).Entries.Count; i++)
-                        _contents.Add(((MaterialMappings)_file).Entries[i].MapFilename);
+                        _contents.Add(((MaterialMappings)_file).Entries[i].Name);
                     break;
                 case "COMMANDS.PAK":
                     _file = new Commands(path);
@@ -208,7 +208,7 @@ namespace AlienPAK
                     return ms.ToArray();
                 case PAKType.MATERIAL_MAPPINGS:
                     //TODO!
-                    MaterialMappings.Mapping map = ((MaterialMappings)_file).Entries.FirstOrDefault(o => o.MapFilename.Replace('\\', '/') == FileName.Replace('\\', '/'));
+                    MaterialMappings.Entry map = ((MaterialMappings)_file).Entries.FirstOrDefault(o => o.Name.Replace('\\', '/') == FileName.Replace('\\', '/'));
                     return null;
                 case PAKType.MODELS:
                     return null;

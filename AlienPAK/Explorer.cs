@@ -31,7 +31,7 @@ namespace AlienPAK
         public Textures textures = null;
         public Textures texturesGlobal = null;
         public Materials materials = null;
-        public ShadersPAK shaders = null;
+        public Shaders shaders = null;
         public IDXRemap shadersIDX = null;
 
         TreeUtility treeHelper;
@@ -157,8 +157,7 @@ namespace AlienPAK
                         textures = new Textures(path + "ENV/PRODUCTION/" + level + "/RENDERABLE/LEVEL_TEXTURES.ALL.PAK");
                         texturesGlobal = new Textures(path + "ENV/GLOBAL/WORLD/GLOBAL_TEXTURES.ALL.PAK");
                         materials = new Materials(path + "ENV/PRODUCTION/" + level + "/RENDERABLE/LEVEL_MODELS.MTL");
-                        shaders = new ShadersPAK(path + "ENV/PRODUCTION/" + level + "/RENDERABLE/LEVEL_SHADERS_DX11.PAK"); //legacy!
-                        shadersIDX = new IDXRemap(path + "ENV/PRODUCTION/" + level + "/RENDERABLE/LEVEL_SHADERS_DX11_IDX_REMAP.PAK"); //legacy!
+                        shaders = new Shaders(path + "ENV/PRODUCTION/" + level + "/RENDERABLE/LEVEL_SHADERS_DX11.PAK"); 
 
                         path += "ENV/PRODUCTION/" + level + "/RENDERABLE/LEVEL_MODELS.PAK";
                     }
@@ -334,7 +333,7 @@ namespace AlienPAK
                                 SaveTexturesAndUpdateMaterials((Textures)pak.File, new Materials(extraPath));
                                 break;
                             case PAKType.MATERIAL_MAPPINGS:
-                                ((MaterialMappings)pak.File).Entries.RemoveAll(o => o.MapFilename.Replace('\\', '/') == nodeVal.Replace('\\', '/'));
+                                ((MaterialMappings)pak.File).Entries.RemoveAll(o => o.Name.Replace('\\', '/') == nodeVal.Replace('\\', '/'));
                                 pak.File.Save();
                                 break;
                             case PAKType.MODELS:
@@ -422,7 +421,7 @@ namespace AlienPAK
                     if (pak.Type == PAKType.MODELS)
                     {
                         Models.CS2 cs2 = ((Models)pak.File).Entries.FirstOrDefault(o => o.Name.Replace('\\', '/') == nodeVal.Replace('\\', '/'));
-                        ModelEditor modelEditor = new ModelEditor(cs2, textures, texturesGlobal, materials, shaders, shadersIDX);
+                        ModelEditor modelEditor = new ModelEditor(cs2, textures, texturesGlobal, materials, shaders);
                         modelEditor.FormClosed += ModelEditor_FormClosed;
                         modelEditor.Show();
                         break;
@@ -655,26 +654,14 @@ namespace AlienPAK
                                 {
                                     foreach (Models.CS2.Component.LOD.Submesh submesh in lod.Submeshes)
                                     {
-                                        GeometryModel3D mdl = submesh.ToGeometryModel3D();
+                                        GeometryModel3D submeshGeo = submesh.ToGeometryModel3D();
                                         verts += submesh.VertexCount;
-                                        try
-                                        {
-                                            ShadersPAK.ShaderMaterialMetadata mdlMeta = shaders.GetMaterialMetadataFromShader(materials.GetAtWriteIndex(submesh.MaterialLibraryIndex));
-                                            ShadersPAK.MaterialTextureContext mdlMetaDiff = mdlMeta.textures.FirstOrDefault(o => o.Type == ShadersPAK.ShaderSlot.DIFFUSE_MAP);
-                                            if (mdlMetaDiff != null)
-                                            {
-                                                Textures tex = mdlMetaDiff.TextureInfo.Source == Texture.TextureSource.GLOBAL ? texturesGlobal : textures;
-                                                Textures.TEX4 diff = tex.GetAtWriteIndex(mdlMetaDiff.TextureInfo.BinIndex);
-                                                byte[] diffDDS = diff?.ToDDS();
-                                                mdl.Material = new DiffuseMaterial(new ImageBrush(diffDDS?.ToBitmap()?.ToImageSource()));
-                                                //TODO: normals?
-                                            }
-                                        }
-                                        catch (Exception ex2)
-                                        {
-                                            Console.WriteLine(ex2.ToString());
-                                        }
-                                        model.Children.Add(mdl); //TODO: are there some offsets/scaling we should be accounting for here?
+
+                                        Materials.Material material = materials.GetAtWriteIndex(submesh.MaterialIndex);
+                                        Shaders.Shader shader = shaders.Entries[material.ShaderIndex];
+                                        MaterialApplier.ApplyMaterial(submeshGeo, material, shader, textures, texturesGlobal);
+
+                                        model.Children.Add(submeshGeo); //TODO: are there some offsets/scaling we should be accounting for here?
                                     }
                                 }
                             }
@@ -758,16 +745,16 @@ namespace AlienPAK
             List<Textures.TEX4> materialTextures = new List<Textures.TEX4>();
             for (int i = 0; i < materials.Entries.Count; i++)
             {
-                for (int x = 0; x < materials.Entries[i].TextureReferences.Length; x++)
+                for (int x = 0; x < materials.Entries[i].TextureReferences.Count; x++)
                 {
                     if (materials.Entries[i].TextureReferences[x] == null) continue;
-                    switch (materials.Entries[i].TextureReferences[x].Source)
+                    switch (materials.Entries[i].TextureReferences[x].Location)
                     {
-                        case Materials.Material.Texture.TextureSource.LEVEL:
-                            materialTextures.Add(texturesPAK.GetAtWriteIndex(materials.Entries[i].TextureReferences[x].BinIndex));
+                        case TexturePtr.Source.LEVEL:
+                            materialTextures.Add(texturesPAK.GetAtWriteIndex(materials.Entries[i].TextureReferences[x].Index));
                             break;
-                        case Materials.Material.Texture.TextureSource.GLOBAL:
-                            materialTextures.Add(null/*GlobalTextures.GetAtWriteIndex(materials.Entries[i].TextureReferences[x].BinIndex)*/);
+                        case TexturePtr.Source.GLOBAL:
+                            materialTextures.Add(null/*GlobalTextures.GetAtWriteIndex(materials.Entries[i].TextureReferences[x].Index)*/);
                             break;
                     }
                 }
@@ -777,16 +764,16 @@ namespace AlienPAK
             int y = 0;
             for (int i = 0; i < materials.Entries.Count; i++)
             {
-                for (int x = 0; x < materials.Entries[i].TextureReferences.Length; x++)
+                for (int x = 0; x < materials.Entries[i].TextureReferences.Count; x++)
                 {
                     if (materials.Entries[i].TextureReferences[x] == null) continue;
-                    switch (materials.Entries[i].TextureReferences[x].Source)
+                    switch (materials.Entries[i].TextureReferences[x].Location)
                     {
-                        case Materials.Material.Texture.TextureSource.LEVEL:
-                            materials.Entries[i].TextureReferences[x].BinIndex = texturesPAK.GetWriteIndex(materialTextures[y]);
+                        case TexturePtr.Source.LEVEL:
+                            materials.Entries[i].TextureReferences[x].Index = texturesPAK.GetWriteIndex(materialTextures[y]);
                             break;
-                        case Materials.Material.Texture.TextureSource.GLOBAL:
-                            //materials.Entries[i].TextureReferences[x].BinIndex = GlobalTextures.GetWriteIndex(materialTextures[y]);
+                        case TexturePtr.Source.GLOBAL:
+                            //materials.Entries[i].TextureReferences[x].Index = GlobalTextures.GetWriteIndex(materialTextures[y]);
                             break;
                     }
                     y++;

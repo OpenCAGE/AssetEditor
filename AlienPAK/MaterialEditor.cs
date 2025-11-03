@@ -24,10 +24,9 @@ namespace AlienPAK
     public partial class MaterialEditor : Form
     {
         Materials _materials = null;
-        ShadersPAK _shaders = null;
+        Shaders _shaders = null;
         Textures _textures = null;
         Textures _texturesGlobal = null;
-        IDXRemap _shadersIDX = null;
 
         List<Materials.Material> _sortedMaterials = new List<Materials.Material>();
         ShadersPAK.ShaderMaterialMetadata _selectedMaterialMeta = null;
@@ -37,13 +36,12 @@ namespace AlienPAK
 
         public Action<int> OnMaterialSelected;
 
-        public MaterialEditor(Materials.Material material = null, Materials materials = null, ShadersPAK shaders = null, Textures textures = null, Textures texturesGlobal = null, IDXRemap shadersIDX = null)
+        public MaterialEditor(Materials.Material material = null, Materials materials = null, Shaders shaders = null, Textures textures = null, Textures texturesGlobal = null)
         {
             _materials = materials;
             _shaders = shaders;
             _textures = textures;
             _texturesGlobal = texturesGlobal;
-            _shadersIDX = shadersIDX;
 
             InitializeComponent();
             if (_materials == null) return;
@@ -96,7 +94,7 @@ namespace AlienPAK
             ShadersPAK.MaterialTextureContext textureInfo = _selectedMaterialMeta.textures[_controls.materialTextureSelection.SelectedIndex];
             if (textureInfo.TextureInfo == null)
             {
-                Texture tex = new Texture();
+                TexturePtr tex = new TexturePtr();
                 textureInfo.TextureInfo = tex;
                 _sortedMaterials[materialList.SelectedIndex].TextureReferences[_controls.materialTextureSelection.SelectedIndex] = tex;
             }
@@ -107,8 +105,8 @@ namespace AlienPAK
             }
             else
             {
-                textureInfo.TextureInfo.BinIndex = texDB.GetWriteIndex(texDB.Entries[index]);
-                textureInfo.TextureInfo.Source = global ? Texture.TextureSource.GLOBAL : Texture.TextureSource.LEVEL;
+                textureInfo.TextureInfo.Index = texDB.GetWriteIndex(texDB.Entries[index]);
+                textureInfo.TextureInfo.Location = global ? TexturePtr.Source.GLOBAL : TexturePtr.Source.LEVEL;
             }
             ShowTextureForMaterial(_controls.materialTextureSelection.SelectedIndex);
             _doingSelection = false;
@@ -133,6 +131,7 @@ namespace AlienPAK
 
         private void MaterialPropertyChanged<T>(MaterialProperty property, T val)
         {
+            /*
             Console.WriteLine("MaterialPropertyChanged");
             if (_selectedMaterialMeta == null || materialList.SelectedIndex == -1 || _sortedMaterials[materialList.SelectedIndex] == null || _selectedMaterialShader == null) return;
             int offset = _sortedMaterials[materialList.SelectedIndex].ConstantBuffers[2].Offset;
@@ -156,6 +155,7 @@ namespace AlienPAK
             BinaryWriter cstWriter = new BinaryWriter(new MemoryStream(_materials.CSTData[2]));
             WriteToCST<T>(ref cstWriter, offset * 4, val);
             cstWriter.Close();
+            */
         }
 
         private void OnMaterialTextureIndexSelected(int index)
@@ -167,6 +167,7 @@ namespace AlienPAK
         bool _doingSelection = false; //temp hack for crap global implementation fix
         private void materialList_SelectedIndexChanged(object sender, EventArgs e)
         {
+            /*
             Console.WriteLine("materialList_SelectedIndexChanged");
             _doingSelection = true;
             _selectedMaterialMeta = null;
@@ -198,10 +199,12 @@ namespace AlienPAK
 
             UpdateShaderCSTInfo(_selectedMaterialMeta.cstIndexes, _selectedMaterialShader, _sortedMaterials[materialList.SelectedIndex]);
             _doingSelection = false;
+            */
         }
 
         private void UpdateShaderCSTInfo(ShadersPAK.MaterialPropertyIndex cstIndexes, ShadersPAK.ShaderEntry shader, Materials.Material InMaterial)
         {
+            /*
             BinaryReader cstReader = new BinaryReader(new MemoryStream(_materials.CSTData[2]));
             int baseOffset = (InMaterial.ConstantBuffers[2].Offset * 4);
 
@@ -240,6 +243,7 @@ namespace AlienPAK
             }
 
             cstReader.Close();
+            */
         }
 
         private void ShowTextureForMaterial(int index)
@@ -255,13 +259,13 @@ namespace AlienPAK
                 return;
             }
 
-            bool isGlobal = mdlMetaDiff.TextureInfo.Source == Texture.TextureSource.GLOBAL;
+            bool isGlobal = mdlMetaDiff.TextureInfo.Location == TexturePtr.Source.GLOBAL;
             if (isGlobal != _controls.textureUseGlobal.IsChecked || _controls.textureFile.Items.Count == 0)
             {
                 _controls.textureUseGlobal.IsChecked = isGlobal;
                 UpdateTextureDropdown(isGlobal);
             }
-            Textures.TEX4 diff = (mdlMetaDiff.TextureInfo.Source == Texture.TextureSource.GLOBAL ? _texturesGlobal : _textures).GetAtWriteIndex(mdlMetaDiff.TextureInfo.BinIndex);
+            Textures.TEX4 diff = (mdlMetaDiff.TextureInfo.Location == TexturePtr.Source.GLOBAL ? _texturesGlobal : _textures).GetAtWriteIndex(mdlMetaDiff.TextureInfo.Index);
             _controls.textureFile.SelectedItem = diff == null ? "NONE" : diff.Name;
             _controls.materialTexturePreview.Source = diff?.ToDDS()?.ToBitmap()?.ToImageSource();
         }
@@ -289,6 +293,7 @@ namespace AlienPAK
 
         private void duplicateMaterial_Click(object sender, EventArgs e)
         {
+            /*
             Materials.Material newMaterial = _sortedMaterials[materialList.SelectedIndex].Copy();
             newMaterial.Name += " Clone";
             for (int i = 0; i < newMaterial.ConstantBuffers.Length; i++)
@@ -323,6 +328,7 @@ namespace AlienPAK
             _materials.Entries.Add(newMaterial);
             Explorer.SaveTexturesAndUpdateMaterials(_textures, _materials);
             PopulateUI(newMaterial);
+            */
         }
     }
 }

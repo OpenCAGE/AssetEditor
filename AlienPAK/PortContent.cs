@@ -75,7 +75,7 @@ namespace AlienPAK
                                     foreach (Models.CS2.Component.LOD.Submesh submesh in lod.Submeshes)
                                     {
                                         //Copy material
-                                        Materials.Material originalMat = _explorer.materials.GetAtWriteIndex(submesh.MaterialLibraryIndex);
+                                        Materials.Material originalMat = _explorer.materials.GetAtWriteIndex(submesh.MaterialIndex);
                                         Materials.Material existingMat = destinationLevel.Materials.Entries.FirstOrDefault(o => o.Name == originalMat.Name);
                                         if (existingMat != null && overwrite.Checked)
                                         {
@@ -90,12 +90,12 @@ namespace AlienPAK
                                         // TODO
 
                                         //Copy textures
-                                        foreach (Materials.Material.Texture textureRef in originalMat.TextureReferences)
+                                        foreach (TexturePtr textureRef in originalMat.TextureReferences)
                                         {
                                             if (textureRef == null) continue;
-                                            if (textureRef.Source == Materials.Material.Texture.TextureSource.GLOBAL) continue;
+                                            if (textureRef.Location == TexturePtr.Source.GLOBAL) continue;
 
-                                            Textures.TEX4 originalTex = _explorer.textures.GetAtWriteIndex(textureRef.BinIndex);
+                                            Textures.TEX4 originalTex = _explorer.textures.GetAtWriteIndex(textureRef.Index);
                                             Textures.TEX4 existingTex = destinationLevel.Textures.Entries.FirstOrDefault(o => o.Name == originalTex.Name);
                                             if (existingTex != null && overwrite.Checked)
                                             {
@@ -121,24 +121,24 @@ namespace AlienPAK
                                     foreach (Models.CS2.Component.LOD.Submesh submesh in lod.Submeshes)
                                     {
                                         //Update index of material 
-                                        Materials.Material originalMaterial = _explorer.materials.GetAtWriteIndex(submesh.MaterialLibraryIndex);
+                                        Materials.Material originalMaterial = _explorer.materials.GetAtWriteIndex(submesh.MaterialIndex);
                                         Materials.Material copiedMaterial = destinationLevel.Materials.Entries.FirstOrDefault(o => o.Name == originalMaterial.Name);
-                                        submesh.MaterialLibraryIndex = destinationLevel.Materials.GetWriteIndex(copiedMaterial);
+                                        submesh.MaterialIndex = destinationLevel.Materials.GetWriteIndex(copiedMaterial);
 
                                         //Update index of shader
                                         // TODO
 
                                         //Update indexes of textures
-                                        for (int i = 0; i < originalMaterial.TextureReferences.Length; i++)
+                                        for (int i = 0; i < originalMaterial.TextureReferences.Count; i++)
                                         {
                                             if (originalMaterial.TextureReferences[i] == null) continue;
-                                            if (originalMaterial.TextureReferences[i].Source == Materials.Material.Texture.TextureSource.GLOBAL) continue;
+                                            if (originalMaterial.TextureReferences[i].Location == TexturePtr.Source.GLOBAL) continue;
 
                                             //TODO: update cst
                                             
-                                            Textures.TEX4 originalTex = _explorer.textures.GetAtWriteIndex(originalMaterial.TextureReferences[i].BinIndex);
+                                            Textures.TEX4 originalTex = _explorer.textures.GetAtWriteIndex(originalMaterial.TextureReferences[i].Index);
                                             Textures.TEX4 copiedTex = destinationLevel.Textures.Entries.FirstOrDefault(o => o.Name == originalTex.Name);
-                                            copiedMaterial.TextureReferences[i].BinIndex = destinationLevel.Textures.GetWriteIndex(copiedTex);
+                                            copiedMaterial.TextureReferences[i].Index = destinationLevel.Textures.GetWriteIndex(copiedTex);
                                         }
                                     }
                                 }

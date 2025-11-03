@@ -247,152 +247,44 @@ namespace AlienPAK
 
         public static GeometryModel3D ToGeometryModel3D(this CS2.Component.LOD.Submesh submesh)
         {
-            Int32Collection indices = new Int32Collection();
-            Point3DCollection vertices = new Point3DCollection();
-            Vector3DCollection normals = new Vector3DCollection();
-            List<Vector4> tangents = new List<Vector4>();
-            PointCollection uv0 = new PointCollection();
-            PointCollection uv1 = new PointCollection();
-            PointCollection uv2 = new PointCollection();
-            PointCollection uv3 = new PointCollection();
-            PointCollection uv7 = new PointCollection();
-
-            //TODO: implement skeleton lookup for the indexes
-            List<Vector4> boneIndex = new List<Vector4>(); //The indexes of 4 bones that affect each vertex
-            List<Vector4> boneWeight = new List<Vector4>(); //The weights for each bone
-
-            if (submesh.content.Length == 0)
+            if (submesh.Data.Length == 0)
                 return new GeometryModel3D();
 
-            using (BinaryReader reader = new BinaryReader(new MemoryStream(submesh.content)))
-            {
-                for (int i = 0; i < submesh.VertexFormat.Elements.Count; ++i)
-                {
-                    if (i == submesh.VertexFormat.Elements.Count - 1)
-                    {
-                        //TODO: should probably properly verify VariableType here 
-                        // if (submesh.VertexFormat.Elements[i].Count != 1 || submesh.VertexFormat.Elements[i][0].VariableType != VBFE_InputType.INDICIES_U16)
-                        //     throw new Exception("unexpected format");
+            Int32Collection indices = new Int32Collection();
+            Point3DCollection vertices = new Point3DCollection();
+            PointCollection[] uvs = new PointCollection[0];
 
+            using (BinaryReader reader = new BinaryReader(new MemoryStream(submesh.Data)))
+            {
+                for (int i = 0; i < submesh.VertexFormatFull.Attributes.Count; ++i)
+                {
+                    if (i == submesh.VertexFormatFull.Attributes.Count - 1)
+                    {
                         for (int x = 0; x < submesh.IndexCount; x++)
                             indices.Add(reader.ReadUInt16());
-
                         continue;
                     }
 
                     for (int x = 0; x < submesh.VertexCount; ++x)
                     {
-                        for (int y = 0; y < submesh.VertexFormat.Elements[i].Count; ++y)
+                        for (int y = 0; y < submesh.VertexFormatFull.Attributes[i].Count; ++y)
                         {
-                            AlienVBF.Element format = submesh.VertexFormat.Elements[i][y];
-                            switch (format.VariableType)
+                            VertexFormat.Attribute attr = submesh.VertexFormatFull.Attributes[i][y];
+                            Vector4 v = ReadVertexData(reader, attr.Type);
+
+                            switch (attr.Usage)
                             {
-                                case VBFE_InputType.VECTOR3:
-                                    { 
-                                        Vector3D v = new Vector3D(reader.ReadSingle(), reader.ReadSingle(), reader.ReadSingle());
-                                        switch (format.ShaderSlot)
-                                        {
-                                            case VBFE_InputSlot.NORMAL:
-                                                normals.Add(v);
-                                                break;
-                                            case VBFE_InputSlot.TANGENT:
-                                                tangents.Add(new Vector4((float)v.X, (float)v.Y, (float)v.Z, 0));
-                                                break;
-                                            case VBFE_InputSlot.UV:
-                                                //TODO: 3D UVW
-                                                break;
-                                        };
-                                        break;
-                                    }
-                                case VBFE_InputType.INT32:
-                                    {
-                                        int v = reader.ReadInt32();
-                                        switch (format.ShaderSlot)
-                                        {
-                                            case VBFE_InputSlot.COLOUR:
-                                                //??
-                                                break;
-                                        }
-                                        break;
-                                    }
-                                case VBFE_InputType.VECTOR4_BYTE:
-                                    {
-                                        Vector4 v = new Vector4(reader.ReadByte(), reader.ReadByte(), reader.ReadByte(), reader.ReadByte());
-                                        switch (format.ShaderSlot)
-                                        {
-                                            case VBFE_InputSlot.BONE_INDICES:
-                                                boneIndex.Add(v);
-                                                break;
-                                        }
-                                        break;
-                                    }
-                                case VBFE_InputType.VECTOR4_BYTE_DIV255:
-                                    {
-                                        Vector4 v = new Vector4(reader.ReadByte(), reader.ReadByte(), reader.ReadByte(), reader.ReadByte());
-                                        v /= 255.0f;
-                                        switch (format.ShaderSlot)
-                                        {
-                                            case VBFE_InputSlot.BONE_WEIGHTS:
-                                                boneWeight.Add(v / (v.X + v.Y + v.Z + v.W));
-                                                break;
-                                            case VBFE_InputSlot.UV:
-                                                uv2.Add(new System.Windows.Point(v.X, v.Y));
-                                                uv3.Add(new System.Windows.Point(v.Z, v.W));
-                                                break;
-                                        }
-                                        break;
-                                    }
-                                case VBFE_InputType.VECTOR2_INT16_DIV2048:
-                                    {
-                                        System.Windows.Point v = new System.Windows.Point(reader.ReadInt16() / 2048.0f, reader.ReadInt16() / 2048.0f);
-                                        switch (format.ShaderSlot)
-                                        {
-                                            case VBFE_InputSlot.UV:
-                                                if (format.VariantIndex == 0) uv0.Add(v);
-                                                else if (format.VariantIndex == 1)
-                                                {
-                                                    // TODO: We can figure this out based on AlienVBFE.
-                                                    //Material->Material.Flags |= Material_HasTexCoord1;
-                                                    uv1.Add(v);
-                                                }
-                                                else if (format.VariantIndex == 2) uv2.Add(v);
-                                                else if (format.VariantIndex == 3) uv3.Add(v);
-                                                else if (format.VariantIndex == 7) uv7.Add(v);
-                                                break;
-                                        }
-                                        break;
-                                    }
-                                case VBFE_InputType.VECTOR4_INT16_DIVMAX:
-                                    {
-                                        Vector4 v = new Vector4(reader.ReadInt16(), reader.ReadInt16(), reader.ReadInt16(), reader.ReadInt16());
-                                        v /= (float)Int16.MaxValue;
-                                        if (v.W != 0 && v.W != -1 && v.W != 1) throw new Exception("Unexpected vert W");
-                                        v *= submesh.ScaleFactor; //Account for scale
-                                        switch (format.ShaderSlot)
-                                        {
-                                            case VBFE_InputSlot.VERTEX:
-                                                vertices.Add(new Point3D(v.X, v.Y, v.Z));
-                                                break;
-                                        }
-                                        break;
-                                    }
-                                case VBFE_InputType.VECTOR4_BYTE_NORM:
-                                    {
-                                        Vector4 v = new Vector4(reader.ReadByte(), reader.ReadByte(), reader.ReadByte(), reader.ReadByte());
-                                        v /= (float)byte.MaxValue - 0.5f;
-                                        v = Vector4.Normalize(v);
-                                        switch (format.ShaderSlot)
-                                        {
-                                            case VBFE_InputSlot.NORMAL:
-                                                normals.Add(new Vector3D(v.X, v.Y, v.Z));
-                                                break;
-                                            case VBFE_InputSlot.TANGENT:
-                                                break;
-                                            case VBFE_InputSlot.BITANGENT:
-                                                break;
-                                        }
-                                        break;
-                                    }
+                                case VertexFormat.Usage.Position:
+                                    vertices.Add(new Point3D(v.X * submesh.VertexScale, v.Y * submesh.VertexScale, -v.Z * submesh.VertexScale));
+                                    break;
+                                case VertexFormat.Usage.TexCoord:
+                                    if (attr.Index >= uvs.Length)
+                                        Array.Resize(ref uvs, attr.Index + 1);
+                                    if (uvs[attr.Index] == null)
+                                        uvs[attr.Index] = new PointCollection();
+                                    uvs[attr.Index].Add(new System.Windows.Point(v.X * 16.0f, v.Y * 16.0f));
+                                    break;
+                                //TODO: support more data
                             }
                         }
                     }
@@ -402,18 +294,80 @@ namespace AlienPAK
 
             if (vertices.Count == 0) return new GeometryModel3D();
 
+            Int32Collection reversedIndices = new Int32Collection();
+            for (int i = 0; i < indices.Count; i += 3)
+            {
+                if (i + 2 < indices.Count)
+                {
+                    reversedIndices.Add(indices[i]);
+                    reversedIndices.Add(indices[i + 2]);
+                    reversedIndices.Add(indices[i + 1]);
+                }
+            }
+
+            PointCollection uv = new PointCollection();
+            for (int i = 0; i < uvs.Length; i++)
+            {
+                if (uvs[i] != null)
+                {
+                    uv = uvs[i];
+                    break;
+                }
+            }
+
+            MeshGeometry3D geometry = new MeshGeometry3D
+            {
+                Positions = vertices,
+                TriangleIndices = reversedIndices,
+                TextureCoordinates = uv,
+            };
             return new GeometryModel3D
             {
-                Geometry = new MeshGeometry3D
-                {
-                    Positions = vertices,
-                    TriangleIndices = indices,
-                    Normals = normals,
-                    TextureCoordinates = uv0,
-                },
+                Geometry = geometry,
                 Material = new DiffuseMaterial(new SolidColorBrush(Color.FromRgb(255, 255, 0))),
                 BackMaterial = new DiffuseMaterial(new SolidColorBrush(Color.FromRgb(255, 255, 0)))
             };
+        }
+
+        private static Vector4 ReadVertexData(BinaryReader reader, VertexFormat.Type type)
+        {
+            switch (type)
+            {
+                case VertexFormat.Type.FP32_1:
+                    return new Vector4(reader.ReadSingle(), 0, 0, 0);
+                case VertexFormat.Type.FP32_2:
+                    return new Vector4(reader.ReadSingle(), reader.ReadSingle(), 0, 0);
+                case VertexFormat.Type.FP32_3:
+                    return new Vector4(reader.ReadSingle(), reader.ReadSingle(), reader.ReadSingle(), 0);
+                case VertexFormat.Type.FP32_4:
+                    return new Vector4(reader.ReadSingle(), reader.ReadSingle(), reader.ReadSingle(), reader.ReadSingle());
+                case VertexFormat.Type.Color:
+                    uint data = reader.ReadUInt32();
+                    return new Vector4((float)((data & 0xFF000000) >> 24) / 255.0f, (float)((data & 0x00FF0000) >> 16) / 255.0f, (float)((data & 0x0000FF00) >> 8) / 255.0f, (float)((data & 0x000000FF) >> 0) / 255.0f);
+                case VertexFormat.Type.U8_4:
+                    return new Vector4(reader.ReadByte(), reader.ReadByte(), reader.ReadByte(), reader.ReadByte());
+                case VertexFormat.Type.S16_2:
+                    return new Vector4(reader.ReadInt16(), reader.ReadInt16(), 0, 0);
+                case VertexFormat.Type.S16_4:
+                    return new Vector4(reader.ReadInt16(), reader.ReadInt16(), reader.ReadInt16(), reader.ReadInt16());
+                case VertexFormat.Type.U8_4N:
+                    return new Vector4((float)reader.ReadByte() / 255.0f, (float)reader.ReadByte() / 255.0f, (float)reader.ReadByte() / 255.0f, (float)reader.ReadByte() / 255.0f);
+                case VertexFormat.Type.S16_2N:
+                    return new Vector4((float)reader.ReadInt16() / (float)Int16.MaxValue, (float)reader.ReadInt16() / (float)Int16.MaxValue, 0, 0);
+                case VertexFormat.Type.S16_4N:
+                    return new Vector4((float)reader.ReadInt16() / (float)Int16.MaxValue, (float)reader.ReadInt16() / (float)Int16.MaxValue, (float)reader.ReadInt16() / (float)Int16.MaxValue, (float)reader.ReadInt16() / (float)Int16.MaxValue);
+                case VertexFormat.Type.U16_2N:
+                    return new Vector4((float)reader.ReadUInt16() / (float)UInt16.MaxValue, (float)reader.ReadUInt16() / (float)UInt16.MaxValue, 0, 0);
+                case VertexFormat.Type.U16_4N:
+                    return new Vector4((float)reader.ReadUInt16() / (float)UInt16.MaxValue, (float)reader.ReadUInt16() / (float)UInt16.MaxValue, (float)reader.ReadUInt16() / (float)UInt16.MaxValue, (float)reader.ReadUInt16() / (float)UInt16.MaxValue);
+                case VertexFormat.Type.Dec3N:
+                    uint val = reader.ReadUInt32();
+                    short sx = (short)((val >> 20) & 0x3ff);
+                    short sy = (short)((val >> 10) & 0x3ff);
+                    short sz = (short)((val) & 0x3ff);
+                    return new Vector4(((sx < 512) ? sx : (sx - 1024)) / 511.0f, ((sy < 512) ? sy : (sy - 1024)) / 511.0f, ((sz < 512) ? sz : (sz - 1024)) / 511.0f, 0);
+            }
+            throw new Exception("Unsupported VertexFormatType");
         }
 
         public static Mesh ToMesh(this CS2.Component.LOD.Submesh submesh)
@@ -455,10 +409,10 @@ namespace AlienPAK
             submesh.IndexCount = indices.Length;
 
             //meshes must not exceed 1 unit in any direction -> TODO: we should validate customScaleFactor here...
-            submesh.ScaleFactor = customScaleFactor == null ? mesh.CalculateScaleFactor() : (ushort)customScaleFactor;
+            submesh.VertexScale = customScaleFactor == null ? mesh.CalculateScaleFactor() : (ushort)customScaleFactor;
 
-            submesh.AABBMax = new Vector3(mesh.BoundingBox.Max.X, mesh.BoundingBox.Max.Y, mesh.BoundingBox.Max.Z);
-            submesh.AABBMin = new Vector3(mesh.BoundingBox.Min.X, mesh.BoundingBox.Min.Y, mesh.BoundingBox.Min.Z);
+            submesh.MaxBounds = new Vector3(mesh.BoundingBox.Max.X, mesh.BoundingBox.Max.Y, mesh.BoundingBox.Max.Z);
+            submesh.MinBounds = new Vector3(mesh.BoundingBox.Min.X, mesh.BoundingBox.Min.Y, mesh.BoundingBox.Min.Z);
 
             //Example vertex format with vertices, UVs, normals, and a colour
             //submesh.VertexFormat.Elements.Add(new List<AlienVBF.Element>() { new AlienVBF.Element(VBFE_InputType.VECTOR4_INT16_DIVMAX, VBFE_InputSlot.VERTEX), new AlienVBF.Element(VBFE_InputType.VECTOR2_INT16_DIV2048, VBFE_InputSlot.UV), new AlienVBF.Element(VBFE_InputType.INT32, VBFE_InputSlot.COLOUR) });
@@ -469,21 +423,21 @@ namespace AlienPAK
             //submesh.VertexFormat.Elements.Add(new List<AlienVBF.Element>() { new AlienVBF.Element(VBFE_InputType.VECTOR4_INT16_DIVMAX, VBFE_InputSlot.VERTEX) });
             //submesh.VertexFormat.Elements.Add(new List<AlienVBF.Element>() { new AlienVBF.Element(VBFE_InputType.AlienVertexInputType_u16) });
 
-            submesh.VertexFormat = new AlienVBF();
-            submesh.VertexFormat.Elements.Add(new List<AlienVBF.Element>() { new AlienVBF.Element(VBFE_InputType.VECTOR4_INT16_DIVMAX, VBFE_InputSlot.VERTEX), new AlienVBF.Element(VBFE_InputType.VECTOR2_INT16_DIV2048, VBFE_InputSlot.UV) { Offset = 8 } });
-            submesh.VertexFormat.Elements.Add(new List<AlienVBF.Element>() { new AlienVBF.Element(VBFE_InputType.VECTOR3, VBFE_InputSlot.NORMAL) });
-            submesh.VertexFormat.Elements.Add(new List<AlienVBF.Element>() { new AlienVBF.Element(VBFE_InputType.INDICIES_U16) }); 
+            submesh.VertexFormatFull = new VertexFormat();
+            submesh.VertexFormatFull.Attributes.Add(new List<VertexFormat.Attribute>() { new VertexFormat.Attribute(VertexFormat.Type.S16_4N, VertexFormat.Usage.Position), new VertexFormat.Attribute(VertexFormat.Type.S16_2N, VertexFormat.Usage.TexCoord) });
+            submesh.VertexFormatFull.Attributes.Add(new List<VertexFormat.Attribute>() { new VertexFormat.Attribute(VertexFormat.Type.FP32_3, VertexFormat.Usage.Normal) });
+            submesh.VertexFormatFull.Attributes.Add(new List<VertexFormat.Attribute>() { new VertexFormat.Attribute(VertexFormat.Type.Unused) }); 
 
-            submesh.VertexFormatLowDetail = new AlienVBF();
-            submesh.VertexFormatLowDetail.Elements.Add(new List<AlienVBF.Element>() { new AlienVBF.Element(VBFE_InputType.VECTOR4_INT16_DIVMAX, VBFE_InputSlot.VERTEX), new AlienVBF.Element(VBFE_InputType.VECTOR2_INT16_DIV2048, VBFE_InputSlot.UV) { Offset = 8 } });
-            submesh.VertexFormatLowDetail.Elements.Add(new List<AlienVBF.Element>() { new AlienVBF.Element(VBFE_InputType.INDICIES_U16) }); 
+            submesh.VertexFormatPartial = new VertexFormat();
+            submesh.VertexFormatPartial.Attributes.Add(new List<VertexFormat.Attribute>() { new VertexFormat.Attribute(VertexFormat.Type.S16_4N, VertexFormat.Usage.Position), new VertexFormat.Attribute(VertexFormat.Type.S16_2N, VertexFormat.Usage.TexCoord) });
+            submesh.VertexFormatPartial.Attributes.Add(new List<VertexFormat.Attribute>() { new VertexFormat.Attribute(VertexFormat.Type.Unused) }); 
 
             MemoryStream ms = new MemoryStream();
             using (BinaryWriter reader = new BinaryWriter(ms))
             {
-                for (int i = 0; i < submesh.VertexFormat.Elements.Count; ++i)
+                for (int i = 0; i < submesh.VertexFormatFull.Attributes.Count; ++i)
                 {
-                    if (i == submesh.VertexFormat.Elements.Count - 1)
+                    if (i == submesh.VertexFormatFull.Attributes.Count - 1)
                     {
                         for (int x = 0; x < indices.Length; x++)
                             reader.Write((UInt16)indices[x]);
@@ -492,96 +446,47 @@ namespace AlienPAK
                         continue;
                     }
 
+                    //TEMP!! This should be reworked to the new logic
+
                     for (int x = 0; x < submesh.VertexCount; ++x)
                     {
-                        for (int y = 0; y < submesh.VertexFormat.Elements[i].Count; ++y)
+                        for (int y = 0; y < submesh.VertexFormatFull.Attributes[i].Count; ++y)
                         {
-                            AlienVBF.Element format = submesh.VertexFormat.Elements[i][y];
-                            switch (format.VariableType)
+                            VertexFormat.Attribute format = submesh.VertexFormatFull.Attributes[i][y];
+                            switch (format.Type)
                             {
-                                case VBFE_InputType.VECTOR3:
+                                case VertexFormat.Type.FP32_3:
                                     {
-                                        switch (format.ShaderSlot)
+                                        switch (format.Usage)
                                         {
-                                            case VBFE_InputSlot.NORMAL:
+                                            case VertexFormat.Usage.Normal:
                                                 reader.Write((float)mesh.Normals[x].X);
                                                 reader.Write((float)mesh.Normals[x].Y);
                                                 reader.Write((float)mesh.Normals[x].Z);
                                                 break;
-                                            case VBFE_InputSlot.TANGENT:
-                                                //tangents.Add(new Vector4((float)v.X, (float)v.Y, (float)v.Z, 0));
-                                                break;
-                                            case VBFE_InputSlot.UV:
-                                                //TODO: 3D UVW
-                                                break;
                                         };
                                         break;
-                                    }/*
-                                case VBFE_InputType.INT32:
-                                    {
-                                        int v = reader.ReadInt32();
-                                        switch (format.ShaderSlot)
-                                        {
-                                            case VBFE_InputSlot.COLOUR:
-                                                //??
-                                                break;
-                                        }
-                                        break;
                                     }
-                                case VBFE_InputType.VECTOR4_BYTE:
+                                case VertexFormat.Type.S16_2N:
                                     {
-                                        Vector4 v = new Vector4(reader.ReadByte(), reader.ReadByte(), reader.ReadByte(), reader.ReadByte());
-                                        switch (format.ShaderSlot)
+                                        switch (format.Usage)
                                         {
-                                            case VBFE_InputSlot.BONE_INDICES:
-                                                boneIndex.Add(v);
-                                                break;
-                                        }
-                                        break;
-                                    }
-                                case VBFE_InputType.VECTOR4_BYTE_DIV255:
-                                    {
-                                        Vector4 v = new Vector4(reader.ReadByte(), reader.ReadByte(), reader.ReadByte(), reader.ReadByte());
-                                        v /= 255.0f;
-                                        switch (format.ShaderSlot)
-                                        {
-                                            case VBFE_InputSlot.BONE_WEIGHTS:
-                                                boneWeight.Add(v / (v.X + v.Y + v.Z + v.W));
-                                                break;
-                                            case VBFE_InputSlot.UV:
-                                                uv2.Add(new System.Windows.Point(v.X, v.Y));
-                                                uv3.Add(new System.Windows.Point(v.Z, v.W));
-                                                break;
-                                        }
-                                        break;
-                                    }
-                                */
-                                case VBFE_InputType.VECTOR2_INT16_DIV2048:
-                                    {
-                                        switch (format.ShaderSlot)
-                                        {
-                                            case VBFE_InputSlot.UV:
-                                                Vector2 v = new Vector2(mesh.TextureCoordinateChannels[format.VariantIndex][x].X, mesh.TextureCoordinateChannels[format.VariantIndex][x].Y);
+                                            case VertexFormat.Usage.TexCoord:
+                                                Vector2 v = new Vector2(mesh.TextureCoordinateChannels[format.Index][x].X, mesh.TextureCoordinateChannels[format.Index][x].Y);
                                                 v *= 2048.0f;
-
-                                                if (v.X > Int16.MaxValue || v.Y > Int16.MaxValue)
-                                                {
-                                                    string sdfdf = "";
-                                                }
-
                                                 reader.Write((Int16)v.X);
                                                 reader.Write((Int16)v.Y);
                                                 break;
                                         }
                                         break;
                                     }
-                                case VBFE_InputType.VECTOR4_INT16_DIVMAX:
+                                case VertexFormat.Type.S16_4N:
                                     {
-                                        switch (format.ShaderSlot)
+                                        switch (format.Usage)
                                         {
-                                            case VBFE_InputSlot.VERTEX:
+                                            case VertexFormat.Usage.Position:
                                                 Vector4 v = new Vector4(mesh.Vertices[x].X, mesh.Vertices[x].Y, mesh.Vertices[x].Z, 0);
-                                                v /= submesh.ScaleFactor;
+                                                v /= submesh.VertexScale;
                                                 v *= (float)Int16.MaxValue;
                                                 reader.Write((Int16)v.X);
                                                 reader.Write((Int16)v.Y);
@@ -591,32 +496,13 @@ namespace AlienPAK
                                         }
                                         break;
                                     }
-                                    /*
-                                case VBFE_InputType.VECTOR4_BYTE_NORM:
-                                    {
-                                        Vector4 v = new Vector4(reader.ReadByte(), reader.ReadByte(), reader.ReadByte(), reader.ReadByte());
-                                        v /= (float)byte.MaxValue - 0.5f;
-                                        v = Vector4.Normalize(v);
-                                        switch (format.ShaderSlot)
-                                        {
-                                            case VBFE_InputSlot.NORMAL:
-                                                normals.Add(new Vector3D(v.X, v.Y, v.Z));
-                                                break;
-                                            case VBFE_InputSlot.TANGENT:
-                                                break;
-                                            case VBFE_InputSlot.BITANGENT:
-                                                break;
-                                        }
-                                        break;
-                                    }*/
                             }
                         }
                     }
                     Utilities.Align(reader, 16);
                 }
             }
-            submesh.content = ms.ToArray();
-            //submesh.
+            submesh.Data = ms.ToArray();
 
             return submesh;
         }
