@@ -220,7 +220,7 @@ namespace AlienPAK
                             texture.TextureStreamed = part.Copy();
                             texture.TexturePersistent = part.Copy();
                             LevelContent.Textures.Entries.Add(texture);
-                            LevelContent.Save();
+                            Save();
                             break;
                         }
                         break;
@@ -259,7 +259,7 @@ namespace AlienPAK
                             return;
                         }
                         LevelContent.Models.Entries.Add(cs2);
-                        LevelContent.Save();
+                        Save();
                         break;
                     default:
                         return;
@@ -296,15 +296,15 @@ namespace AlienPAK
                             case PAKType.ANIMATIONS:
                             case PAKType.UI:
                                 Archive.Entries.RemoveAll(o => o.Filename.Replace('\\', '/') == nodeVal.Replace('\\', '/'));
-                                Archive.Save();
+                                Save();
                                 break;
                             case PAKType.TEXTURES:
                                 LevelContent.Textures.Entries.RemoveAll(o => o.Name.Replace('\\', '/') == nodeVal.Replace('\\', '/'));
-                                LevelContent.Save();
+                                Save();
                                 break;
                             case PAKType.MODELS:
                                 LevelContent.Models.Entries.RemoveAll(o => o.Name.Replace('\\', '/') == nodeVal.Replace('\\', '/'));
-                                LevelContent.Save();
+                                Save();
                                 break;
                         }
                         MessageBox.Show("Successfully deleted file!", "Delete complete", MessageBoxButtons.OK, MessageBoxIcon.Information);
@@ -370,7 +370,7 @@ namespace AlienPAK
                             case PAKType.ANIMATIONS:
                             case PAKType.UI:
                                 Archive.Entries.FirstOrDefault(o => o.Filename.Replace('\\', '/') == nodeVal.Replace('\\', '/')).Content = File.ReadAllBytes(FilePicker.FileName);
-                                Archive.Save();
+                                Save();
                                 break;
                             case PAKType.TEXTURES:
                                 Textures.TEX4 texture = LevelContent.Textures.Entries.FirstOrDefault(o => o.Name.Replace('\\', '/') == nodeVal.Replace('\\', '/'));
@@ -383,7 +383,7 @@ namespace AlienPAK
                                 }
                                 if (texture.TextureStreamed?.Content != null) texture.TextureStreamed = part;
                                 if (texture.TexturePersistent?.Content != null) texture.TexturePersistent = part;
-                                LevelContent.Save();
+                                Save();
                                 break;
                         }
                         MessageBox.Show("Successfully imported file!", "Import complete", MessageBoxButtons.OK, MessageBoxIcon.Information);
@@ -399,7 +399,7 @@ namespace AlienPAK
         }
         private void ModelEditor_FormClosed(object sender, FormClosedEventArgs e)
         {
-            LevelContent.Save(); //todo - add a button for this
+            Save(); //todo - add a button for this
             UpdateSelectedFilePreview();
             this.BringToFront();
             this.Focus();
