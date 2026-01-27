@@ -9,261 +9,91 @@ using System.Runtime.InteropServices.WindowsRuntime;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using System.Xml.Linq;
+using static CATHODE.Textures;
+using static DirectXTex.DirectXTexUtility;
 
 namespace AlienPAK
 {
     public class PAKWrapper
     {
-        //PAK file
-        CathodeFile _file = null;
-        public CathodeFile File { get { return _file; } }
-
-        //Files within the PAK
-        List<string> _contents = new List<string>();
-        public List<string> Contents { get { return _contents; } }
-
-        //Type of PAK
-        PAKType _type = PAKType.NONE;
-        public PAKType Type { get { return _type; } }
-
-        /* Load a PAK file */
-        public List<string> Load(string path)
-        {
-            Unload();
-
-            _contents = new List<string>();
-            switch (Path.GetFileName(path).ToUpper())
-            {
-                case "GLOBAL_TEXTURES.ALL.PAK":
-                case "LEVEL_TEXTURES.ALL.PAK":
-                    Textures texFile = new Textures(path);
-                    _type = PAKType.TEXTURES;
-                    for (int i = 0; i < texFile.Entries.Count; i++)
-                    {
-                        //NOTE: we ensure files end in .DDS here, since we do our own DDS processing to them later
-                        string texPath = texFile.Entries[i].Name;
-                        if (Path.GetExtension(texPath).ToUpper() != ".DDS") texPath += ".dds";
-                        texFile.Entries[i].Name = texPath;
-                        _contents.Add(texPath);
-                    }
-                    _file = texFile;
-                    break;
-                case "GLOBAL_MODELS.PAK":
-                case "LEVEL_MODELS.PAK":
-                    _file = new Models(path);
-                    _type = PAKType.MODELS;
-                    for (int i = 0; i < ((Models)_file).Entries.Count; i++)
-                        _contents.Add(((Models)_file).Entries[i].Name);
-                    break;
-                case "MATERIAL_MAPPINGS.PAK":
-                    _file = new MaterialMappings(path);
-                    _type = PAKType.MATERIAL_MAPPINGS;
-                    for (int i = 0; i < ((MaterialMappings)_file).Entries.Count; i++)
-                        _contents.Add(((MaterialMappings)_file).Entries[i].Name);
-                    break;
-                case "COMMANDS.PAK":
-                    _file = new Commands(path);
-                    _type = PAKType.COMMANDS;
-                    for (int i = 0; i < ((Commands)_file).Entries.Count; i++)
-                        _contents.Add(((Commands)_file).Entries[i].name);
-                    break;
-                /*
-                case "LEVEL_SHADERS_DX11.PAK":
-                case "BESPOKESHADERS_DX11.PAK":
-                case "DEFERREDSHADERS_DX11.PAK":
-                case "POSTPROCESSINGSHADERS_DX11.PAK":
-                case "REQUIREDSHADERS_DX11.PAK":
-                    _file = new Shaders(filename);
-                    _type = AlienContentType.SHADER;
-                    for (int i = 0; i < ((Shaders)AlienPAKs).Entries.Count; i++)
-                        _files.Add(((Shaders)AlienPAKs).Entries[i].name);
-                    break;
-                */
-                case "ANIMATION.PAK":
-                    _file = new PAK2(path);
-                    _type = PAKType.ANIMATIONS;
-                    for (int i = 0; i < ((PAK2)_file).Entries.Count; i++)
-                        _contents.Add(((PAK2)_file).Entries[i].Filename);
-                    break;
-                case "UI.PAK":
-                    _file = new PAK2(path);
-                    _type = PAKType.UI;
-                    for (int i = 0; i < ((PAK2)_file).Entries.Count; i++)
-                        _contents.Add(((PAK2)_file).Entries[i].Filename);
-                    break;
-                case "CHR_INFO.PAK":
-                    _file = new PAK2(path);
-                    _type = PAKType.CHR_INFO;
-                    for (int i = 0; i < ((PAK2)_file).Entries.Count; i++)
-                        _contents.Add(((PAK2)_file).Entries[i].Filename);
-                    break;
-                default:
-                    _file = null;
-                    _type = PAKType.NONE;
-                    MessageBox.Show("The selected PAK is currently unsupported.", "Unsupported", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    break;
-            }
-            return _contents;
-        }
-
-        /* Free-up from a loaded PAK */
-        public void Unload()
-        {
-            if (_file == null) return;
-            switch (_type)
-            {
-                case PAKType.TEXTURES:
-                    ((Textures)_file).Entries.Clear();
-                    break;
-                case PAKType.MODELS:
-                    ((Models)_file).Entries.Clear();
-                    break;
-                case PAKType.MATERIAL_MAPPINGS:
-                    ((MaterialMappings)_file).Entries.Clear();
-                    break;
-                case PAKType.COMMANDS:
-                    ((Commands)_file).Entries.Clear();
-                    break;
-                /*
-                case PAKType.SHADER:
-                    ((Shaders)_file).Entries.Clear();
-                    break;
-                */
-                case PAKType.ANIMATIONS:
-                case PAKType.UI:
-                case PAKType.CHR_INFO:
-                    ((PAK2)_file).Entries.Clear();
-                    break;
-            }
-            _file = null;
-        }
-
         /* Get a file from the loaded PAK as a byte array */
+        /*
         public byte[] GetFileContent(string FileName)
         {
             switch (_type)
             {
+                case PAKType.ANIMATIONS:
+                case PAKType.UI:
+                    return ((PAK2)_file).Entries.FirstOrDefault(o => o.Filename.Replace('\\', '/') == FileName.Replace('\\', '/'))?.Content;
                 case PAKType.TEXTURES:
                     Textures.TEX4 texture = ((Textures)_file).Entries.FirstOrDefault(o => o.Name.Replace('\\', '/') == FileName.Replace('\\', '/'));
                     Textures.TEX4.Texture part = texture?.TextureStreamed?.Content != null ? texture.TextureStreamed : texture?.TexturePersistent?.Content != null ? texture.TexturePersistent : null;
                     if (part == null) return null;
-                    DirectXTexUtility.DXGIFormat format;
+                    DDSHeader theDDSHeader = new DDSHeader();
+                    DX10Header theDX10Header = new DX10Header();
+                    MemoryStream ms = new MemoryStream();
                     switch (texture.Format)
                     {
                         case Textures.TextureFormat.A32R32G32B32F:
-                            format = DirectXTexUtility.DXGIFormat.R32G32B32A32FLOAT;
-                            break;
                         case Textures.TextureFormat.A16R16G16B16:
-                            format = DirectXTexUtility.DXGIFormat.R16G16B16A16UNORM;
-                            break;
                         case Textures.TextureFormat.A8R8G8B8:
-                            format = DirectXTexUtility.DXGIFormat.R8G8B8A8UNORM;
-                            break;
                         case Textures.TextureFormat.X8R8G8B8:
-                            format = DirectXTexUtility.DXGIFormat.B8G8R8X8UNORM;
-                            break;
                         case Textures.TextureFormat.A8:
-                            format = DirectXTexUtility.DXGIFormat.A8UNORM;
-                            break;
                         case Textures.TextureFormat.L8:
-                            format = DirectXTexUtility.DXGIFormat.R8UNORM;
-                            break;
-                        case Textures.TextureFormat.DXT1:
-                            format = DirectXTexUtility.DXGIFormat.BC1UNORM;
-                            break;
-                        case Textures.TextureFormat.DXT3:
-                            format = DirectXTexUtility.DXGIFormat.BC2UNORM;
-                            break;
-                        case Textures.TextureFormat.DXT5:
-                            format = DirectXTexUtility.DXGIFormat.BC3UNORM;
-                            break;
-                        case Textures.TextureFormat.DXN:
-                            format = DirectXTexUtility.DXGIFormat.BC5UNORM;
-                            break;
                         case Textures.TextureFormat.A4R4G4B4:
-                            format = DirectXTexUtility.DXGIFormat.B4G4R4A4UNORM;
-                            break;
+                        case Textures.TextureFormat.DXT1:
+                        case Textures.TextureFormat.DXT3:
+                        case Textures.TextureFormat.DXN:
+                        case Textures.TextureFormat.DXT5:
                         case Textures.TextureFormat.BC6H:
-                            format = DirectXTexUtility.DXGIFormat.BC6HUF16;
-                            break;
                         case Textures.TextureFormat.BC7:
-                            format = DirectXTexUtility.DXGIFormat.BC7UNORM;
-                            break;
                         case Textures.TextureFormat.R16F:
-                            format = DirectXTexUtility.DXGIFormat.R16FLOAT;
+                            theDDSHeader.mHeight = (uint)part.Height;
+                            theDDSHeader.mWidth = (uint)part.Width;
+                            theDDSHeader.mDepth = (uint)part.Depth;
+                            theDDSHeader.mMipMapCount = (uint)part.MipLevels;
+
+                            theDDSHeader.mCaps1 = DDSCaps.DDSCAPS_TEXTURE;
+                            if (theDDSHeader.mDepth > 1) { theDDSHeader.mFlags |= DDSFlags.DDSD_DEPTH; theDDSHeader.mCaps1 |= DDSCaps.DDSCAPS_COMPLEX; theDDSHeader.mCaps2 |= DDSCaps2.DDSCAPS2_VOLUME; }
+                            if (theDDSHeader.mMipMapCount > 0) { theDDSHeader.mFlags |= DDSFlags.DDSD_MIPMAPCOUNT; theDDSHeader.mCaps1 |= DDSCaps.DDSCAPS_COMPLEX; }
+                            if (texture.StateFlags.HasFlag(TextureStateFlag.CUBE)) { theDDSHeader.mCaps2 |= DDSCaps2.DDSCAPS2_FULLCUBEMAP; theDX10Header.mMiscFlags |= DDSMiscFlag.DDS_RESOURCE_MISC_TEXTURECUBE; }
+                            theDX10Header.mResourceDimension = part.Depth > 1 ? D3D10_RESOURCE_DIMENSION.D3D10_RESOURCE_DIMENSION_TEXTURE3D : D3D10_RESOURCE_DIMENSION.D3D10_RESOURCE_DIMENSION_TEXTURE2D;
+                            theDX10Header.mArraySize = 1;
+
+                            //TODO: does this support cubemaps?
+
+                            switch (texture.Format)
+                            {
+                                case Textures.TextureFormat.A32R32G32B32F: theDX10Header.mDXGIFormat = DXGI_FORMAT.DXGI_FORMAT_R32G32B32A32_FLOAT; break;
+                                case Textures.TextureFormat.A16R16G16B16: theDX10Header.mDXGIFormat = DXGI_FORMAT.DXGI_FORMAT_R16G16B16A16_UNORM; break;
+                                case Textures.TextureFormat.A8R8G8B8: theDX10Header.mDXGIFormat = DXGI_FORMAT.DXGI_FORMAT_B8G8R8A8_UNORM; break;
+                                case Textures.TextureFormat.X8R8G8B8: theDX10Header.mDXGIFormat = DXGI_FORMAT.DXGI_FORMAT_B8G8R8X8_UNORM; break;
+                                case Textures.TextureFormat.A8:
+                                case Textures.TextureFormat.L8: theDX10Header.mDXGIFormat = DXGI_FORMAT.DXGI_FORMAT_A8_UNORM; break;
+                                case Textures.TextureFormat.A4R4G4B4: theDX10Header.mDXGIFormat = DXGI_FORMAT.DXGI_FORMAT_B4G4R4A4_UNORM; break;
+                                case Textures.TextureFormat.DXT1: theDX10Header.mDXGIFormat = DXGI_FORMAT.DXGI_FORMAT_BC1_UNORM; break;
+                                case Textures.TextureFormat.DXT3: theDX10Header.mDXGIFormat = DXGI_FORMAT.DXGI_FORMAT_BC2_UNORM; break;
+                                case Textures.TextureFormat.DXN: theDX10Header.mDXGIFormat = DXGI_FORMAT.DXGI_FORMAT_BC5_UNORM; break;
+                                case Textures.TextureFormat.DXT5: theDX10Header.mDXGIFormat = DXGI_FORMAT.DXGI_FORMAT_BC3_UNORM; break;
+                                case Textures.TextureFormat.BC6H: theDX10Header.mDXGIFormat = DXGI_FORMAT.DXGI_FORMAT_BC6H_UF16; break;
+                                case Textures.TextureFormat.BC7: theDX10Header.mDXGIFormat = DXGI_FORMAT.DXGI_FORMAT_BC7_UNORM; break;
+                                case Textures.TextureFormat.R16F: theDX10Header.mDXGIFormat = DXGI_FORMAT.DXGI_FORMAT_R16_FLOAT; break;
+                            }
+                            using (BinaryWriter bw = new BinaryWriter(ms))
+                            {
+                                bw.Write(new char[4] { 'D', 'D', 'S', ' ' });
+                                Utilities.Write(bw, theDDSHeader);
+                                Utilities.Write(bw, theDX10Header);
+                                bw.Write(part.Content);
+                            }
                             break;
-                        default:
-                            format = DirectXTexUtility.DXGIFormat.UNKNOWN;
-                            break;
-                    }
-                    DirectXTexUtility.GenerateDDSHeader(
-                        DirectXTexUtility.GenerateMataData(part.Width, part.Height, part.MipLevels, format, texture.StateFlags.HasFlag(Textures.TextureStateFlag.CUBE)),
-                        DirectXTexUtility.DDSFlags.FORCEDX10EXT, out DirectXTexUtility.DDSHeader ddsHeader, out DirectXTexUtility.DX10Header dx10Header);
-                    MemoryStream ms = new MemoryStream();
-                    using (BinaryWriter bw = new BinaryWriter(ms))
-                    {
-                        bw.Write(DirectXTexUtility.EncodeDDSHeader(ddsHeader, dx10Header));
-                        bw.Write(part.Content);
                     }
                     return ms.ToArray();
-                case PAKType.MATERIAL_MAPPINGS:
-                    //TODO!
-                    MaterialMappings.Entry map = ((MaterialMappings)_file).Entries.FirstOrDefault(o => o.Name.Replace('\\', '/') == FileName.Replace('\\', '/'));
-                    return null;
                 case PAKType.MODELS:
                     return null;
-                case PAKType.ANIMATIONS:
-                case PAKType.UI:
-                case PAKType.CHR_INFO:
-                    return ((PAK2)_file).Entries.FirstOrDefault(o => o.Filename.Replace('\\', '/') == FileName.Replace('\\', '/'))?.Content;
-                default:
-                    return null;
             }
         }
-
-        /* Functionality provided by the currently loaded PAK */
-        public PAKFunction Functionality
-        {
-            get
-            {
-                switch (_type)
-                {
-                    case PAKType.MODELS:
-                        return PAKFunction.CAN_EXPORT_FILES | PAKFunction.CAN_IMPORT_FILES | PAKFunction.CAN_REPLACE_FILES | PAKFunction.CAN_DELETE_FILES;
-                    case PAKType.ANIMATIONS:
-                    case PAKType.UI:
-                    case PAKType.CHR_INFO:
-                    case PAKType.TEXTURES:
-                        return PAKFunction.CAN_EXPORT_FILES | PAKFunction.CAN_IMPORT_FILES | PAKFunction.CAN_REPLACE_FILES | PAKFunction.CAN_DELETE_FILES | PAKFunction.CAN_EXPORT_ALL;
-                    default:
-                        return PAKFunction.NONE;
-                }
-            }
-        }
-    }
-
-    public enum PAKType
-    {
-        TEXTURES,
-        MODELS,
-        UI,
-        COMMANDS,
-        ANIMATIONS,
-        MATERIAL_MAPPINGS,
-        SHADERS,
-        CHR_INFO,
-
-        NONE
-    };
-
-    [Flags]
-    public enum PAKFunction
-    {
-        NONE = 0,
-        CAN_EXPORT_FILES = 1,
-        CAN_IMPORT_FILES = 2,
-        CAN_REPLACE_FILES = 4,
-        CAN_DELETE_FILES = 8,
-        CAN_EXPORT_ALL = 16,
+        */
     }
 }

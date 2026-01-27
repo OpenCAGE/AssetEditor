@@ -15,6 +15,31 @@ namespace AlienPAK
         public static bool openedViaOpenCAGE = false;
     }
 
+    public enum PAKType
+    {
+        TEXTURES,
+        MODELS,
+        UI,
+        COMMANDS,
+        ANIMATIONS,
+        MATERIAL_MAPPINGS,
+        SHADERS,
+        CHR_INFO,
+
+        NONE
+    };
+
+    [Flags]
+    public enum PAKFunction
+    {
+        NONE = 0,
+        CAN_EXPORT_FILES = 1,
+        CAN_IMPORT_FILES = 2,
+        CAN_REPLACE_FILES = 4,
+        CAN_DELETE_FILES = 8,
+        CAN_EXPORT_ALL = 16,
+    }
+
     static class Program
     {
         static Dictionary<string, string> _args;
@@ -79,10 +104,8 @@ namespace AlienPAK
             //Launch application
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(true);
-            if (GetArgument("pathToAI") != null && (GetArgument("level") == null || GetArgument("mode") == null))
+            if (GetArgument("pathToAI") != null)
                 Application.Run(new Landing());
-            else 
-                Application.Run(new Explorer(GetArgument("level"), GetArgument("mode")));
         }
 
         public static string GetArgument(string name)

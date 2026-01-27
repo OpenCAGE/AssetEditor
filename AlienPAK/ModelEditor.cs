@@ -1,6 +1,5 @@
 ﻿using Assimp;
 using CATHODE;
-using CATHODE.LEGACY;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -273,19 +272,19 @@ namespace AlienPAK
             if (FileTree.SelectedNode == null) return;
             StringMeshLookup lookup = _treeLookup.FirstOrDefault(o => o.String == FileTree.SelectedNode.FullPath);
             if (lookup == null || lookup.submesh == null) return;
-            Materials.Material material = _materials.GetAtWriteIndex(lookup.submesh.MaterialIndex);
+            Materials.Material material = lookup.submesh.Material;
             if (material == null) return;
 
             MaterialEditor materialEditor = new MaterialEditor(material, _materials, _shaders, _textures, _texturesGlobal);
             materialEditor.OnMaterialSelected += OnMaterialSelected;
             materialEditor.Show();
         }
-        private void OnMaterialSelected(int index)
+        private void OnMaterialSelected(Materials.Material material)
         {
             StringMeshLookup lookup = _treeLookup.FirstOrDefault(o => o.String == FileTree.SelectedNode.FullPath);
             Submesh submesh = lookup?.submesh;
             if (submesh == null) return;
-            submesh.MaterialIndex = index;
+            submesh.Material = material;
             RefreshSelectedModelPreview(false);
 
             this.Focus();
@@ -330,12 +329,10 @@ namespace AlienPAK
                         GeometryModel3D mdl = submesh.ToGeometryModel3D();
                         try
                         {
-                            Materials.Material material = _materials.GetAtWriteIndex(submesh.MaterialIndex);
-                            if (lookup?.submesh != null) materialInfo = material.Name;
+                            if (lookup?.submesh != null) materialInfo = submesh.Material.Name;
                             if (_controls.renderMaterials.IsChecked == true)
                             {
-                                Shaders.Shader shader = _shaders.Entries[material.ShaderIndex];
-                                MaterialApplier.ApplyMaterial(mdl, material, shader, _textures, _texturesGlobal);
+                                MaterialApplier.ApplyMaterial(mdl, submesh.Material);
                             }
                         }
                         catch (Exception ex2)
