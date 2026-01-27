@@ -32,6 +32,24 @@ namespace AlienPAK
             FileTree = tree;
         }
 
+        ~TreeUtility()
+        {
+            ForceClearTree();
+        }
+
+        public void ForceClearTree()
+        {
+            if (FileTree != null)
+            {
+                FileTree.SuspendLayout();
+                FileTree.BeginUpdate();
+                FileTree.Nodes.Clear();
+                FileTree.EndUpdate();
+                FileTree.Dispose();
+                FileTree.ResumeLayout();
+            }
+        }
+
         /* Update the file tree GUI */
         public void UpdateFileTree(List<string> FilesToList, ContextMenuStrip contextMenu = null)
         {

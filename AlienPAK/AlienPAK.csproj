@@ -46,13 +46,13 @@
       <HintPath>..\CathodeLib\CathodeLib\bin\Debug\netstandard2.0\CathodeLib.dll</HintPath>
     </Reference>
     <Reference Include="HelixToolkit">
-      <HintPath>lib\HelixToolkit\Release\HelixToolkit.dll</HintPath>
+      <HintPath>lib\HelixToolkit\Debug\HelixToolkit.dll</HintPath>
     </Reference>
     <Reference Include="HelixToolkit.Wpf">
-      <HintPath>lib\HelixToolkit\Release\HelixToolkit.Wpf.dll</HintPath>
+      <HintPath>lib\HelixToolkit\Debug\HelixToolkit.Wpf.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.Extensions.Logging.Abstractions">
-      <HintPath>lib\HelixToolkit\Release\Microsoft.Extensions.Logging.Abstractions.dll</HintPath>
+      <HintPath>lib\HelixToolkit\Debug\Microsoft.Extensions.Logging.Abstractions.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'">
@@ -260,6 +260,7 @@
     <Compile Include="Explorer.Designer.cs">
       <DependentUpon>Explorer.cs</DependentUpon>
     </Compile>
+    <Compile Include="MaterialApplier.cs" />
     <Compile Include="MaterialEditor.cs">
       <SubType>Form</SubType>
     </Compile>

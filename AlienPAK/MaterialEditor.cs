@@ -24,10 +24,9 @@ namespace AlienPAK
     public partial class MaterialEditor : Form
     {
         Materials _materials = null;
-        ShadersPAK _shaders = null;
+        Shaders _shaders = null;
         Textures _textures = null;
         Textures _texturesGlobal = null;
-        IDXRemap _shadersIDX = null;
 
         List<Materials.Material> _sortedMaterials = new List<Materials.Material>();
         ShadersPAK.ShaderMaterialMetadata _selectedMaterialMeta = null;
@@ -37,13 +36,12 @@ namespace AlienPAK
 
         public Action<int> OnMaterialSelected;
 
-        public MaterialEditor(Materials.Material material = null, Materials materials = null, ShadersPAK shaders = null, Textures textures = null, Textures texturesGlobal = null, IDXRemap shadersIDX = null)
+        public MaterialEditor(Materials.Material material = null, Materials materials = null, Shaders shaders = null, Textures textures = null, Textures texturesGlobal = null)
         {
             _materials = materials;
             _shaders = shaders;
             _textures = textures;
             _texturesGlobal = texturesGlobal;
-            _shadersIDX = shadersIDX;
 
             InitializeComponent();
             if (_materials == null) return;
@@ -96,7 +94,7 @@ namespace AlienPAK
             ShadersPAK.MaterialTextureContext textureInfo = _selectedMaterialMeta.textures[_controls.materialTextureSelection.SelectedIndex];
             if (textureInfo.TextureInfo == null)
             {
-                Texture tex = new Texture();
+                TexturePtr tex = new TexturePtr();
                 textureInfo.TextureInfo = tex;
                 _sortedMaterials[materialList.SelectedIndex].TextureReferences[_controls.materialTextureSelection.SelectedIndex] = tex;
             }
@@ -107,8 +105,8 @@ namespace AlienPAK
             }
             else
             {
-                textureInfo.TextureInfo.BinIndex = texDB.GetWriteIndex(texDB.Entries[index]);
-                textureInfo.TextureInfo.Source = global ? Texture.TextureSource.GLOBAL : Texture.TextureSource.LEVEL;
+                textureInfo.TextureInfo.Index = texDB.GetWriteIndex(texDB.Entries[index]);
+                textureInfo.TextureInfo.Location = global ? TexturePtr.Source.GLOBAL : TexturePtr.Source.LEVEL;
             }
             ShowTextureForMaterial(_controls.materialTextureSelection.SelectedIndex);
             _doingSelection = false;
@@ -133,22 +131,23 @@ namespace AlienPAK
 
         private void MaterialPropertyChanged<T>(MaterialProperty property, T val)
         {
+            /*
             Console.WriteLine("MaterialPropertyChanged");
             if (_selectedMaterialMeta == null || materialList.SelectedIndex == -1 || _sortedMaterials[materialList.SelectedIndex] == null || _selectedMaterialShader == null) return;
             int offset = _sortedMaterials[materialList.SelectedIndex].ConstantBuffers[2].Offset;
             switch (property)
             {
                 case MaterialProperty.COLOUR:
-                    offset += _selectedMaterialShader.CSTLinks[2][_selectedMaterialMeta.cstIndexes.DiffuseIndex];
+                    offset += _selectedMaterialShader.CSTLinks[2][_selectedMaterialMeta.cstIndexes.Diffuse0];
                     break;
                 case MaterialProperty.DIFFUSE_SCALE:
-                    offset += _selectedMaterialShader.CSTLinks[2][_selectedMaterialMeta.cstIndexes.DiffuseUVMultiplierIndex];
+                    offset += _selectedMaterialShader.CSTLinks[2][_selectedMaterialMeta.cstIndexes.DiffuseMap0UVMultiplier];
                     break;
-                case MaterialProperty.DIFFUSE_OFFSET:
-                    offset += _selectedMaterialShader.CSTLinks[2][_selectedMaterialMeta.cstIndexes.DiffuseUVAdderIndex];
-                    break;
+                //case MaterialProperty.DIFFUSE_OFFSET:
+                //    offset += _selectedMaterialShader.CSTLinks[2][_selectedMaterialMeta.cstIndexes.DiffuseMap0];
+                //    break;
                 case MaterialProperty.NORMAL_SCALE:
-                    offset += _selectedMaterialShader.CSTLinks[2][_selectedMaterialMeta.cstIndexes.NormalUVMultiplierIndex];
+                    offset += _selectedMaterialShader.CSTLinks[2][_selectedMaterialMeta.cstIndexes.NormalMap0UVMultiplier];
                     break;
                 default:
                     return;
@@ -156,6 +155,7 @@ namespace AlienPAK
             BinaryWriter cstWriter = new BinaryWriter(new MemoryStream(_materials.CSTData[2]));
             WriteToCST<T>(ref cstWriter, offset * 4, val);
             cstWriter.Close();
+            */
         }
 
         private void OnMaterialTextureIndexSelected(int index)
@@ -167,6 +167,7 @@ namespace AlienPAK
         bool _doingSelection = false; //temp hack for crap global implementation fix
         private void materialList_SelectedIndexChanged(object sender, EventArgs e)
         {
+            /*
             Console.WriteLine("materialList_SelectedIndexChanged");
             _doingSelection = true;
             _selectedMaterialMeta = null;
@@ -176,9 +177,9 @@ namespace AlienPAK
                 _doingSelection = false;
                 return;
             }
-            _selectedMaterialMeta = _shaders.GetMaterialMetadataFromShader(_sortedMaterials[materialList.SelectedIndex], _shadersIDX);
+            _selectedMaterialMeta = _shaders.GetMaterialMetadataFromShader(_sortedMaterials[materialList.SelectedIndex]);
 
-            int shaderIndex = _shadersIDX.Datas[_sortedMaterials[materialList.SelectedIndex].UberShaderIndex].Index;
+            int shaderIndex = _shadersIDX.Datas[_sortedMaterials[materialList.SelectedIndex].ShaderIndex].Index;
             _selectedMaterialShader = _shaders.Shaders[shaderIndex];
 
             _controls.fileNameText.Text = _sortedMaterials[materialList.SelectedIndex].Name;
@@ -198,47 +199,51 @@ namespace AlienPAK
 
             UpdateShaderCSTInfo(_selectedMaterialMeta.cstIndexes, _selectedMaterialShader, _sortedMaterials[materialList.SelectedIndex]);
             _doingSelection = false;
+            */
         }
 
         private void UpdateShaderCSTInfo(ShadersPAK.MaterialPropertyIndex cstIndexes, ShadersPAK.ShaderEntry shader, Materials.Material InMaterial)
         {
+            /*
             BinaryReader cstReader = new BinaryReader(new MemoryStream(_materials.CSTData[2]));
             int baseOffset = (InMaterial.ConstantBuffers[2].Offset * 4);
 
-            _controls.matColourLabel.Visibility = CSTIndexValid(cstIndexes.DiffuseIndex, ref shader) ? System.Windows.Visibility.Visible : System.Windows.Visibility.Collapsed;
+            _controls.matColourLabel.Visibility = CSTIndexValid(cstIndexes.Diffuse0, ref shader) ? System.Windows.Visibility.Visible : System.Windows.Visibility.Collapsed;
             _controls.matColour.Visibility = _controls.matColourLabel.Visibility;
             if (_controls.matColour.Visibility == System.Windows.Visibility.Visible)
             {
-                Vector4 colour = LoadFromCST<Vector4>(ref cstReader, baseOffset + (shader.CSTLinks[2][cstIndexes.DiffuseIndex] * 4));
+                Vector4 colour = LoadFromCST<Vector4>(ref cstReader, baseOffset + (shader.CSTLinks[2][cstIndexes.Diffuse0] * 4));
                 System.Windows.Media.Color colour_c = System.Windows.Media.Color.FromArgb((byte)(int)(colour.W * 255.0f), (byte)(int)(colour.X * 255.0f), (byte)(int)(colour.Y * 255.0f), (byte)(int)(colour.Z * 255.0f));
                 _controls.matColour.Background = new SolidColorBrush(colour_c);
             }
 
-            _controls.matDiffuseScaleLabel.Visibility = CSTIndexValid(cstIndexes.DiffuseUVMultiplierIndex, ref shader) ? System.Windows.Visibility.Visible : System.Windows.Visibility.Collapsed;
+            _controls.matDiffuseScaleLabel.Visibility = CSTIndexValid(cstIndexes.DiffuseMap0UVMultiplier, ref shader) ? System.Windows.Visibility.Visible : System.Windows.Visibility.Collapsed;
             _controls.matDiffuseScale.Visibility = _controls.matDiffuseScaleLabel.Visibility;
             if (_controls.matDiffuseScale.Visibility == System.Windows.Visibility.Visible)
             {
-                float offset = LoadFromCST<float>(ref cstReader, baseOffset + (shader.CSTLinks[2][cstIndexes.DiffuseUVMultiplierIndex] * 4));
+                float offset = LoadFromCST<float>(ref cstReader, baseOffset + (shader.CSTLinks[2][cstIndexes.DiffuseMap0UVMultiplier] * 4));
                 _controls.matDiffuseScale.Text = offset.ToString();
             }
 
-            _controls.matDiffuseOffsetLabel.Visibility = CSTIndexValid(cstIndexes.DiffuseUVAdderIndex, ref shader) ? System.Windows.Visibility.Visible : System.Windows.Visibility.Collapsed;
-            _controls.matDiffuseOffset.Visibility = _controls.matDiffuseOffsetLabel.Visibility;
-            if (_controls.matDiffuseOffset.Visibility == System.Windows.Visibility.Visible)
-            {
-                float offset = LoadFromCST<float>(ref cstReader, baseOffset + (shader.CSTLinks[2][cstIndexes.DiffuseUVAdderIndex] * 4));
-                _controls.matDiffuseOffset.Text = offset.ToString();
-            }
+            _controls.matDiffuseOffsetLabel.Visibility = System.Windows.Visibility.Hidden;
+            //_controls.matDiffuseOffsetLabel.Visibility = CSTIndexValid(cstIndexes.DiffuseMap0, ref shader) ? System.Windows.Visibility.Visible : System.Windows.Visibility.Collapsed;
+            //_controls.matDiffuseOffset.Visibility = _controls.matDiffuseOffsetLabel.Visibility;
+            //if (_controls.matDiffuseOffset.Visibility == System.Windows.Visibility.Visible)
+            //{
+            //    float offset = LoadFromCST<float>(ref cstReader, baseOffset + (shader.CSTLinks[2][cstIndexes.DiffuseMap0] * 4));
+            //    _controls.matDiffuseOffset.Text = offset.ToString();
+            //}
 
-            _controls.matNormalScaleLabel.Visibility = CSTIndexValid(cstIndexes.NormalUVMultiplierIndex, ref shader) ? System.Windows.Visibility.Visible : System.Windows.Visibility.Collapsed;
+            _controls.matNormalScaleLabel.Visibility = CSTIndexValid(cstIndexes.NormalMap0UVMultiplier, ref shader) ? System.Windows.Visibility.Visible : System.Windows.Visibility.Collapsed;
             _controls.matNormalScale.Visibility = _controls.matNormalScaleLabel.Visibility;
             if (_controls.matNormalScale.Visibility == System.Windows.Visibility.Visible)
             {
-                float offset = LoadFromCST<float>(ref cstReader, baseOffset + (shader.CSTLinks[2][cstIndexes.NormalUVMultiplierIndex] * 4));
+                float offset = LoadFromCST<float>(ref cstReader, baseOffset + (shader.CSTLinks[2][cstIndexes.NormalMap0UVMultiplier] * 4));
                 _controls.matNormalScale.Text = offset.ToString();
             }
 
             cstReader.Close();
+            */
         }
 
         private void ShowTextureForMaterial(int index)
@@ -254,13 +259,13 @@ namespace AlienPAK
                 return;
             }
 
-            bool isGlobal = mdlMetaDiff.TextureInfo.Source == Texture.TextureSource.GLOBAL;
+            bool isGlobal = mdlMetaDiff.TextureInfo.Location == TexturePtr.Source.GLOBAL;
             if (isGlobal != _controls.textureUseGlobal.IsChecked || _controls.textureFile.Items.Count == 0)
             {
                 _controls.textureUseGlobal.IsChecked = isGlobal;
                 UpdateTextureDropdown(isGlobal);
             }
-            Textures.TEX4 diff = (mdlMetaDiff.TextureInfo.Source == Texture.TextureSource.GLOBAL ? _texturesGlobal : _textures).GetAtWriteIndex(mdlMetaDiff.TextureInfo.BinIndex);
+            Textures.TEX4 diff = (mdlMetaDiff.TextureInfo.Location == TexturePtr.Source.GLOBAL ? _texturesGlobal : _textures).GetAtWriteIndex(mdlMetaDiff.TextureInfo.Index);
             _controls.textureFile.SelectedItem = diff == null ? "NONE" : diff.Name;
             _controls.materialTexturePreview.Source = diff?.ToDDS()?.ToBitmap()?.ToImageSource();
         }
@@ -288,6 +293,7 @@ namespace AlienPAK
 
         private void duplicateMaterial_Click(object sender, EventArgs e)
         {
+            /*
             Materials.Material newMaterial = _sortedMaterials[materialList.SelectedIndex].Copy();
             newMaterial.Name += " Clone";
             for (int i = 0; i < newMaterial.ConstantBuffers.Length; i++)
@@ -322,6 +328,7 @@ namespace AlienPAK
             _materials.Entries.Add(newMaterial);
             Explorer.SaveTexturesAndUpdateMaterials(_textures, _materials);
             PopulateUI(newMaterial);
+            */
         }
     }
 }

@@ -59,7 +59,7 @@ namespace AlienPAK
                     _file = new MaterialMappings(path);
                     _type = PAKType.MATERIAL_MAPPINGS;
                     for (int i = 0; i < ((MaterialMappings)_file).Entries.Count; i++)
-                        _contents.Add(((MaterialMappings)_file).Entries[i].MapFilename);
+                        _contents.Add(((MaterialMappings)_file).Entries[i].Name);
                     break;
                 case "COMMANDS.PAK":
                     _file = new Commands(path);
@@ -145,29 +145,59 @@ namespace AlienPAK
             {
                 case PAKType.TEXTURES:
                     Textures.TEX4 texture = ((Textures)_file).Entries.FirstOrDefault(o => o.Name.Replace('\\', '/') == FileName.Replace('\\', '/'));
-                    Textures.TEX4.Part part = texture?.tex_HighRes?.Content != null ? texture.tex_HighRes : texture?.tex_LowRes?.Content != null ? texture.tex_LowRes : null;
+                    Textures.TEX4.Texture part = texture?.TextureStreamed?.Content != null ? texture.TextureStreamed : texture?.TexturePersistent?.Content != null ? texture.TexturePersistent : null;
                     if (part == null) return null;
                     DirectXTexUtility.DXGIFormat format;
                     switch (texture.Format)
                     {
-                        case Textures.TextureFormat.DXGI_FORMAT_BC5_UNORM:
-                            format = DirectXTexUtility.DXGIFormat.BC5UNORM;
+                        case Textures.TextureFormat.A32R32G32B32F:
+                            format = DirectXTexUtility.DXGIFormat.R32G32B32A32FLOAT;
                             break;
-                        case Textures.TextureFormat.DXGI_FORMAT_BC1_UNORM:
+                        case Textures.TextureFormat.A16R16G16B16:
+                            format = DirectXTexUtility.DXGIFormat.R16G16B16A16UNORM;
+                            break;
+                        case Textures.TextureFormat.A8R8G8B8:
+                            format = DirectXTexUtility.DXGIFormat.R8G8B8A8UNORM;
+                            break;
+                        case Textures.TextureFormat.X8R8G8B8:
+                            format = DirectXTexUtility.DXGIFormat.B8G8R8X8UNORM;
+                            break;
+                        case Textures.TextureFormat.A8:
+                            format = DirectXTexUtility.DXGIFormat.A8UNORM;
+                            break;
+                        case Textures.TextureFormat.L8:
+                            format = DirectXTexUtility.DXGIFormat.R8UNORM;
+                            break;
+                        case Textures.TextureFormat.DXT1:
                             format = DirectXTexUtility.DXGIFormat.BC1UNORM;
                             break;
-                        case Textures.TextureFormat.DXGI_FORMAT_BC3_UNORM:
+                        case Textures.TextureFormat.DXT3:
+                            format = DirectXTexUtility.DXGIFormat.BC2UNORM;
+                            break;
+                        case Textures.TextureFormat.DXT5:
                             format = DirectXTexUtility.DXGIFormat.BC3UNORM;
                             break;
-                        case Textures.TextureFormat.DXGI_FORMAT_B8G8R8A8_UNORM:
-                            format = DirectXTexUtility.DXGIFormat.B8G8R8A8UNORM;
+                        case Textures.TextureFormat.DXN:
+                            format = DirectXTexUtility.DXGIFormat.BC5UNORM;
+                            break;
+                        case Textures.TextureFormat.A4R4G4B4:
+                            format = DirectXTexUtility.DXGIFormat.B4G4R4A4UNORM;
+                            break;
+                        case Textures.TextureFormat.BC6H:
+                            format = DirectXTexUtility.DXGIFormat.BC6HUF16;
+                            break;
+                        case Textures.TextureFormat.BC7:
+                            format = DirectXTexUtility.DXGIFormat.BC7UNORM;
+                            break;
+                        case Textures.TextureFormat.R16F:
+                            format = DirectXTexUtility.DXGIFormat.R16FLOAT;
                             break;
                         default:
-                            format = DirectXTexUtility.DXGIFormat.BC7UNORM;
+                            format = DirectXTexUtility.DXGIFormat.UNKNOWN;
                             break;
                     }
                     DirectXTexUtility.GenerateDDSHeader(
-                        DirectXTexUtility.GenerateMataData(part.Width, part.Height, part.MipLevels, format, texture.Type == Textures.AlienTextureType.ENVIRONMENT_MAP),
+                        DirectXTexUtility.GenerateMataData(part.Width, part.Height, part.MipLevels, format, texture.StateFlags.HasFlag(Textures.TextureStateFlag.CUBE)),
                         DirectXTexUtility.DDSFlags.FORCEDX10EXT, out DirectXTexUtility.DDSHeader ddsHeader, out DirectXTexUtility.DX10Header dx10Header);
                     MemoryStream ms = new MemoryStream();
                     using (BinaryWriter bw = new BinaryWriter(ms))
@@ -178,7 +208,7 @@ namespace AlienPAK
                     return ms.ToArray();
                 case PAKType.MATERIAL_MAPPINGS:
                     //TODO!
-                    MaterialMappings.Mapping map = ((MaterialMappings)_file).Entries.FirstOrDefault(o => o.MapFilename.Replace('\\', '/') == FileName.Replace('\\', '/'));
+                    MaterialMappings.Entry map = ((MaterialMappings)_file).Entries.FirstOrDefault(o => o.Name.Replace('\\', '/') == FileName.Replace('\\', '/'));
                     return null;
                 case PAKType.MODELS:
                     return null;
