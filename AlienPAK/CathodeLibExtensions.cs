@@ -407,7 +407,7 @@ namespace AlienPAK
             }
             for (int i = 0; i < cathodeMesh.Normals.Count; i++)
             {
-                assimpMesh.Normals.Add(new Assimp.Vector3D((float)cathodeMesh.Normals[i].X, (float)cathodeMesh.Normals[i].Y, (float)cathodeMesh.Normals[i].Z));
+                //assimpMesh.Normals.Add(new Assimp.Vector3D((float)cathodeMesh.Normals[i].X, (float)cathodeMesh.Normals[i].Y, (float)cathodeMesh.Normals[i].Z));
             }
             //binormals?
             for (int i = 0; i < cathodeMesh.Tangents.Count; i++)
