@@ -216,9 +216,9 @@ namespace AlienPAK
                                 break;
                             }
                             texture.UsageFlags = Textures.TextureUsageFlag.DEFAULT | Textures.TextureUsageFlag.IS_LEVEL_PACK; //todo: ui to allow selection of this
-                            //texture.StateFlags = Textures.TextureStateFlag.
-                            texture.TextureStreamed = part.Copy();
-                            texture.TexturePersistent = part.Copy();
+                            //texture.StateFlags = Textures.TextureStateFlag. //todo: ui to allow selection of this
+                            texture.TextureStreamed = part.Copy(); 
+                            texture.TexturePersistent = part.Copy(); //todo: i think we can just set persistent or streamed?
                             LevelContent.Textures.Entries.Add(texture);
                             Save();
                             break;
@@ -344,7 +344,6 @@ namespace AlienPAK
             {
                 case TreeItemType.DIRECTORY:
                 case TreeItemType.EXPORTABLE_FILE:
-                    //TODO: refactor
                     if (LaunchMode == PAKType.MODELS)
                     {
                         int selectedModelIndex = Convert.ToInt32(nodeVal);
