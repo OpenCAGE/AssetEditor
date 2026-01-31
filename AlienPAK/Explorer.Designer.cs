@@ -41,14 +41,15 @@ namespace AlienPAK
             this.toolStripSeparator2 = new System.Windows.Forms.ToolStripSeparator();
             this.importFileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.exportFileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.toolStripSeparator1 = new System.Windows.Forms.ToolStripSeparator();
+            this.exportAllToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.viewToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.expandAllDirectoriesToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.shrinkAllDirectoriesToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.menuStrip1 = new System.Windows.Forms.MenuStrip();
             this.elementHost1 = new System.Windows.Forms.Integration.ElementHost();
             this.explorerControlsWPF1 = new AlienPAK.ExplorerControlsWPF();
-            this.toolStripSeparator1 = new System.Windows.Forms.ToolStripSeparator();
-            this.exportAllToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.saveChangesToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.fileContextMenu.SuspendLayout();
             this.menuStrip1.SuspendLayout();
             this.SuspendLayout();
@@ -57,10 +58,9 @@ namespace AlienPAK
             // 
             this.FileTree.BorderStyle = System.Windows.Forms.BorderStyle.None;
             this.FileTree.HideSelection = false;
-            this.FileTree.Location = new System.Drawing.Point(-2, 37);
-            this.FileTree.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
+            this.FileTree.Location = new System.Drawing.Point(-1, 24);
             this.FileTree.Name = "FileTree";
-            this.FileTree.Size = new System.Drawing.Size(750, 1045);
+            this.FileTree.Size = new System.Drawing.Size(500, 679);
             this.FileTree.TabIndex = 5;
             this.FileTree.AfterSelect += new System.Windows.Forms.TreeViewEventHandler(this.FileTree_AfterSelect);
             // 
@@ -102,9 +102,10 @@ namespace AlienPAK
             this.importFileToolStripMenuItem,
             this.exportFileToolStripMenuItem,
             this.toolStripSeparator1,
-            this.exportAllToolStripMenuItem});
+            this.exportAllToolStripMenuItem,
+            this.saveChangesToolStripMenuItem});
             this.fileToolStripMenuItem.Name = "fileToolStripMenuItem";
-            this.fileToolStripMenuItem.Size = new System.Drawing.Size(37, 19);
+            this.fileToolStripMenuItem.Size = new System.Drawing.Size(37, 20);
             this.fileToolStripMenuItem.Text = "File";
             // 
             // openToolStripMenuItem
@@ -132,13 +133,25 @@ namespace AlienPAK
             this.exportFileToolStripMenuItem.Text = "Export Selected File";
             this.exportFileToolStripMenuItem.Click += new System.EventHandler(this.exportFileToolStripMenuItem_Click);
             // 
+            // toolStripSeparator1
+            // 
+            this.toolStripSeparator1.Name = "toolStripSeparator1";
+            this.toolStripSeparator1.Size = new System.Drawing.Size(177, 6);
+            // 
+            // exportAllToolStripMenuItem
+            // 
+            this.exportAllToolStripMenuItem.Name = "exportAllToolStripMenuItem";
+            this.exportAllToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.exportAllToolStripMenuItem.Text = "Export All";
+            this.exportAllToolStripMenuItem.Click += new System.EventHandler(this.exportAllToolStripMenuItem_Click);
+            // 
             // viewToolStripMenuItem
             // 
             this.viewToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.expandAllDirectoriesToolStripMenuItem,
             this.shrinkAllDirectoriesToolStripMenuItem});
             this.viewToolStripMenuItem.Name = "viewToolStripMenuItem";
-            this.viewToolStripMenuItem.Size = new System.Drawing.Size(44, 19);
+            this.viewToolStripMenuItem.Size = new System.Drawing.Size(44, 20);
             this.viewToolStripMenuItem.Text = "View";
             // 
             // expandAllDirectoriesToolStripMenuItem
@@ -162,45 +175,37 @@ namespace AlienPAK
             this.viewToolStripMenuItem});
             this.menuStrip1.Location = new System.Drawing.Point(0, 0);
             this.menuStrip1.Name = "menuStrip1";
-            this.menuStrip1.Padding = new System.Windows.Forms.Padding(9, 3, 0, 3);
-            this.menuStrip1.Size = new System.Drawing.Size(1178, 25);
+            this.menuStrip1.Size = new System.Drawing.Size(785, 24);
             this.menuStrip1.TabIndex = 1;
             this.menuStrip1.Text = "menuStrip1";
             // 
             // elementHost1
             // 
-            this.elementHost1.Location = new System.Drawing.Point(758, 37);
-            this.elementHost1.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
+            this.elementHost1.Location = new System.Drawing.Point(505, 24);
             this.elementHost1.Name = "elementHost1";
-            this.elementHost1.Size = new System.Drawing.Size(416, 1040);
+            this.elementHost1.Size = new System.Drawing.Size(277, 676);
             this.elementHost1.TabIndex = 17;
             this.elementHost1.Text = "elementHost1";
             this.elementHost1.Child = this.explorerControlsWPF1;
             // 
-            // toolStripSeparator1
+            // saveChangesToolStripMenuItem
             // 
-            this.toolStripSeparator1.Name = "toolStripSeparator1";
-            this.toolStripSeparator1.Size = new System.Drawing.Size(177, 6);
-            // 
-            // exportAllToolStripMenuItem
-            // 
-            this.exportAllToolStripMenuItem.Name = "exportAllToolStripMenuItem";
-            this.exportAllToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
-            this.exportAllToolStripMenuItem.Text = "Export All";
-            this.exportAllToolStripMenuItem.Click += new System.EventHandler(this.exportAllToolStripMenuItem_Click);
+            this.saveChangesToolStripMenuItem.Name = "saveChangesToolStripMenuItem";
+            this.saveChangesToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.saveChangesToolStripMenuItem.Text = "Save Changes";
+            this.saveChangesToolStripMenuItem.Click += new System.EventHandler(this.saveChangesToolStripMenuItem_Click);
             // 
             // Explorer
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(9F, 20F);
+            this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(1178, 1082);
+            this.ClientSize = new System.Drawing.Size(785, 703);
             this.Controls.Add(this.elementHost1);
             this.Controls.Add(this.FileTree);
             this.Controls.Add(this.menuStrip1);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedToolWindow;
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.MainMenuStrip = this.menuStrip1;
-            this.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.MaximizeBox = false;
             this.Name = "Explorer";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
@@ -234,6 +239,7 @@ namespace AlienPAK
         private System.Windows.Forms.MenuStrip menuStrip1;
         private System.Windows.Forms.ToolStripSeparator toolStripSeparator1;
         private System.Windows.Forms.ToolStripMenuItem exportAllToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem saveChangesToolStripMenuItem;
     }
 }
 

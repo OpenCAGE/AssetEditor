@@ -122,6 +122,7 @@ namespace AlienPAK
                     {
                         List<string> allModelFileNames = new List<string>();
                         List<string> allModelTagsNames = new List<string>();
+                        List<Models.CS2.Component> allModelTagsModels = new List<Models.CS2.Component>();
                         foreach (Models.CS2 mesh in LevelContent.Models.Entries)
                         {
                             foreach (Models.CS2.Component component in mesh.Components)
@@ -137,9 +138,10 @@ namespace AlienPAK
                                 Models.CS2.Component.LOD.Submesh submesh0 = lod0.Submeshes[0];
                                 allModelFileNames.Add(CreateTagForMesh(mesh, submesh0, lod0, component));
                                 allModelTagsNames.Add(LevelContent.Models.GetWriteIndex(submesh0).ToString());
+                                allModelTagsModels.Add(component);
                             }
                         }
-                        treeHelper.UpdateFileTree(allModelFileNames, null, allModelTagsNames);
+                        treeHelper.UpdateFileTree(allModelFileNames, null, allModelTagsNames, allModelTagsModels);
                     }
                     break;
                 case PAKType.TEXTURES:
@@ -220,7 +222,6 @@ namespace AlienPAK
                             texture.TextureStreamed = part.Copy(); 
                             texture.TexturePersistent = part.Copy(); //todo: i think we can just set persistent or streamed?
                             LevelContent.Textures.Entries.Add(texture);
-                            Save();
                             break;
                         }
                         break;
@@ -259,7 +260,6 @@ namespace AlienPAK
                             return;
                         }
                         LevelContent.Models.Entries.Add(cs2);
-                        Save();
                         break;
                     default:
                         return;
@@ -296,20 +296,12 @@ namespace AlienPAK
                             case PAKType.ANIMATIONS:
                             case PAKType.UI:
                                 Archive.Entries.RemoveAll(o => o.Filename.Replace('\\', '/') == nodeVal.Replace('\\', '/'));
-                                Save();
                                 break;
                             case PAKType.TEXTURES:
                                 LevelContent.Textures.Entries.RemoveAll(o => o.Name.Replace('\\', '/') == nodeVal.Replace('\\', '/'));
-                                Save();
                                 break;
                             case PAKType.MODELS:
-                                int selectedModelIndex = Convert.ToInt32(nodeVal);
-                                if (selectedModelIndex == -1)
-                                    return;
-                                Models.CS2.Component comp = LevelContent.Models.FindModelComponentForSubmesh(LevelContent.Models.GetAtWriteIndex(selectedModelIndex));
-                                Models.CS2 cs2 = LevelContent.Models.FindModelForComponent(comp);
-                                LevelContent.Models.Entries.Remove(cs2);
-                                Save();
+                                LevelContent.Models.Entries.Remove(LevelContent.Models.FindModelForComponent(((TreeItem)FileTree.SelectedNode.Tag).Model_Value));
                                 break;
                         }
                         MessageBox.Show("Successfully deleted file!", "Delete complete", MessageBoxButtons.OK, MessageBoxIcon.Information);
@@ -346,12 +338,7 @@ namespace AlienPAK
                 case TreeItemType.EXPORTABLE_FILE:
                     if (LaunchMode == PAKType.MODELS)
                     {
-                        int selectedModelIndex = Convert.ToInt32(nodeVal);
-                        if (selectedModelIndex == -1)
-                            return;
-                        Models.CS2.Component comp = LevelContent.Models.FindModelComponentForSubmesh(LevelContent.Models.GetAtWriteIndex(selectedModelIndex));
-                        Models.CS2 cs2 = LevelContent.Models.FindModelForComponent(comp);
-                        ModelEditor modelEditor = new ModelEditor(cs2, LevelContent.Textures, LevelContent.Global.Textures, LevelContent.Materials, LevelContent.Shaders);
+                        ModelEditor modelEditor = new ModelEditor(LevelContent.Models.FindModelForComponent(((TreeItem)FileTree.SelectedNode.Tag).Model_Value), LevelContent.Textures, LevelContent.Global.Textures, LevelContent.Materials, LevelContent.Shaders);
                         modelEditor.FormClosed += ModelEditor_FormClosed;
                         modelEditor.Show();
                         break;
@@ -374,7 +361,6 @@ namespace AlienPAK
                             case PAKType.ANIMATIONS:
                             case PAKType.UI:
                                 Archive.Entries.FirstOrDefault(o => o.Filename.Replace('\\', '/') == nodeVal.Replace('\\', '/')).Content = File.ReadAllBytes(FilePicker.FileName);
-                                Save();
                                 break;
                             case PAKType.TEXTURES:
                                 Textures.TEX4 texture = LevelContent.Textures.Entries.FirstOrDefault(o => o.Name.Replace('\\', '/') == nodeVal.Replace('\\', '/'));
@@ -387,7 +373,6 @@ namespace AlienPAK
                                 }
                                 if (texture.TextureStreamed?.Content != null) texture.TextureStreamed = part;
                                 if (texture.TexturePersistent?.Content != null) texture.TexturePersistent = part;
-                                Save();
                                 break;
                         }
                         MessageBox.Show("Successfully imported file!", "Import complete", MessageBoxButtons.OK, MessageBoxIcon.Information);
@@ -403,7 +388,6 @@ namespace AlienPAK
         }
         private void ModelEditor_FormClosed(object sender, FormClosedEventArgs e)
         {
-            Save(); //todo - add a button for this
             UpdateSelectedFilePreview();
             UpdateUI();
             this.BringToFront();
@@ -474,12 +458,7 @@ namespace AlienPAK
                         content?.ToBitmap()?.Save(pickedFileName);
                         break;
                     case PAKType.MODELS:
-                        int selectedModelIndex = Convert.ToInt32(nodeVal);
-                        if (selectedModelIndex == -1)
-                            return;
-                        Models.CS2.Component comp = LevelContent.Models.FindModelComponentForSubmesh(LevelContent.Models.GetAtWriteIndex(selectedModelIndex));
-                        Models.CS2 cs2 = LevelContent.Models.FindModelForComponent(comp);
-                        cs2.ExportMesh(pickedFileName);
+                        LevelContent.Models.FindModelForComponent(((TreeItem)FileTree.SelectedNode.Tag).Model_Value).ExportMesh(pickedFileName);
                         break;
                     default:
                         if (outputFolder == "")
@@ -554,9 +533,7 @@ namespace AlienPAK
                             if (!(FileTree.SelectedNode.Nodes.Count > 0 && FileTree.SelectedNode.Nodes[0].Nodes.Count == 0))
                                 return;
                             {
-                                Models.CS2.Component comp = LevelContent.Models.FindModelComponentForSubmesh(LevelContent.Models.GetAtWriteIndex(selectedModelIndex));
-                                Models.CS2 cs2 = LevelContent.Models.FindModelForComponent(comp);
-                                foreach (Models.CS2.Component component in cs2.Components)
+                                foreach (Models.CS2.Component component in LevelContent.Models.FindModelForComponent(((TreeItem)FileTree.SelectedNode.Tag).Model_Value).Components)
                                 {
                                     foreach (Models.CS2.Component.LOD lod in component.LODs)
                                     {
@@ -576,8 +553,7 @@ namespace AlienPAK
                             break;
                         case TreeItemType.EXPORTABLE_FILE:
                             {
-                                Models.CS2.Component component = LevelContent.Models.FindModelComponentForSubmesh(LevelContent.Models.GetAtWriteIndex(selectedModelIndex));
-                                foreach (Models.CS2.Component.LOD lod in component.LODs)
+                                foreach (Models.CS2.Component.LOD lod in ((TreeItem)FileTree.SelectedNode.Tag).Model_Value.LODs)
                                 {
                                     foreach (Models.CS2.Component.LOD.Submesh submesh in lod.Submeshes)
                                     {
@@ -720,8 +696,10 @@ namespace AlienPAK
             treeHelper = null;
         }
 
-        private void Save()
+        private void saveChangesToolStripMenuItem_Click(object sender, EventArgs e)
         {
+            Cursor.Current = Cursors.WaitCursor;
+
             //Close alien down if it's open, it conflicts with our write locks!
             List<Process> allProcesses = new List<Process>(Process.GetProcessesByName("AI"));
             for (int x = 0; x < allProcesses.Count; x++)
@@ -736,6 +714,8 @@ namespace AlienPAK
 
             Archive?.Save();
             LevelContent?.Save();
+
+            Cursor.Current = Cursors.Default;
         }
     }
 }

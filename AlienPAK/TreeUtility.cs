@@ -1,4 +1,5 @@
-﻿using System;
+﻿using CATHODE;
+using System;
 using System.Collections.Generic;
 using System.Windows.Forms;
 
@@ -21,6 +22,7 @@ namespace AlienPAK
     public struct TreeItem
     {
         public string String_Value;
+        public Models.CS2.Component Model_Value;
         public TreeItemType Item_Type;
     }
 
@@ -53,7 +55,7 @@ namespace AlienPAK
         }
 
         /* Update the file tree GUI */
-        public void UpdateFileTree(List<string> FilesToList, ContextMenuStrip contextMenu = null, List<string> tags = null)
+        public void UpdateFileTree(List<string> FilesToList, ContextMenuStrip contextMenu = null, List<string> tags = null, List<Models.CS2.Component> models = null)
         {
             _fileTree.SuspendLayout();
             _fileTree.BeginUpdate();
@@ -62,7 +64,7 @@ namespace AlienPAK
             {
                 string[] FileNameParts = FilesToList[i].Split('/');
                 if (FileNameParts.Length == 1) { FileNameParts = FilesToList[i].Split('\\'); }
-                AddFileToTree(FileNameParts, 0, _fileTree.Nodes, contextMenu, (tags == null) ? "" : tags[i]);
+                AddFileToTree(FileNameParts, 0, _fileTree.Nodes, contextMenu, (tags == null) ? "" : tags[i], models == null ? null : models[i]);
             }
             _fileTree.Sort();
             _fileTree.EndUpdate();
@@ -70,7 +72,7 @@ namespace AlienPAK
         }
 
         /* Add a file to the GUI tree structure */
-        private void AddFileToTree(string[] FileNameParts, int index, TreeNodeCollection LoopedNodeCollection, ContextMenuStrip contextMenu = null, string tag = "")
+        private void AddFileToTree(string[] FileNameParts, int index, TreeNodeCollection LoopedNodeCollection, ContextMenuStrip contextMenu = null, string tag = "", Models.CS2.Component model = null)
         {
             if (FileNameParts.Length <= index)
             {
@@ -83,7 +85,7 @@ namespace AlienPAK
                 if (ThisFileNode.Text == FileNameParts[index])
                 {
                     should = false;
-                    AddFileToTree(FileNameParts, index + 1, ThisFileNode.Nodes, contextMenu, tag);
+                    AddFileToTree(FileNameParts, index + 1, ThisFileNode.Nodes, contextMenu, tag, model);
                     break;
                 }
             }
@@ -96,6 +98,7 @@ namespace AlienPAK
                     //Node is a file
                     for (int i = 0; i < FileNameParts.Length; i++) ThisTag.String_Value += FileNameParts[i] + "/";
                     ThisTag.String_Value = tag != "" ? tag : ThisTag.String_Value.ToString().Substring(0, ThisTag.String_Value.ToString().Length - 1);
+                    ThisTag.Model_Value = model;
 
                     FileNode.ImageIndex = (int)TreeItemIcon.FILE;
                     FileNode.SelectedImageIndex = FileNode.ImageIndex;
@@ -108,11 +111,12 @@ namespace AlienPAK
                     //Node is a directory
                     for (int i = 0; i < index + 1; i++) ThisTag.String_Value += FileNameParts[i] + "/";
                     ThisTag.String_Value = tag != "" ? tag : ThisTag.String_Value.ToString().Substring(0, ThisTag.String_Value.ToString().Length - 1);
+                    ThisTag.Model_Value = model;
 
                     ThisTag.Item_Type = TreeItemType.DIRECTORY;
                     FileNode.ImageIndex = (int)TreeItemIcon.FOLDER;
                     FileNode.SelectedImageIndex = (int)TreeItemIcon.FOLDER;
-                    AddFileToTree(FileNameParts, index + 1, FileNode.Nodes, contextMenu, tag);
+                    AddFileToTree(FileNameParts, index + 1, FileNode.Nodes, contextMenu, tag, model);
                 }
 
                 FileNode.Tag = ThisTag;
