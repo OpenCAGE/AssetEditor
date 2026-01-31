@@ -64,7 +64,6 @@ namespace AlienPAK
 
             baseTitle = "OpenCAGE Asset Editor";
 
-            openToolStripMenuItem.Enabled = false;
             this.Text = baseTitle;
 
             preview = (ExplorerControlsWPF)elementHost1.Child;
