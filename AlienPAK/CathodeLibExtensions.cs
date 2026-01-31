@@ -421,7 +421,7 @@ namespace AlienPAK
 
                 for (int x = 0; x < cathodeMesh.UVs[i].Count; x++)
                 {
-                    assimpMesh.TextureCoordinateChannels[exportedUVs].Add(new Assimp.Vector3D((float)cathodeMesh.UVs[i][x].X, (float)cathodeMesh.UVs[i][x].Y, 0));
+                    assimpMesh.TextureCoordinateChannels[exportedUVs].Add(new Assimp.Vector3D((float)cathodeMesh.UVs[i][x].X, 1.0f - (float)cathodeMesh.UVs[i][x].Y, 0));
                 }
                 assimpMesh.HasTextureCoords(exportedUVs);
                 assimpMesh.UVComponentCount[exportedUVs] = 2;
