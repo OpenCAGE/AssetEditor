@@ -303,7 +303,12 @@ namespace AlienPAK
                                 Save();
                                 break;
                             case PAKType.MODELS:
-                                LevelContent.Models.Entries.RemoveAll(o => o.Name.Replace('\\', '/') == nodeVal.Replace('\\', '/'));
+                                int selectedModelIndex = Convert.ToInt32(nodeVal);
+                                if (selectedModelIndex == -1)
+                                    return;
+                                Models.CS2.Component comp = LevelContent.Models.FindModelComponentForSubmesh(LevelContent.Models.GetAtWriteIndex(selectedModelIndex));
+                                Models.CS2 cs2 = LevelContent.Models.FindModelForComponent(comp);
+                                LevelContent.Models.Entries.Remove(cs2);
                                 Save();
                                 break;
                         }
@@ -401,6 +406,7 @@ namespace AlienPAK
         {
             Save(); //todo - add a button for this
             UpdateSelectedFilePreview();
+            UpdateUI();
             this.BringToFront();
             this.Focus();
         }
@@ -474,7 +480,11 @@ namespace AlienPAK
                             case PAKType.MODELS:
                                 Scene scene = new Scene();
                                 scene.Materials.Add(new Assimp.Material());
-                                Models.CS2 cs2 = LevelContent.Models.Entries.FirstOrDefault(o => o.Name.Replace('\\', '/') == nodeVal.Replace('\\', '/'));
+                                int selectedModelIndex = Convert.ToInt32(nodeVal);
+                                if (selectedModelIndex == -1)
+                                    return;
+                                Models.CS2.Component comp = LevelContent.Models.FindModelComponentForSubmesh(LevelContent.Models.GetAtWriteIndex(selectedModelIndex));
+                                Models.CS2 cs2 = LevelContent.Models.FindModelForComponent(comp);
                                 scene.RootNode = new Node(cs2.Name);
                                 for (int i = 0; i < cs2.Components.Count; i++)
                                 {
@@ -531,7 +541,7 @@ namespace AlienPAK
         /* Update file preview */
         private void UpdateSelectedFilePreview()
         {
-            preview.ShowFunctionButtons(Functionality, LaunchMode, FileTree.SelectedNode != null && (LaunchMode == PAKType.MODELS ? ((TreeItem)FileTree.SelectedNode.Tag).Item_Type == TreeItemType.DIRECTORY || ((TreeItem)FileTree.SelectedNode.Tag).Item_Type == TreeItemType.EXPORTABLE_FILE : ((TreeItem)FileTree.SelectedNode.Tag).Item_Type == TreeItemType.EXPORTABLE_FILE));
+            preview.ShowFunctionButtons(Functionality, LaunchMode, false);
             if (FileTree.SelectedNode == null) return;
             TreeItemType nodeType = ((TreeItem)FileTree.SelectedNode.Tag).Item_Type;
             string nodeVal = ((TreeItem)FileTree.SelectedNode.Tag).String_Value;
@@ -547,6 +557,7 @@ namespace AlienPAK
                             PAK2.File file = Archive.Entries.FirstOrDefault(o => o.Filename.Replace('\\', '/') == nodeVal.Replace('\\', '/'));
                             preview.SetFileInfo(Path.GetFileName(nodeVal), file?.Content.Length.ToString());
                             preview.SetImagePreview(file.Content);
+                            preview.ShowFunctionButtons(Functionality, LaunchMode, true);
                             break;
                     }
                     break;
@@ -559,6 +570,7 @@ namespace AlienPAK
                             byte[] content = texture?.ToDDS();
                             preview.SetFileInfo(Path.GetFileName(nodeVal), content?.Length.ToString());
                             preview.SetImagePreview(content);
+                            preview.ShowFunctionButtons(Functionality, LaunchMode, true);
                             break;
                     }
                     break;
@@ -591,6 +603,7 @@ namespace AlienPAK
                                         }
                                     }
                                 }
+                                preview.ShowFunctionButtons(Functionality, LaunchMode, true);
                             }
                             break;
                         case TreeItemType.EXPORTABLE_FILE:
