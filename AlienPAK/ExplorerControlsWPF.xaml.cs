@@ -1,17 +1,17 @@
-﻿using System.Collections.Generic;
+﻿using CATHODE;
+using CathodeLib;
 using System;
+using System.Collections.Generic;
+using System.Drawing;
+using System.Drawing.Imaging;
 using System.IO;
 using System.Linq;
-using System.Windows.Controls;
-using System.Xml.Linq;
-using System.Drawing;
 using System.Runtime.InteropServices;
-using System.Windows.Interop;
 using System.Windows;
-using System.Drawing.Imaging;
-using CATHODE;
+using System.Windows.Controls;
+using System.Windows.Interop;
 using System.Windows.Media.Media3D;
-using CathodeLib;
+using System.Xml.Linq;
 
 namespace AlienPAK
 {
@@ -87,6 +87,10 @@ namespace AlienPAK
             modelPreviewGroup.Visibility = Visibility.Visible;
             imagePreviewGroup.Visibility = Visibility.Collapsed;
             filePreviewModel.Content = content;
+
+            filePreviewModelContainer.ModelUpDirection = new Vector3D(0, 1, 0);
+            filePreviewModelContainer.Camera.UpDirection = new Vector3D(0, 1, 0);
+            filePreviewModelContainer.Camera.LookDirection = new Vector3D(-0.5, -0.5, -1.0f);
             filePreviewModelContainer.ZoomExtents();
         }
 

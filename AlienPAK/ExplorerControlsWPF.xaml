@@ -19,9 +19,9 @@
             </GroupBox>
 
             <GroupBox x:Name="modelPreviewGroup" Header="File Preview" Margin="0 0 0 10">
-                <HelixToolkit:HelixViewport3D x:Name="filePreviewModelContainer" Height="300" ZoomExtentsWhenLoaded="True" ShowViewCube="True" ViewCubeVerticalPosition="Top">
-                    <HelixToolkit:SunLight/>
-                    <ModelVisual3D x:Name="filePreviewModel" />
+                <HelixToolkit:HelixViewport3D x:Name="filePreviewModelContainer" Height="300" ZoomExtentsWhenLoaded="True" ShowViewCube="True" ViewCubeVerticalPosition="Top" ShowCoordinateSystem="True" CoordinateSystemVerticalPosition="Top">
+                    <HelixToolkit:SunLight Altitude="160" Azimuth="120" Ambient="0.7" Brightness="1" />
+                    <ModelVisual3D x:Name="filePreviewModel"/>
                     <!--<HelixToolkit:GridLinesVisual3D Width="8" Length="8" MinorDistance="1" MajorDistance="1" Thickness="0.01"/>-->
                 </HelixToolkit:HelixViewport3D>
             </GroupBox>
