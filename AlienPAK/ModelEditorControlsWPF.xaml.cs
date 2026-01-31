@@ -19,7 +19,6 @@ namespace AlienPAK
     /// </summary>
     public partial class ModelEditorControlsWPF : UserControl
     {
-        public Action OnExportRequested;
         public Action OnDeleteRequested;
         public Action OnReplaceRequested;
         public Action<SelectedModelType> OnAddRequested;
@@ -52,7 +51,6 @@ namespace AlienPAK
 
         public void ShowContextualButtons(SelectedModelType type)
         {
-            exportBtn.Visibility = type != SelectedModelType.NONE ? Visibility.Visible : Visibility.Collapsed;
             replaceBtn.Visibility = type == SelectedModelType.SUBMESH ? Visibility.Visible : Visibility.Collapsed;
             editMaterialBtn.Visibility = type == SelectedModelType.SUBMESH ? Visibility.Visible : Visibility.Collapsed;
             deleteBtn.Visibility = type != SelectedModelType.CS2 && type != SelectedModelType.NONE ? Visibility.Visible : Visibility.Collapsed;
@@ -62,10 +60,6 @@ namespace AlienPAK
         }
 
         /* Button event triggers */
-        private void ExportBtn(object sender, RoutedEventArgs e)
-        {
-            OnExportRequested?.Invoke();
-        }
         private void DeleteBtn(object sender, RoutedEventArgs e)
         {
             OnDeleteRequested?.Invoke();

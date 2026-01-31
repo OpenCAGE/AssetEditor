@@ -1,4 +1,4 @@
-﻿using CATHODE;
+using CATHODE;
 using CATHODE.ShaderTypes;
 using System;
 using System.Collections.Generic;
@@ -14,6 +14,55 @@ namespace AlienPAK
 
     public static class MaterialApplier
     {
+        public static Textures.TEX4 GetDiffuseTexture(Materials.Material material)
+        {
+            if (material == null || material.Shader == null) return null;
+            int diffuseMap = GetDiffuseMapSamplerIndex(material.Shader);
+            if (diffuseMap == -1 || diffuseMap >= material.Shader.SamplerRemaps.Count) return null;
+            int diffuseMapIndex = material.Shader.SamplerRemaps[diffuseMap];
+            if (diffuseMapIndex == 255 || diffuseMapIndex >= material.TextureReferences.Count) return null;
+            return material.TextureReferences[diffuseMapIndex]?.Texture;
+        }
+
+        public static void GetDiffuseTintForExport(Materials.Material material, out float r, out float g, out float b)
+        {
+            r = g = b = 1.0f;
+            if (material == null || material.Shader == null) return;
+            System.Windows.Media.Color c = GetDiffuseTint(material);
+            r = c.R / 255f;
+            g = c.G / 255f;
+            b = c.B / 255f;
+        }
+
+        private static int GetDiffuseMapSamplerIndex(Shaders.Shader shader)
+        {
+            switch (shader.Ubershader)
+            {
+                case SHADER_LIST.CA_ENVIRONMENT: return (int)CA_ENVIRONMENT.SAMPLERS.DIFFUSE_MAP;
+                case SHADER_LIST.CA_DECAL_ENVIRONMENT: return (int)CA_DECAL_ENVIRONMENT.SAMPLERS.DIFFUSE_MAP;
+                case SHADER_LIST.CA_CHARACTER: return (int)CA_CHARACTER.SAMPLERS.DIFFUSE_MAP;
+                case SHADER_LIST.CA_SKIN: return (int)CA_SKIN.SAMPLERS.DIFFUSE_MAP;
+                case SHADER_LIST.CA_HAIR: return (int)CA_HAIR.SAMPLERS.DIFFUSE_MAP;
+                case SHADER_LIST.CA_EYE: return (int)CA_EYE.SAMPLERS.IRIS_MAP;
+                case SHADER_LIST.CA_SKIN_OCCLUSION: return (int)CA_SKIN_OCCLUSION.SAMPLERS.DIFFUSE_MAP;
+                case SHADER_LIST.CA_DECAL: return (int)CA_DECAL.SAMPLERS.DIFFUSE_MAP;
+                case SHADER_LIST.CA_FOGPLANE: return (int)CA_FOGPLANE.SAMPLERS.DIFFUSE_MAP_0;
+                case SHADER_LIST.CA_EFFECT: return (int)CA_EFFECT.SAMPLERS.DIFFUSE_MAP_0;
+                case SHADER_LIST.CA_LIQUID_ENVIRONMENT: return (int)CA_LIQUID_ENVIRONMENT.SAMPLERS.LIQUIFLOW_DISTORTION_MAP;
+                case SHADER_LIST.CA_LIQUID_CHARACTER: return (int)CA_LIQUID_CHARACTER.SAMPLERS.LIQUIFLOW_DISTORTION_MAP;
+                case SHADER_LIST.CA_SKYDOME: return (int)CA_SKYDOME.SAMPLERS.SKYDOME_MAP;
+                case SHADER_LIST.CA_SURFACE_EFFECTS: return (int)CA_SURFACE_EFFECTS.SAMPLERS.DIFFUSE_MAP;
+                case SHADER_LIST.CA_EFFECT_OVERLAY: return (int)CA_EFFECT_OVERLAY.SAMPLERS.TEXTURE_MAP;
+                case SHADER_LIST.CA_TERRAIN: return (int)CA_TERRAIN.SAMPLERS.DIFFUSE_MAP;
+                case SHADER_LIST.CA_PLANET: return (int)CA_PLANET.SAMPLERS.TERRAIN_MAP;
+                case SHADER_LIST.CA_LIGHTMAP_ENVIRONMENT: return (int)CA_LIGHTMAP_ENVIRONMENT.SAMPLERS.DIFFUSE_MAP;
+                case SHADER_LIST.CA_STREAMER: return (int)CA_STREAMER.SAMPLERS.DIFFUSE_MAP;
+                case SHADER_LIST.CA_LOW_LOD_CHARACTER: return (int)CA_LOW_LOD_CHARACTER.SAMPLERS.DIFFUSE_MAP;
+                case SHADER_LIST.CA_CAMERA_MAP: return (int)CA_CAMERA_MAP.SAMPLERS.DIFFUSE_MAP;
+                default: return -1;
+            }
+        }
+
         public static void ApplyMaterial(GeometryModel3D geometryModel, Materials.Material material)
         {
             if (geometryModel == null || material == null || material.Shader == null)
@@ -53,86 +102,9 @@ namespace AlienPAK
 
         private static ImageBrush GetDiffuseTextureBrush(Materials.Material material)
         {
-            int diffuseMap = -1;
-            switch (material.Shader.Ubershader)
-            {
-                case SHADER_LIST.CA_ENVIRONMENT:
-                    diffuseMap = (int)CA_ENVIRONMENT.SAMPLERS.DIFFUSE_MAP;
-                    break;
-                case SHADER_LIST.CA_DECAL_ENVIRONMENT:
-                    diffuseMap = (int)CA_DECAL_ENVIRONMENT.SAMPLERS.DIFFUSE_MAP;
-                    break;
-                case SHADER_LIST.CA_CHARACTER:
-                    diffuseMap = (int)CA_CHARACTER.SAMPLERS.DIFFUSE_MAP;
-                    break;
-                case SHADER_LIST.CA_SKIN:
-                    diffuseMap = (int)CA_SKIN.SAMPLERS.DIFFUSE_MAP;
-                    break;
-                case SHADER_LIST.CA_HAIR:
-                    diffuseMap = (int)CA_HAIR.SAMPLERS.DIFFUSE_MAP;
-                    break;
-                case SHADER_LIST.CA_EYE:
-                    diffuseMap = (int)CA_EYE.SAMPLERS.IRIS_MAP;
-                    break;
-                case SHADER_LIST.CA_SKIN_OCCLUSION:
-                    diffuseMap = (int)CA_SKIN_OCCLUSION.SAMPLERS.DIFFUSE_MAP;
-                    break;
-                case SHADER_LIST.CA_DECAL:
-                    diffuseMap = (int)CA_DECAL.SAMPLERS.DIFFUSE_MAP;
-                    break;
-                case SHADER_LIST.CA_FOGPLANE:
-                    diffuseMap = (int)CA_FOGPLANE.SAMPLERS.DIFFUSE_MAP_0;
-                    break;
-                case SHADER_LIST.CA_EFFECT:
-                    diffuseMap = (int)CA_EFFECT.SAMPLERS.DIFFUSE_MAP_0;
-                    break;
-                case SHADER_LIST.CA_LIQUID_ENVIRONMENT:
-                    diffuseMap = (int)CA_LIQUID_ENVIRONMENT.SAMPLERS.LIQUIFLOW_DISTORTION_MAP;
-                    break;
-                case SHADER_LIST.CA_LIQUID_CHARACTER:
-                    diffuseMap = (int)CA_LIQUID_CHARACTER.SAMPLERS.LIQUIFLOW_DISTORTION_MAP;
-                    break;
-                case SHADER_LIST.CA_SKYDOME:
-                    diffuseMap = (int)CA_SKYDOME.SAMPLERS.SKYDOME_MAP;
-                    break;
-                case SHADER_LIST.CA_SURFACE_EFFECTS:
-                    diffuseMap = (int)CA_SURFACE_EFFECTS.SAMPLERS.DIFFUSE_MAP;
-                    break;
-                case SHADER_LIST.CA_EFFECT_OVERLAY:
-                    diffuseMap = (int)CA_EFFECT_OVERLAY.SAMPLERS.TEXTURE_MAP;
-                    break;
-                case SHADER_LIST.CA_TERRAIN:
-                    diffuseMap = (int)CA_TERRAIN.SAMPLERS.DIFFUSE_MAP;
-                    break;
-                case SHADER_LIST.CA_PLANET:
-                    diffuseMap = (int)CA_PLANET.SAMPLERS.TERRAIN_MAP;
-                    break;
-                case SHADER_LIST.CA_LIGHTMAP_ENVIRONMENT:
-                    diffuseMap = (int)CA_LIGHTMAP_ENVIRONMENT.SAMPLERS.DIFFUSE_MAP;
-                    break;
-                case SHADER_LIST.CA_STREAMER:
-                    diffuseMap = (int)CA_STREAMER.SAMPLERS.DIFFUSE_MAP;
-                    break;
-                case SHADER_LIST.CA_LOW_LOD_CHARACTER:
-                    diffuseMap = (int)CA_LOW_LOD_CHARACTER.SAMPLERS.DIFFUSE_MAP;
-                    break;
-                case SHADER_LIST.CA_CAMERA_MAP:
-                    diffuseMap = (int)CA_CAMERA_MAP.SAMPLERS.DIFFUSE_MAP;
-                    break;
-            }
-
-            if (diffuseMap != -1 && diffuseMap < material.Shader.SamplerRemaps.Count)
-            {
-                int diffuseMapIndex = material.Shader.SamplerRemaps[diffuseMap];
-                if (diffuseMapIndex != 255 && diffuseMapIndex < material.TextureReferences.Count)
-                {
-                    ImageSource imageSource = material.TextureReferences[diffuseMapIndex]?.Texture?.ToDDS()?.ToBitmap()?.ToImageSource();
-                    if (imageSource != null)
-                        return new ImageBrush(imageSource);
-                }
-            }
-
-            return null;
+            Textures.TEX4 tex = GetDiffuseTexture(material);
+            ImageSource imageSource = tex?.ToDDS()?.ToBitmap()?.ToImageSource();
+            return imageSource != null ? new ImageBrush(imageSource) : null;
         }
 
         private static float GetDiffuseUvScale(Materials.Material material)

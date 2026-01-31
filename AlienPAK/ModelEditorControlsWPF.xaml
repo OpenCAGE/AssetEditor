@@ -56,7 +56,6 @@
 
             <GroupBox x:Name="utiltiesGroup" Header="Utilities" Margin="0 0 0 10">
                 <WrapPanel Margin="10">
-                    <Button x:Name="exportBtn" Click="ExportBtn" Padding="10 5">Export Selected</Button>
                     <Button x:Name="replaceBtn" Click="ReplaceBtn" Margin="10 0 0 0" Padding="10 5">Replace Selected</Button>
                     <Button x:Name="editMaterialBtn" Click="EditMaterialBtn" Margin="10 0 0 0" Padding="10 5">Edit Material</Button>
                     <Button x:Name="deleteBtn" Click="DeleteBtn" Margin="10 0 0 0" Padding="10 5">Delete Selected</Button>

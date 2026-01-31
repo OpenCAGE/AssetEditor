@@ -370,11 +370,31 @@ namespace AlienPAK
             throw new Exception("Unsupported VertexFormatType");
         }
 
-        public static Mesh ToMesh(this CS2.Component.LOD.Submesh submesh)
+        public static Assimp.Material ToAssimpMaterial(this Materials.Material cathodeMaterial, int materialIndex, string diffuseTextureFileName = null)
+        {
+            Assimp.Material mat = new Assimp.Material();
+            if (cathodeMaterial == null) return mat;
+
+            mat.Name = cathodeMaterial.Name;
+            float r, g, b;
+            MaterialApplier.GetDiffuseTintForExport(cathodeMaterial, out r, out g, out b);
+            mat.ColorDiffuse = new Assimp.Color4D(r, g, b, 1.0f);
+            if (!string.IsNullOrEmpty(diffuseTextureFileName))
+            {
+                Assimp.TextureSlot slot = new Assimp.TextureSlot();
+                slot.FilePath = diffuseTextureFileName;
+                slot.TextureType = Assimp.TextureType.Diffuse;
+                slot.TextureIndex = 0;
+                mat.AddMaterialTexture(slot);
+            }
+            return mat;
+        }
+
+        public static Mesh ToMesh(this CS2.Component.LOD.Submesh submesh, int materialIndex = 0)
         {
             cMesh cathodeMesh = ModelUtility.ToMesh(submesh);
             Mesh assimpMesh = new Mesh();
-            assimpMesh.MaterialIndex = 0; //todo
+            assimpMesh.MaterialIndex = materialIndex;
 
             if (!assimpMesh.SetIndices(cathodeMesh.Indices.Select(x => (int)x).ToArray(), 3))
             {
@@ -396,6 +416,9 @@ namespace AlienPAK
             }
             for (int i = 0; i < cathodeMesh.UVs.Length; i++)
             {
+                if (cathodeMesh.UVs[i] == null)
+                    continue;
+
                 for (int x = 0; x < cathodeMesh.UVs[i].Count; x++)
                 {
                     assimpMesh.TextureCoordinateChannels[i].Add(new Assimp.Vector3D((float)cathodeMesh.UVs[i][x].X, (float)cathodeMesh.UVs[i][x].Y, 0));
@@ -404,6 +427,81 @@ namespace AlienPAK
             }
 
             return assimpMesh;
+        }
+
+        public static void ExportMesh(this Models.CS2 cs2, string filename)
+        {
+            string modelDir = Path.GetDirectoryName(filename);
+            string modelBase = Path.GetFileNameWithoutExtension(filename);
+            if (string.IsNullOrEmpty(modelBase)) modelBase = cs2.Name ?? "model";
+
+            List<Materials.Material> materials = new List<Materials.Material>();
+            Dictionary<Materials.Material, int> materialIndexes = new Dictionary<Materials.Material, int>();
+            foreach (var component in cs2.Components)
+            {
+                foreach (var lod in component.LODs)
+                {
+                    foreach (var submesh in lod.Submeshes)
+                    {
+                        if (submesh.Material != null && !materialIndexes.ContainsKey(submesh.Material))
+                        {
+                            materialIndexes[submesh.Material] = materials.Count;
+                            materials.Add(submesh.Material);
+                        }
+                    }
+                }
+            }
+
+            Directory.CreateDirectory(Path.Combine(modelDir, modelBase + " Textures"));
+            string[] diffuseFileNames = new string[materials.Count];
+            for (int i = 0; i < materials.Count; i++)
+            {
+                Materials.Material mat = materials[i];
+                Textures.TEX4 diffuseTex = MaterialApplier.GetDiffuseTexture(mat);
+                if (diffuseTex != null)
+                {
+                    byte[] dds = diffuseTex.ToDDS();
+                    if (dds != null && dds.Length > 0)
+                    {
+                        string ddsFileName = modelBase + " Textures/" + i + "_" + Path.GetFileNameWithoutExtension(diffuseTex.Name) + ".dds";
+                        diffuseFileNames[i] = ddsFileName;
+                        File.WriteAllBytes(Path.Combine(modelDir, ddsFileName), dds);
+                    }
+                }
+            }
+
+            Scene scene = new Scene();
+            for (int matIdx = 0; matIdx < materials.Count; matIdx++)
+                scene.Materials.Add(materials[matIdx].ToAssimpMaterial(matIdx, diffuseFileNames[matIdx]));
+            if (scene.Materials.Count == 0)
+                scene.Materials.Add(new Assimp.Material());
+
+            scene.RootNode = new Node(cs2.Name);
+            for (int i = 0; i < cs2.Components.Count; i++)
+            {
+                Node componentNode = new Node(i.ToString());
+                scene.RootNode.Children.Add(componentNode);
+                for (int x = 0; x < cs2.Components[i].LODs.Count; x++)
+                {
+                    Node lodNode = new Node(cs2.Components[i].LODs[x].Name);
+                    componentNode.Children.Add(lodNode);
+                    for (int y = 0; y < cs2.Components[i].LODs[x].Submeshes.Count; y++)
+                    {
+                        Node submeshNode = new Node(y.ToString());
+                        lodNode.Children.Add(submeshNode);
+                        Materials.Material submeshMat = cs2.Components[i].LODs[x].Submeshes[y].Material;
+                        int meshMatIndex = (submeshMat != null && materialIndexes.ContainsKey(submeshMat)) ? materialIndexes[submeshMat] : 0;
+                        Mesh mesh = cs2.Components[i].LODs[x].Submeshes[y].ToMesh(meshMatIndex);
+                        mesh.Name = cs2.Name + " [" + x + "] -> " + lodNode.Name + " [" + i + "]";
+                        scene.Meshes.Add(mesh);
+                        submeshNode.MeshIndices.Add(scene.Meshes.Count - 1);
+                    }
+                }
+            }
+
+            AssimpContext exp = new AssimpContext();
+            exp.ExportFile(scene, filename, Path.GetExtension(filename).Replace(".", ""));
+            exp.Dispose();
         }
 
         public static CS2.Component.LOD.Submesh ToSubmesh(this Mesh mesh, ushort? customScaleFactor = null)
