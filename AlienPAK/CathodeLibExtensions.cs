@@ -414,18 +414,19 @@ namespace AlienPAK
             {
                 assimpMesh.Tangents.Add(new Assimp.Vector3D((float)cathodeMesh.Tangents[i].X, (float)cathodeMesh.Tangents[i].Y, (float)cathodeMesh.Tangents[i].Z));
             }
+            int exportedUVs = 0;
             for (int i = 0; i < cathodeMesh.UVs.Length; i++)
             {
-                if (cathodeMesh.UVs[i] == null)
-                    continue;
+                if (cathodeMesh.UVs[i] == null) continue;
 
                 for (int x = 0; x < cathodeMesh.UVs[i].Count; x++)
                 {
-                    assimpMesh.TextureCoordinateChannels[i].Add(new Assimp.Vector3D((float)cathodeMesh.UVs[i][x].X, (float)cathodeMesh.UVs[i][x].Y, 0));
+                    assimpMesh.TextureCoordinateChannels[exportedUVs].Add(new Assimp.Vector3D((float)cathodeMesh.UVs[i][x].X, (float)cathodeMesh.UVs[i][x].Y, 0));
                 }
-                assimpMesh.HasTextureCoords(i);
+                assimpMesh.HasTextureCoords(exportedUVs);
+                assimpMesh.UVComponentCount[exportedUVs] = 2;
+                exportedUVs++;
             }
-
             return assimpMesh;
         }
 
@@ -499,9 +500,10 @@ namespace AlienPAK
                 }
             }
 
-            AssimpContext exp = new AssimpContext();
-            exp.ExportFile(scene, filename, Path.GetExtension(filename).Replace(".", ""));
-            exp.Dispose();
+            using (AssimpContext exp = new AssimpContext())
+            {
+                exp.ExportFile(scene, filename, Path.GetExtension(filename).TrimStart('.').ToLowerInvariant());
+            }
         }
 
         public static CS2.Component.LOD.Submesh ToSubmesh(this Mesh mesh, ushort? customScaleFactor = null)
