@@ -387,8 +387,8 @@ namespace AlienPAK
         }
         private void ModelEditor_FormClosed(object sender, FormClosedEventArgs e)
         {
-            UpdateSelectedFilePreview();
             UpdateUI();
+            UpdateSelectedFilePreview();
             this.BringToFront();
             this.Focus();
         }
