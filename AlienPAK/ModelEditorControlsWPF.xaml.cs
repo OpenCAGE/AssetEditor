@@ -37,7 +37,13 @@ namespace AlienPAK
         public void SetModelPreview(Model3DGroup content, string filename, int vertCount, string material, int sf = -1, bool doZoom = true)
         {
             filePreviewModel.Content = content;
-            if (doZoom) filePreviewModelContainer.ZoomExtents();
+            if (doZoom)
+            {
+                filePreviewModelContainer.ModelUpDirection = new Vector3D(0, 1, 0);
+                filePreviewModelContainer.Camera.UpDirection = new Vector3D(0, 1, 0);
+                filePreviewModelContainer.Camera.LookDirection = new Vector3D(-0.5, -0.5, -1.0f);
+                filePreviewModelContainer.ZoomExtents();
+            }
 
             fileNameText.Text = filename;
             vertexCount.Text = vertCount.ToString();
