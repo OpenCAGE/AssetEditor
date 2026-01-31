@@ -427,7 +427,55 @@ namespace AlienPAK
                 assimpMesh.UVComponentCount[exportedUVs] = 2;
                 exportedUVs++;
             }
+
+            /*
+            bool hasBoneData = cathodeMesh.BoneWeights.Count == cathodeMesh.Vertices.Count && cathodeMesh.BoneIndexes.Count == cathodeMesh.Vertices.Count;
+            if (hasBoneData)
+            {
+                var boneVertexWeights = new Dictionary<int, List<Assimp.VertexWeight>>();
+                const float weightEpsilon = 1e-6f;
+                bool useBonePalette = submesh.Bones != null && submesh.Bones.Count > 0;
+                int MapBoneIndex(int localIndex)
+                {
+                    if (useBonePalette && localIndex >= 0 && localIndex < submesh.Bones.Count)
+                        return submesh.Bones[localIndex];
+                    return localIndex;
+                }
+
+                for (int vertexIndex = 0; vertexIndex < cathodeMesh.Vertices.Count; vertexIndex++)
+                {
+                    Vector4 indices = cathodeMesh.BoneIndexes[vertexIndex];
+                    Vector4 weights = cathodeMesh.BoneWeights[vertexIndex];
+
+                    AddBoneWeight(boneVertexWeights, vertexIndex, MapBoneIndex((int)Math.Round(indices.X)), weights.X, weightEpsilon);
+                    AddBoneWeight(boneVertexWeights, vertexIndex, MapBoneIndex((int)Math.Round(indices.Y)), weights.Y, weightEpsilon);
+                    AddBoneWeight(boneVertexWeights, vertexIndex, MapBoneIndex((int)Math.Round(indices.Z)), weights.Z, weightEpsilon);
+                    AddBoneWeight(boneVertexWeights, vertexIndex, MapBoneIndex((int)Math.Round(indices.W)), weights.W, weightEpsilon);
+                }
+
+                foreach (var kvp in boneVertexWeights.OrderBy(x => x.Key))
+                {
+                    var bone = new Assimp.Bone();
+                    bone.Name = "Bone_" + kvp.Key;
+                    bone.OffsetMatrix = new Assimp.Matrix4x4(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1);
+                    bone.VertexWeights.AddRange(kvp.Value);
+                    assimpMesh.Bones.Add(bone);
+                }
+            }
+            */
+
             return assimpMesh;
+        }
+
+        private static void AddBoneWeight(Dictionary<int, List<Assimp.VertexWeight>> boneVertexWeights, int vertexIndex, int boneIndex, float weight, float epsilon)
+        {
+            if (weight <= epsilon || boneIndex < 0) return;
+            if (!boneVertexWeights.TryGetValue(boneIndex, out var list))
+            {
+                list = new List<Assimp.VertexWeight>();
+                boneVertexWeights[boneIndex] = list;
+            }
+            list.Add(new Assimp.VertexWeight(vertexIndex, weight));
         }
 
         public static void ExportMesh(this Models.CS2 cs2, string filename)
