@@ -17,9 +17,6 @@ using System.Windows.Documents;
 using System.Windows.Forms;
 using System.Windows.Media;
 using System.Windows.Media.Media3D;
-using static CATHODE.Collisions.WeightedCollision;
-using static CATHODE.Materials.Material;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement.Window;
 
 namespace AlienPAK
 {
@@ -516,10 +513,8 @@ namespace AlienPAK
                     }
                     break;
                 case PAKType.MODELS:
-                    int selectedModelIndex = Convert.ToInt32(nodeVal);
-                    if (selectedModelIndex == -1)
-                        return;
                     Model3DGroup model = new Model3DGroup();
+                    string name = "";
                     int verts = 0;
                     switch (nodeType)
                     {
@@ -527,7 +522,8 @@ namespace AlienPAK
                             if (!(FileTree.SelectedNode.Nodes.Count > 0 && FileTree.SelectedNode.Nodes[0].Nodes.Count == 0))
                                 return;
                             {
-                                foreach (Models.CS2.Component component in LevelContent.Models.FindModelForComponent(((TreeItem)FileTree.SelectedNode.Tag).Model_Value).Components)
+                                Models.CS2 cs2 = LevelContent.Models.FindModelForComponent(((TreeItem)FileTree.SelectedNode.Tag).Model_Value);
+                                foreach (Models.CS2.Component component in cs2.Components)
                                 {
                                     foreach (Models.CS2.Component.LOD lod in component.LODs)
                                     {
@@ -542,12 +538,15 @@ namespace AlienPAK
                                         }
                                     }
                                 }
+                                name = Path.GetFileName(cs2.Name);
                                 preview.ShowFunctionButtons(Functionality, LaunchMode, true);
                             }
                             break;
                         case TreeItemType.EXPORTABLE_FILE:
                             {
-                                foreach (Models.CS2.Component.LOD lod in ((TreeItem)FileTree.SelectedNode.Tag).Model_Value.LODs)
+                                //TODO: show a selection between LODs
+                                Models.CS2.Component component = ((TreeItem)FileTree.SelectedNode.Tag).Model_Value;
+                                foreach (Models.CS2.Component.LOD lod in component.LODs)
                                 {
                                     foreach (Models.CS2.Component.LOD.Submesh submesh in lod.Submeshes)
                                     {
@@ -559,11 +558,12 @@ namespace AlienPAK
                                         model.Children.Add(submeshGeo); //TODO: are there some offsets/scaling we should be accounting for here?
                                     }
                                 }
+                                name = Path.GetFileName(LevelContent.Models.FindModelForComponent(component).Name); //todo - show component name or index
                             }
                             break;
                     }
-                    preview.SetFileInfo(Path.GetFileName(nodeVal), verts.ToString(), true);
-                    preview.SetModelPreview(model); //TODO: perhaps we should just pass the CS2 object to the model previewer and let that pick what to render
+                    preview.SetFileInfo(name, verts.ToString(), true);
+                    preview.SetModelPreview(model);
                     break;
             }
         }
