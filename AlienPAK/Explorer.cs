@@ -538,7 +538,7 @@ namespace AlienPAK
                                         }
                                     }
                                 }
-                                name = Path.GetFileName(cs2.Name);
+                                name = Path.GetFileNameWithoutExtension(cs2.Name);
                                 preview.ShowFunctionButtons(Functionality, LaunchMode, true);
                             }
                             break;
@@ -558,7 +558,7 @@ namespace AlienPAK
                                         model.Children.Add(submeshGeo); //TODO: are there some offsets/scaling we should be accounting for here?
                                     }
                                 }
-                                name = Path.GetFileName(LevelContent.Models.FindModelForComponent(component).Name); //todo - show component name or index
+                                name = Path.GetFileNameWithoutExtension(LevelContent.Models.FindModelForComponent(component).Name); //todo - show component name or index
                             }
                             break;
                     }
