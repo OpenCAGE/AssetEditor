@@ -39,26 +39,32 @@ namespace AlienPAK
             this.fileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.importFileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.exportFileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.toolStripSeparator1 = new System.Windows.Forms.ToolStripSeparator();
             this.exportAllToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.toolStripSeparator1 = new System.Windows.Forms.ToolStripSeparator();
+            this.saveChangesToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.viewToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.expandAllDirectoriesToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.shrinkAllDirectoriesToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.menuStrip1 = new System.Windows.Forms.MenuStrip();
-            this.saveChangesToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.splitContainer1 = new System.Windows.Forms.SplitContainer();
             this.elementHost1 = new System.Windows.Forms.Integration.ElementHost();
             this.explorerControlsWPF1 = new AlienPAK.ExplorerControlsWPF();
             this.fileContextMenu.SuspendLayout();
             this.menuStrip1.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.splitContainer1)).BeginInit();
+            this.splitContainer1.Panel1.SuspendLayout();
+            this.splitContainer1.Panel2.SuspendLayout();
+            this.splitContainer1.SuspendLayout();
             this.SuspendLayout();
             // 
             // FileTree
             // 
             this.FileTree.BorderStyle = System.Windows.Forms.BorderStyle.None;
+            this.FileTree.Dock = System.Windows.Forms.DockStyle.Fill;
             this.FileTree.HideSelection = false;
-            this.FileTree.Location = new System.Drawing.Point(-1, 24);
+            this.FileTree.Location = new System.Drawing.Point(0, 0);
             this.FileTree.Name = "FileTree";
-            this.FileTree.Size = new System.Drawing.Size(500, 679);
+            this.FileTree.Size = new System.Drawing.Size(486, 679);
             this.FileTree.TabIndex = 5;
             this.FileTree.AfterSelect += new System.Windows.Forms.TreeViewEventHandler(this.FileTree_AfterSelect);
             // 
@@ -118,17 +124,26 @@ namespace AlienPAK
             this.exportFileToolStripMenuItem.Text = "Export Selected File";
             this.exportFileToolStripMenuItem.Click += new System.EventHandler(this.exportFileToolStripMenuItem_Click);
             // 
-            // toolStripSeparator1
-            // 
-            this.toolStripSeparator1.Name = "toolStripSeparator1";
-            this.toolStripSeparator1.Size = new System.Drawing.Size(184, 6);
-            // 
             // exportAllToolStripMenuItem
             // 
             this.exportAllToolStripMenuItem.Name = "exportAllToolStripMenuItem";
             this.exportAllToolStripMenuItem.Size = new System.Drawing.Size(187, 22);
             this.exportAllToolStripMenuItem.Text = "Export All";
             this.exportAllToolStripMenuItem.Click += new System.EventHandler(this.exportAllToolStripMenuItem_Click);
+            // 
+            // toolStripSeparator1
+            // 
+            this.toolStripSeparator1.Name = "toolStripSeparator1";
+            this.toolStripSeparator1.Size = new System.Drawing.Size(184, 6);
+            // 
+            // saveChangesToolStripMenuItem
+            // 
+            this.saveChangesToolStripMenuItem.Name = "saveChangesToolStripMenuItem";
+            this.saveChangesToolStripMenuItem.ShortcutKeys = ((System.Windows.Forms.Keys)((System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.S)));
+            this.saveChangesToolStripMenuItem.Size = new System.Drawing.Size(187, 22);
+            this.saveChangesToolStripMenuItem.Text = "Save Changes";
+            this.saveChangesToolStripMenuItem.ToolTipText = "Ctrl+S";
+            this.saveChangesToolStripMenuItem.Click += new System.EventHandler(this.saveChangesToolStripMenuItem_Click);
             // 
             // viewToolStripMenuItem
             // 
@@ -164,20 +179,29 @@ namespace AlienPAK
             this.menuStrip1.TabIndex = 1;
             this.menuStrip1.Text = "menuStrip1";
             // 
-            // saveChangesToolStripMenuItem
+            // splitContainer1
             // 
-            this.saveChangesToolStripMenuItem.Name = "saveChangesToolStripMenuItem";
-            this.saveChangesToolStripMenuItem.ShortcutKeys = ((System.Windows.Forms.Keys)((System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.S)));
-            this.saveChangesToolStripMenuItem.Size = new System.Drawing.Size(187, 22);
-            this.saveChangesToolStripMenuItem.Text = "Save Changes";
-            this.saveChangesToolStripMenuItem.ToolTipText = "Ctrl+S";
-            this.saveChangesToolStripMenuItem.Click += new System.EventHandler(this.saveChangesToolStripMenuItem_Click);
+            this.splitContainer1.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.splitContainer1.Location = new System.Drawing.Point(0, 24);
+            this.splitContainer1.Name = "splitContainer1";
+            // 
+            // splitContainer1.Panel1
+            // 
+            this.splitContainer1.Panel1.Controls.Add(this.FileTree);
+            // 
+            // splitContainer1.Panel2
+            // 
+            this.splitContainer1.Panel2.Controls.Add(this.elementHost1);
+            this.splitContainer1.Size = new System.Drawing.Size(785, 679);
+            this.splitContainer1.SplitterDistance = 486;
+            this.splitContainer1.TabIndex = 18;
             // 
             // elementHost1
             // 
-            this.elementHost1.Location = new System.Drawing.Point(505, 24);
+            this.elementHost1.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.elementHost1.Location = new System.Drawing.Point(0, 0);
             this.elementHost1.Name = "elementHost1";
-            this.elementHost1.Size = new System.Drawing.Size(277, 676);
+            this.elementHost1.Size = new System.Drawing.Size(295, 679);
             this.elementHost1.TabIndex = 17;
             this.elementHost1.Text = "elementHost1";
             this.elementHost1.Child = this.explorerControlsWPF1;
@@ -187,10 +211,8 @@ namespace AlienPAK
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(785, 703);
-            this.Controls.Add(this.elementHost1);
-            this.Controls.Add(this.FileTree);
+            this.Controls.Add(this.splitContainer1);
             this.Controls.Add(this.menuStrip1);
-            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedToolWindow;
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.MainMenuStrip = this.menuStrip1;
             this.MaximizeBox = false;
@@ -201,6 +223,10 @@ namespace AlienPAK
             this.fileContextMenu.ResumeLayout(false);
             this.menuStrip1.ResumeLayout(false);
             this.menuStrip1.PerformLayout();
+            this.splitContainer1.Panel1.ResumeLayout(false);
+            this.splitContainer1.Panel2.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)(this.splitContainer1)).EndInit();
+            this.splitContainer1.ResumeLayout(false);
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -208,6 +234,7 @@ namespace AlienPAK
 
         #endregion
         private System.Windows.Forms.ToolTip toolTip1;
+        private System.Windows.Forms.SplitContainer splitContainer1;
         private System.Windows.Forms.TreeView FileTree;
         private System.Windows.Forms.ContextMenuStrip fileContextMenu;
         private System.Windows.Forms.ToolStripMenuItem exportFileContext;
