@@ -498,25 +498,23 @@ namespace AlienPAK
                 case PAKType.UI:
                     switch (nodeType)
                     {
-                        case TreeItemType.DIRECTORY:
                         case TreeItemType.EXPORTABLE_FILE:
                             PAK2.File file = Archive.Entries.FirstOrDefault(o => o.Filename.Replace('\\', '/') == nodeVal.Replace('\\', '/'));
+                            preview.ShowFunctionButtons(Functionality, LaunchMode, true);
                             preview.SetFileInfo(Path.GetFileName(nodeVal), file?.Content.Length.ToString());
                             preview.SetImagePreview(file.Content);
-                            preview.ShowFunctionButtons(Functionality, LaunchMode, true);
                             break;
                     }
                     break;
                 case PAKType.TEXTURES:
                     switch (nodeType)
                     {
-                        case TreeItemType.DIRECTORY:
                         case TreeItemType.EXPORTABLE_FILE:
                             Textures.TEX4 texture = LevelContent.Textures.Entries.FirstOrDefault(o => o.Name.Replace('\\', '/') == nodeVal.Replace('\\', '/'));
                             byte[] content = texture?.ToDDS();
+                            preview.ShowFunctionButtons(Functionality, LaunchMode, true);
                             preview.SetFileInfo(Path.GetFileName(nodeVal), content?.Length.ToString());
                             preview.SetImagePreview(content);
-                            preview.ShowFunctionButtons(Functionality, LaunchMode, true);
                             break;
                     }
                     break;
