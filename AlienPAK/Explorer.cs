@@ -147,7 +147,6 @@ namespace AlienPAK
                         for (int i = 0; i < LevelContent.Textures.Entries.Count; i++)
                         {
                             string texPath = LevelContent.Textures.Entries[i].Name;
-                            if (Path.GetExtension(texPath).ToUpper() != ".DDS") texPath += ".dds";
                             LevelContent.Textures.Entries[i].Name = texPath;
                             textureNames.Add(texPath);
                         }
@@ -203,27 +202,23 @@ namespace AlienPAK
                     case PAKType.TEXTURES:
                         newFileName += ".dds";
                         Textures.TEX4 texture = new Textures.TEX4() { Name = Path.GetFileName(FilePicker.FileName) };
-                        if (Path.GetExtension(FilePicker.FileName).ToUpper() == ".DDS")
+                        byte[] content = File.ReadAllBytes(FilePicker.FileName);
+                        //TODO: perhaps we need a custom UI for this to allow swapping high/low res assets individually
+                        Textures.TEX4.Texture part = content?.ToTEX4Part(out texture.Format);
+                        if (part == null)
                         {
-                            byte[] content = File.ReadAllBytes(FilePicker.FileName);
-                            //TODO: perhaps we need a custom UI for this to allow swapping high/low res assets individually
-                            Textures.TEX4.Texture part = content?.ToTEX4Part(out texture.Format);
-                            if (part == null)
-                            {
-                                MessageBox.Show("Please select a DX10 DDS image!\nIf you have converted this DDS yourself, you've converted it wrong - try using a tool like Nvidia Texture Tools Exporter.", "Import failed", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                                break;
-                            }
-                            texture.UsageFlags = Textures.TextureUsageFlag.DEFAULT | Textures.TextureUsageFlag.IS_LEVEL_PACK; //todo: ui to allow selection of this
-                            //texture.StateFlags = Textures.TextureStateFlag. //todo: ui to allow selection of this
-                            texture.TextureStreamed = part.Copy(); 
-                            texture.TexturePersistent = part.Copy(); //todo: i think we can just set persistent or streamed?
-                            LevelContent.Textures.Entries.Add(texture);
+                            MessageBox.Show("Please select a DX10 DDS image!\nIf you have converted this DDS yourself, you've converted it wrong - try using a tool like Nvidia Texture Tools Exporter.", "Import failed", MessageBoxButtons.OK, MessageBoxIcon.Error);
                             break;
                         }
+                        texture.UsageFlags = Textures.TextureUsageFlag.DEFAULT | Textures.TextureUsageFlag.IS_LEVEL_PACK; //todo: ui to allow selection of this
+                        //texture.StateFlags = Textures.TextureStateFlag. //todo: ui to allow selection of this
+                        texture.TextureStreamed = part.Copy(); 
+                        texture.TexturePersistent = part.Copy(); //todo: i think we can just set persistent or streamed?
+                        LevelContent.Textures.Entries.Add(texture);
                         break;
                     case PAKType.MODELS:
-                        Models.CS2 cs2 = new Models.CS2();
                         newFileName += ".cs2";
+                        Models.CS2 cs2 = new Models.CS2();
                         cs2.Name = newFileName;
                         cs2.Components.Add(new Models.CS2.Component());
                         cs2.Components[0].LODs.Add(new Models.CS2.Component.LOD(newFileName));
