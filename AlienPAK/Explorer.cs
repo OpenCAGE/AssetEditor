@@ -57,7 +57,6 @@ namespace AlienPAK
             InitializeComponent();
 
             FileTree.ImageList = imageList1;
-            treeHelper = new TreeUtility(FileTree);
 
             baseTitle = "OpenCAGE Asset Editor";
 
@@ -105,7 +104,7 @@ namespace AlienPAK
             {
                 case PAKType.ANIMATIONS:
                 case PAKType.UI:
-                    treeHelper = new TreeUtility(FileTree, true);
+                    treeHelper = new TreeUtility(FileTree);
                     {
                         List<string> fileNames = new List<string>();
                         for (int i = 0; i < Archive.Entries.Count; i++)
@@ -141,7 +140,7 @@ namespace AlienPAK
                     }
                     break;
                 case PAKType.TEXTURES:
-                    treeHelper = new TreeUtility(FileTree, true);
+                    treeHelper = new TreeUtility(FileTree);
                     {
                         List<string> textureNames = new List<string>();
                         for (int i = 0; i < LevelContent.Textures.Entries.Count; i++)

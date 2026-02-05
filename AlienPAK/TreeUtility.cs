@@ -59,6 +59,7 @@ namespace AlienPAK
         {
             _fileTree.SuspendLayout();
             _fileTree.BeginUpdate();
+
             _fileTree.Nodes.Clear();
             for (int i = 0; i < FilesToList.Count; i++)
             {
@@ -67,8 +68,26 @@ namespace AlienPAK
                 AddFileToTree(FileNameParts, 0, _fileTree.Nodes, contextMenu, (tags == null) ? "" : tags[i], models == null ? null : models[i]);
             }
             _fileTree.Sort();
+
+            if (_isModelTree)
+            {
+                SetModelNodeIcons(_fileTree.Nodes);
+            }
+
             _fileTree.EndUpdate();
             _fileTree.ResumeLayout();
+        }
+        private void SetModelNodeIcons(TreeNodeCollection nodes)
+        {
+            foreach (TreeNode node in nodes)
+            {
+                if (node.Nodes.Count > 0 && node.Nodes[0].Nodes.Count == 0)
+                {
+                    node.ImageIndex = (int)TreeItemIcon.FILE;
+                    node.SelectedImageIndex = node.ImageIndex;
+                }
+                SetModelNodeIcons(node.Nodes);
+            }
         }
 
         /* Add a file to the GUI tree structure */
@@ -159,12 +178,14 @@ namespace AlienPAK
 
         private void FileTree_AfterCollapse(object sender, TreeViewEventArgs e)
         {
+            if (_isModelTree && e.Node.Nodes.Count > 0 && e.Node.Nodes[0].Nodes.Count == 0) return;
             if (((TreeItem)e.Node.Tag).Item_Type != TreeItemType.DIRECTORY) return;
             e.Node.ImageIndex = (int)TreeItemIcon.FOLDER;
             e.Node.SelectedImageIndex = (int)TreeItemIcon.FOLDER;
         }
         private void FileTree_AfterExpand(object sender, TreeViewEventArgs e)
         {
+            if (_isModelTree && e.Node.Nodes.Count > 0 && e.Node.Nodes[0].Nodes.Count == 0) return;
             if (((TreeItem)e.Node.Tag).Item_Type != TreeItemType.DIRECTORY) return;
             e.Node.ImageIndex = (int)TreeItemIcon.FOLDER_OPEN;
             e.Node.SelectedImageIndex = (int)TreeItemIcon.FOLDER_OPEN;
