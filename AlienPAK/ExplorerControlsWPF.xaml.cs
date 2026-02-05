@@ -1,17 +1,17 @@
-﻿using System.Collections.Generic;
+using CATHODE;
+using CathodeLib;
 using System;
+using System.Collections.Generic;
+using System.Drawing;
+using System.Drawing.Imaging;
 using System.IO;
 using System.Linq;
-using System.Windows.Controls;
-using System.Xml.Linq;
-using System.Drawing;
 using System.Runtime.InteropServices;
-using System.Windows.Interop;
 using System.Windows;
-using System.Drawing.Imaging;
-using CATHODE;
+using System.Windows.Controls;
+using System.Windows.Interop;
 using System.Windows.Media.Media3D;
-using CathodeLib;
+using System.Xml.Linq;
 
 namespace AlienPAK
 {
@@ -77,6 +77,7 @@ namespace AlienPAK
             _filePreviewBitmap = content?.ToBitmap();
             imagePreviewGroup.Visibility = _filePreviewBitmap == null ? Visibility.Collapsed : Visibility.Visible;
             modelPreviewGroup.Visibility = Visibility.Collapsed;
+            UpdatePreviewRowHeight();
             if (_filePreviewBitmap == null) return;
             filePreviewImage.Source = _filePreviewBitmap?.ToImageSource();
         }
@@ -86,7 +87,12 @@ namespace AlienPAK
         {
             modelPreviewGroup.Visibility = Visibility.Visible;
             imagePreviewGroup.Visibility = Visibility.Collapsed;
+            UpdatePreviewRowHeight();
             filePreviewModel.Content = content;
+
+            filePreviewModelContainer.ModelUpDirection = new Vector3D(0, 1, 0);
+            filePreviewModelContainer.Camera.UpDirection = new Vector3D(0, 1, 0);
+            filePreviewModelContainer.Camera.LookDirection = new Vector3D(-0.5, -0.5, -1.0f);
             filePreviewModelContainer.ZoomExtents();
         }
 
@@ -112,12 +118,11 @@ namespace AlienPAK
         {
             imagePreviewGroup.Visibility = Visibility.Collapsed;
             modelPreviewGroup.Visibility = Visibility.Collapsed;
+            UpdatePreviewRowHeight();
             fileInfoGroup.Visibility = Visibility.Collapsed;
 
             //TODO: this is a temp hack to show the model button before i implement a nicer method when textures have a window too
             replaceBtn.Content = type == PAKType.MODELS ? "Modify Selected" : "Replace Selected";
-
-            portBtn.Visibility = SharedData.openedViaOpenCAGE && (/*type == PAKType.MODELS || */type == PAKType.TEXTURES) ? Visibility.Visible : Visibility.Collapsed;
 
             exportBtn.Visibility = FlagToVisibility(function, PAKFunction.CAN_EXPORT_FILES, hasSelectedFile);
             replaceBtn.Visibility = FlagToVisibility(function, PAKFunction.CAN_REPLACE_FILES, hasSelectedFile);
@@ -128,6 +133,16 @@ namespace AlienPAK
             exportAllBtn.Visibility = FlagToVisibility(function, PAKFunction.CAN_EXPORT_ALL);
             archiveUtilitiesGroup.Visibility = FlagToVisibility(function, PAKFunction.CAN_IMPORT_FILES | PAKFunction.CAN_EXPORT_FILES);
         }
+        private void UpdatePreviewRowHeight()
+        {
+            bool anyPreviewVisible = imagePreviewGroup.Visibility == Visibility.Visible || modelPreviewGroup.Visibility == Visibility.Visible;
+            previewRow.Height = anyPreviewVisible ? new GridLength(1, GridUnitType.Star) : new GridLength(0);
+            if (anyPreviewVisible)
+                previewRow.MinHeight = 120;
+            else
+                previewRow.MinHeight = 0;
+        }
+
         private Visibility FlagToVisibility(PAKFunction function, PAKFunction flag, bool? hasSelectedFile = null)
         {
             return function.HasFlag(flag) && ((hasSelectedFile != null && hasSelectedFile == true) || hasSelectedFile == null) ? Visibility.Visible : Visibility.Collapsed;

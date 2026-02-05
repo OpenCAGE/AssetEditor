@@ -1,30 +1,34 @@
-using Assimp.Configs;
 using Assimp;
+using Assimp.Configs;
 using CATHODE;
 using CathodeLib;
 using DirectXTex;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
+using System.Drawing;
+using System.Drawing.Imaging;
 using System.IO;
 using System.Linq;
 using System.Numerics;
+using System.Reflection;
+using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.ComTypes;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows;
+using System.Windows.Documents;
+using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Media3D;
 using static CATHODE.Materials.Material;
 using static CATHODE.Models;
-using System.Reflection;
-using Vector3D = System.Windows.Media.Media3D.Vector3D;
-using System.Windows;
-using System.ComponentModel;
-using System.Drawing;
-using System.Runtime.InteropServices;
-using System.Drawing.Imaging;
-using PixelFormat = System.Drawing.Imaging.PixelFormat;
-using Color = System.Windows.Media.Color;
-using System.Windows.Interop;
 using static CATHODE.Models.CS2.Component.LOD;
+using static CATHODE.Textures;
+using static DirectXTex.DirectXTexUtility;
+using Color = System.Windows.Media.Color;
+using PixelFormat = System.Drawing.Imaging.PixelFormat;
+using Vector3D = System.Windows.Media.Media3D.Vector3D;
 
 namespace AlienPAK
 {
@@ -33,145 +37,142 @@ namespace AlienPAK
         /* Convert a TEX4 to DDS */
         public static byte[] ToDDS(this Textures.TEX4 texture, bool forceLowRes = false)
         {
-            Textures.TEX4.Texture part = texture?.TextureStreamed?.Content != null && !forceLowRes ? texture.TextureStreamed : texture?.TexturePersistent?.Content != null ? texture.TexturePersistent : null;
+            Textures.TEX4.Texture part = texture?.TextureStreamed?.Content != null ? texture.TextureStreamed : texture?.TexturePersistent?.Content != null ? texture.TexturePersistent : null;
             if (part == null) return null;
-            DirectXTexUtility.DXGIFormat format;
+            DDSHeader theDDSHeader = new DDSHeader();
+            DX10Header theDX10Header = new DX10Header();
+            MemoryStream ms = new MemoryStream();
             switch (texture.Format)
             {
                 case Textures.TextureFormat.A32R32G32B32F:
-                    format = DirectXTexUtility.DXGIFormat.R32G32B32A32FLOAT;
-                    break;
                 case Textures.TextureFormat.A16R16G16B16:
-                    format = DirectXTexUtility.DXGIFormat.R16G16B16A16UNORM;
-                    break;
                 case Textures.TextureFormat.A8R8G8B8:
-                    format = DirectXTexUtility.DXGIFormat.R8G8B8A8UNORM;
-                    break;
                 case Textures.TextureFormat.X8R8G8B8:
-                    format = DirectXTexUtility.DXGIFormat.B8G8R8X8UNORM;
-                    break;
                 case Textures.TextureFormat.A8:
-                    format = DirectXTexUtility.DXGIFormat.A8UNORM;
-                    break;
                 case Textures.TextureFormat.L8:
-                    format = DirectXTexUtility.DXGIFormat.R8UNORM;
-                    break;
-                case Textures.TextureFormat.DXT1:
-                    format = DirectXTexUtility.DXGIFormat.BC1UNORM;
-                    break;
-                case Textures.TextureFormat.DXT3:
-                    format = DirectXTexUtility.DXGIFormat.BC2UNORM;
-                    break;
-                case Textures.TextureFormat.DXT5:
-                    format = DirectXTexUtility.DXGIFormat.BC3UNORM;
-                    break;
-                case Textures.TextureFormat.DXN:
-                    format = DirectXTexUtility.DXGIFormat.BC5UNORM;
-                    break;
                 case Textures.TextureFormat.A4R4G4B4:
-                    format = DirectXTexUtility.DXGIFormat.B4G4R4A4UNORM;
-                    break;
+                case Textures.TextureFormat.DXT1:
+                case Textures.TextureFormat.DXT3:
+                case Textures.TextureFormat.DXN:
+                case Textures.TextureFormat.DXT5:
                 case Textures.TextureFormat.BC6H:
-                    format = DirectXTexUtility.DXGIFormat.BC6HUF16;
-                    break;
                 case Textures.TextureFormat.BC7:
-                    format = DirectXTexUtility.DXGIFormat.BC7UNORM;
-                    break;
                 case Textures.TextureFormat.R16F:
-                    format = DirectXTexUtility.DXGIFormat.R16FLOAT;
+                    theDDSHeader.mHeight = (uint)part.Height;
+                    theDDSHeader.mWidth = (uint)part.Width;
+                    theDDSHeader.mDepth = (uint)part.Depth;
+                    theDDSHeader.mMipMapCount = (uint)part.MipLevels;
+
+                    theDDSHeader.mCaps1 = DDSCaps.DDSCAPS_TEXTURE;
+                    if (theDDSHeader.mDepth > 1) { theDDSHeader.mFlags |= DDSFlags.DDSD_DEPTH; theDDSHeader.mCaps1 |= DDSCaps.DDSCAPS_COMPLEX; theDDSHeader.mCaps2 |= DDSCaps2.DDSCAPS2_VOLUME; }
+                    if (theDDSHeader.mMipMapCount > 0) { theDDSHeader.mFlags |= DDSFlags.DDSD_MIPMAPCOUNT; theDDSHeader.mCaps1 |= DDSCaps.DDSCAPS_COMPLEX; }
+                    if (texture.StateFlags.HasFlag(TextureStateFlag.CUBE)) { theDDSHeader.mCaps2 |= DDSCaps2.DDSCAPS2_FULLCUBEMAP; theDX10Header.mMiscFlags |= DDSMiscFlag.DDS_RESOURCE_MISC_TEXTURECUBE; }
+                    theDX10Header.mResourceDimension = part.Depth > 1 ? D3D10_RESOURCE_DIMENSION.D3D10_RESOURCE_DIMENSION_TEXTURE3D : D3D10_RESOURCE_DIMENSION.D3D10_RESOURCE_DIMENSION_TEXTURE2D;
+                    theDX10Header.mArraySize = 1;
+
+                    switch (texture.Format)
+                    {
+                        case Textures.TextureFormat.A32R32G32B32F: theDX10Header.mDXGIFormat = DXGI_FORMAT.DXGI_FORMAT_R32G32B32A32_FLOAT; break;
+                        case Textures.TextureFormat.A16R16G16B16: theDX10Header.mDXGIFormat = DXGI_FORMAT.DXGI_FORMAT_R16G16B16A16_UNORM; break;
+                        case Textures.TextureFormat.A8R8G8B8: theDX10Header.mDXGIFormat = DXGI_FORMAT.DXGI_FORMAT_B8G8R8A8_UNORM; break;
+                        case Textures.TextureFormat.X8R8G8B8: theDX10Header.mDXGIFormat = DXGI_FORMAT.DXGI_FORMAT_B8G8R8X8_UNORM; break;
+                        case Textures.TextureFormat.A8:
+                        case Textures.TextureFormat.L8: theDX10Header.mDXGIFormat = DXGI_FORMAT.DXGI_FORMAT_A8_UNORM; break;
+                        case Textures.TextureFormat.A4R4G4B4: theDX10Header.mDXGIFormat = DXGI_FORMAT.DXGI_FORMAT_B4G4R4A4_UNORM; break;
+                        case Textures.TextureFormat.DXT1: theDX10Header.mDXGIFormat = DXGI_FORMAT.DXGI_FORMAT_BC1_UNORM; break;
+                        case Textures.TextureFormat.DXT3: theDX10Header.mDXGIFormat = DXGI_FORMAT.DXGI_FORMAT_BC2_UNORM; break;
+                        case Textures.TextureFormat.DXN: theDX10Header.mDXGIFormat = DXGI_FORMAT.DXGI_FORMAT_BC5_UNORM; break;
+                        case Textures.TextureFormat.DXT5: theDX10Header.mDXGIFormat = DXGI_FORMAT.DXGI_FORMAT_BC3_UNORM; break;
+                        case Textures.TextureFormat.BC6H: theDX10Header.mDXGIFormat = DXGI_FORMAT.DXGI_FORMAT_BC6H_UF16; break;
+                        case Textures.TextureFormat.BC7: theDX10Header.mDXGIFormat = DXGI_FORMAT.DXGI_FORMAT_BC7_UNORM; break;
+                        case Textures.TextureFormat.R16F: theDX10Header.mDXGIFormat = DXGI_FORMAT.DXGI_FORMAT_R16_FLOAT; break;
+
+                        default:
+                            throw new Exception("Unsupported");
+                    }
+                    using (BinaryWriter bw = new BinaryWriter(ms))
+                    {
+                        bw.Write(new char[4] { 'D', 'D', 'S', ' ' });
+                        Utilities.Write(bw, theDDSHeader);
+                        Utilities.Write(bw, theDX10Header);
+                        bw.Write(part.Content);
+                    }
                     break;
+
                 default:
-                    format = DirectXTexUtility.DXGIFormat.UNKNOWN;
-                    break;
-            }
-            DirectXTexUtility.GenerateDDSHeader(
-                DirectXTexUtility.GenerateMataData(part.Width, part.Height, part.MipLevels, format, texture.StateFlags.HasFlag(Textures.TextureStateFlag.CUBE)),
-                DirectXTexUtility.DDSFlags.FORCEDX10EXT, out DirectXTexUtility.DDSHeader ddsHeader, out DirectXTexUtility.DX10Header dx10Header);
-            MemoryStream ms = new MemoryStream();
-            using (BinaryWriter bw = new BinaryWriter(ms))
-            {
-                bw.Write(DirectXTexUtility.EncodeDDSHeader(ddsHeader, dx10Header));
-                bw.Write(part.Content);
+                    throw new Exception("Unsupported");
             }
             return ms.ToArray();
         }
 
         /* Convert DDS to a TEX4 Part */
-        public static Textures.TEX4.Texture ToTEX4Part(this byte[] content, out Textures.TextureFormat format, Textures.TEX4.Texture part = null) //Optionally pass a part to start from
+        public static Textures.TEX4.Texture ToTEX4Part(this byte[] content, out Textures.TextureFormat format)
         {
-            if (part == null) part = new Textures.TEX4.Texture();
-            using (MemoryStream imageStream = new MemoryStream(content))
-            using (Pfim.IImage image = Pfim.Pfim.FromStream(imageStream))
+            Textures.TEX4.Texture part = new TEX4.Texture();
+            format = TextureFormat.AUTO;
+
+            using (MemoryStream stream = new MemoryStream(content))
+            using (BinaryReader reader = new BinaryReader(stream))
             {
-                part.Depth = (short)image.BitsPerPixel; // is this right
-                part.MipLevels = (short)image.MipMaps.Length;
-                part.Width = (short)image.Width;
-                part.Height = (short)image.Height;
-                byte[] contentTrimmed;
-                using (MemoryStream readerStream = new MemoryStream(content))
-                using (BinaryReader reader = new BinaryReader(readerStream))
-                {
-                    reader.BaseStream.Position = 84;
-                    if (reader.ReadChar() == 'D' && reader.ReadChar() == 'X' && reader.ReadChar() == '1' && reader.ReadChar() == '0')
-                        reader.BaseStream.Position = 148;
-                    else
-                        reader.BaseStream.Position = 128;
-                    contentTrimmed = reader.ReadBytes((int)(reader.BaseStream.Length - reader.BaseStream.Position));
-                }
-                part.Content = contentTrimmed;
-                Pfim.DdsHeaderDxt10 header = ((Pfim.Dds)image).Header10;
-                if (header == null)
-                {
-                    format = (Textures.TextureFormat)0;
+                reader.BaseStream.Position += 4;
+                DDSHeader ddsHeader = Utilities.Consume<DDSHeader>(reader);
+                DX10Header dx10Header = null;
+                if (ddsHeader.mPixelFormat.mFlags == DDSPixelFormat.DDPF_FOURCC &&
+                    ddsHeader.mPixelFormat.mFourCC[0] == 'D' && ddsHeader.mPixelFormat.mFourCC[1] == 'X' && ddsHeader.mPixelFormat.mFourCC[2] == '1' && ddsHeader.mPixelFormat.mFourCC[3] == '0')
+                    dx10Header = Utilities.Consume<DX10Header>(reader);
+
+                if (dx10Header == null)
                     return null;
-                }
-                switch (header.DxgiFormat)
+
+                part.Depth = (short)ddsHeader.mDepth;
+                part.MipLevels = (short)ddsHeader.mMipMapCount;
+                part.Width = (short)ddsHeader.mWidth;
+                part.Height = (short)ddsHeader.mHeight;
+                part.Content = reader.ReadBytes((int)(reader.BaseStream.Length - reader.BaseStream.Position));
+
+                switch (dx10Header.mDXGIFormat)
                 {
-                    case Pfim.DxgiFormat.R32G32B32A32_FLOAT:
+                    case DXGI_FORMAT.DXGI_FORMAT_R32G32B32A32_FLOAT:
                         format = Textures.TextureFormat.A32R32G32B32F;
                         break;
-                    case Pfim.DxgiFormat.R16G16B16A16_UNORM:
+                    case DXGI_FORMAT.DXGI_FORMAT_R16G16B16A16_UNORM:
                         format = Textures.TextureFormat.A16R16G16B16;
                         break;
-                    case Pfim.DxgiFormat.R8G8B8A8_UNORM:
+                    case DXGI_FORMAT.DXGI_FORMAT_B8G8R8A8_UNORM:
                         format = Textures.TextureFormat.A8R8G8B8;
                         break;
-                    case Pfim.DxgiFormat.B8G8R8X8_UNORM:
+                    case DXGI_FORMAT.DXGI_FORMAT_B8G8R8X8_UNORM:
                         format = Textures.TextureFormat.X8R8G8B8;
                         break;
-                    case Pfim.DxgiFormat.A8_UNORM:
-                        format = Textures.TextureFormat.A8;
+                    case DXGI_FORMAT.DXGI_FORMAT_A8_UNORM:
+                        format = Textures.TextureFormat.A8; //A8 and L8 both map to A8_UNORM
                         break;
-                    case Pfim.DxgiFormat.R8_UNORM:
-                        format = Textures.TextureFormat.L8;
-                        break;
-                    case Pfim.DxgiFormat.BC1_UNORM:
-                        format = Textures.TextureFormat.DXT1;
-                        break;
-                    case Pfim.DxgiFormat.BC2_UNORM:
-                        format = Textures.TextureFormat.DXT3;
-                        break;
-                    case Pfim.DxgiFormat.BC3_UNORM:
-                        format = Textures.TextureFormat.DXT5;
-                        break;
-                    case Pfim.DxgiFormat.BC5_UNORM:
-                        format = Textures.TextureFormat.DXN;
-                        break;
-                    case Pfim.DxgiFormat.B4G4R4A4_UNORM:
+                    case DXGI_FORMAT.DXGI_FORMAT_B4G4R4A4_UNORM:
                         format = Textures.TextureFormat.A4R4G4B4;
                         break;
-                    case Pfim.DxgiFormat.BC6H_UF16:
+                    case DXGI_FORMAT.DXGI_FORMAT_BC1_UNORM:
+                        format = Textures.TextureFormat.DXT1;
+                        break;
+                    case DXGI_FORMAT.DXGI_FORMAT_BC2_UNORM:
+                        format = Textures.TextureFormat.DXT3;
+                        break;
+                    case DXGI_FORMAT.DXGI_FORMAT_BC5_UNORM:
+                        format = Textures.TextureFormat.DXN;
+                        break;
+                    case DXGI_FORMAT.DXGI_FORMAT_BC3_UNORM:
+                        format = Textures.TextureFormat.DXT5;
+                        break;
+                    case DXGI_FORMAT.DXGI_FORMAT_BC6H_UF16:
                         format = Textures.TextureFormat.BC6H;
                         break;
-                    case Pfim.DxgiFormat.BC7_UNORM:
+                    case DXGI_FORMAT.DXGI_FORMAT_BC7_UNORM:
                         format = Textures.TextureFormat.BC7;
                         break;
-                    case Pfim.DxgiFormat.R16_FLOAT:
+                    case DXGI_FORMAT.DXGI_FORMAT_R16_FLOAT:
                         format = Textures.TextureFormat.R16F;
                         break;
                     default:
-                        format = Textures.TextureFormat.BC7;
-                        break;
+                        return null;
                 }
             }
             return part;
@@ -370,26 +371,188 @@ namespace AlienPAK
             throw new Exception("Unsupported VertexFormatType");
         }
 
-        public static Mesh ToMesh(this CS2.Component.LOD.Submesh submesh)
+        public static Assimp.Material ToAssimpMaterial(this Materials.Material cathodeMaterial, int materialIndex, string diffuseTextureFileName = null)
         {
-            //TODO: we should just make a generic "to usable data" extension that spits out the verts etc, rather than relying on this - but doing it for testing for now
-            GeometryModel3D modelGeo = submesh.ToGeometryModel3D();
-            MeshGeometry3D model = (MeshGeometry3D)modelGeo?.Geometry;
-            Mesh mesh = new Mesh();
-            mesh.MaterialIndex = 0; //todo
-            if (model != null)
+            Assimp.Material mat = new Assimp.Material();
+            if (cathodeMaterial == null) return mat;
+
+            mat.Name = cathodeMaterial.Name;
+            float r, g, b;
+            MaterialApplier.GetDiffuseTintForExport(cathodeMaterial, out r, out g, out b);
+            mat.ColorDiffuse = new Assimp.Color4D(r, g, b, 1.0f);
+            if (!string.IsNullOrEmpty(diffuseTextureFileName))
             {
-                for (int i = 0; i < model.Positions.Count; i++)
-                    mesh.Vertices.Add(new Assimp.Vector3D((float)model.Positions[i].X, (float)model.Positions[i].Y, (float)model.Positions[i].Z));
-                mesh.HasTextureCoords(0);
-                for (int i = 0; i < model.TextureCoordinates.Count; i++)
-                    mesh.TextureCoordinateChannels[0].Add(new Assimp.Vector3D((float)model.TextureCoordinates[i].X, (float)model.TextureCoordinates[i].Y, 0));
-                for (int i = 0; i < model.Normals.Count; i++)
-                    mesh.Normals.Add(new Assimp.Vector3D((float)model.Normals[i].X, (float)model.Normals[i].Y, (float)model.Normals[i].Z));
-                bool worked = mesh.SetIndices(model.TriangleIndices.ToArray(), 3);
-                if (!worked) throw new Exception("oops");
+                Assimp.TextureSlot slot = new Assimp.TextureSlot();
+                slot.FilePath = diffuseTextureFileName;
+                slot.TextureType = Assimp.TextureType.Diffuse;
+                slot.TextureIndex = 0;
+                mat.AddMaterialTexture(slot);
             }
-            return mesh;
+            return mat;
+        }
+
+        public static Mesh ToMesh(this CS2.Component.LOD.Submesh submesh, int materialIndex = 0)
+        {
+            cMesh cathodeMesh = ModelUtility.ToMesh(submesh);
+            Mesh assimpMesh = new Mesh();
+            assimpMesh.MaterialIndex = materialIndex;
+
+            if (!assimpMesh.SetIndices(cathodeMesh.Indices.Select(x => (int)x).ToArray(), 3))
+            {
+                return assimpMesh;
+            }
+
+            for (int i = 0; i < cathodeMesh.Vertices.Count; i++)
+            {
+                assimpMesh.Vertices.Add(new Assimp.Vector3D((float)cathodeMesh.Vertices[i].X, (float)cathodeMesh.Vertices[i].Y, (float)cathodeMesh.Vertices[i].Z));
+            }
+            for (int i = 0; i < cathodeMesh.Normals.Count; i++)
+            {
+                //assimpMesh.Normals.Add(new Assimp.Vector3D((float)cathodeMesh.Normals[i].X, (float)cathodeMesh.Normals[i].Y, (float)cathodeMesh.Normals[i].Z));
+            }
+            //binormals?
+            for (int i = 0; i < cathodeMesh.Tangents.Count; i++)
+            {
+                assimpMesh.Tangents.Add(new Assimp.Vector3D((float)cathodeMesh.Tangents[i].X, (float)cathodeMesh.Tangents[i].Y, (float)cathodeMesh.Tangents[i].Z));
+            }
+            int exportedUVs = 0;
+            for (int i = 0; i < cathodeMesh.UVs.Length; i++)
+            {
+                if (cathodeMesh.UVs[i] == null) continue;
+
+                for (int x = 0; x < cathodeMesh.UVs[i].Count; x++)
+                {
+                    assimpMesh.TextureCoordinateChannels[exportedUVs].Add(new Assimp.Vector3D((float)cathodeMesh.UVs[i][x].X, 1.0f - (float)cathodeMesh.UVs[i][x].Y, 0));
+                }
+                assimpMesh.HasTextureCoords(exportedUVs);
+                assimpMesh.UVComponentCount[exportedUVs] = 2;
+                exportedUVs++;
+            }
+
+            /*
+            bool hasBoneData = cathodeMesh.BoneWeights.Count == cathodeMesh.Vertices.Count && cathodeMesh.BoneIndexes.Count == cathodeMesh.Vertices.Count;
+            if (hasBoneData)
+            {
+                List<List<Tuple<float, int>>> vertexBoneWeights = new List<List<Tuple<float, int>>>(cathodeMesh.Vertices.Count);
+                for (int v = 0; v < cathodeMesh.Vertices.Count; v++)
+                    vertexBoneWeights.Add(new List<Tuple<float, int>>());
+                for (int vertexIndex = 0; vertexIndex < cathodeMesh.Vertices.Count; vertexIndex++)
+                {
+                    Vector4 weights = cathodeMesh.BoneWeights[vertexIndex];
+                    Vector4 indices = cathodeMesh.BoneIndexes[vertexIndex];
+
+                    if (indices.X != 0 && weights.X != 0)
+                        vertexBoneWeights[vertexIndex].Add(new Tuple<float, int>(weights.X, Convert.ToInt32(indices.X)));
+                    if (indices.Y != 0 && weights.Y != 0)
+                        vertexBoneWeights[vertexIndex].Add(new Tuple<float, int>(weights.Y, Convert.ToInt32(indices.Y)));
+                    if (indices.Z != 0 && weights.Z != 0)
+                        vertexBoneWeights[vertexIndex].Add(new Tuple<float, int>(weights.Z, Convert.ToInt32(indices.Z)));
+                    if (indices.W != 0 && weights.W != 0)
+                        vertexBoneWeights[vertexIndex].Add(new Tuple<float, int>(weights.W, Convert.ToInt32(indices.W)));
+                }
+
+                Dictionary<int, List<Assimp.VertexWeight>> boneVertexWeights = new Dictionary<int, List<Assimp.VertexWeight>>();
+                for (int vertexIndex = 0; vertexIndex < vertexBoneWeights.Count; vertexIndex++)
+                {
+                    foreach (var entry in vertexBoneWeights[vertexIndex])
+                    {
+                        List<Assimp.VertexWeight> list;
+                        if (!boneVertexWeights.TryGetValue(entry.Item2, out list))
+                        {
+                            list = new List<Assimp.VertexWeight>();
+                            boneVertexWeights[entry.Item2] = list;
+                        }
+                        list.Add(new Assimp.VertexWeight(vertexIndex, entry.Item1));
+                    }
+                }
+
+                foreach (var kvp in boneVertexWeights.OrderBy(x => x.Key))
+                {
+                    var bone = new Assimp.Bone();
+                    bone.Name = "Bone_" + kvp.Key;
+                    bone.VertexWeights.AddRange(kvp.Value);
+                    assimpMesh.Bones.Add(bone);
+                }
+            }
+            */
+
+            return assimpMesh;
+        }
+
+        public static void ExportMesh(this Models.CS2 cs2, string filename)
+        {
+            string modelDir = Path.GetDirectoryName(filename);
+            string modelBase = Path.GetFileNameWithoutExtension(filename);
+            if (string.IsNullOrEmpty(modelBase)) modelBase = cs2.Name ?? "model";
+
+            List<Materials.Material> materials = new List<Materials.Material>();
+            Dictionary<Materials.Material, int> materialIndexes = new Dictionary<Materials.Material, int>();
+            foreach (var component in cs2.Components)
+            {
+                foreach (var lod in component.LODs)
+                {
+                    foreach (var submesh in lod.Submeshes)
+                    {
+                        if (submesh.Material != null && !materialIndexes.ContainsKey(submesh.Material))
+                        {
+                            materialIndexes[submesh.Material] = materials.Count;
+                            materials.Add(submesh.Material);
+                        }
+                    }
+                }
+            }
+
+            Directory.CreateDirectory(Path.Combine(modelDir, modelBase + " Textures"));
+            string[] diffuseFileNames = new string[materials.Count];
+            for (int i = 0; i < materials.Count; i++)
+            {
+                Materials.Material mat = materials[i];
+                Textures.TEX4 diffuseTex = MaterialApplier.GetDiffuseTexture(mat);
+                if (diffuseTex != null)
+                {
+                    byte[] dds = diffuseTex.ToDDS();
+                    if (dds != null && dds.Length > 0)
+                    {
+                        string ddsFileName = modelBase + " Textures/" + i + "_" + Path.GetFileNameWithoutExtension(diffuseTex.Name) + ".dds";
+                        diffuseFileNames[i] = ddsFileName;
+                        File.WriteAllBytes(Path.Combine(modelDir, ddsFileName), dds);
+                    }
+                }
+            }
+
+            Scene scene = new Scene();
+            for (int matIdx = 0; matIdx < materials.Count; matIdx++)
+                scene.Materials.Add(materials[matIdx].ToAssimpMaterial(matIdx, diffuseFileNames[matIdx]));
+            if (scene.Materials.Count == 0)
+                scene.Materials.Add(new Assimp.Material());
+
+            scene.RootNode = new Node(cs2.Name);
+            for (int i = 0; i < cs2.Components.Count; i++)
+            {
+                Node componentNode = new Node(i.ToString());
+                scene.RootNode.Children.Add(componentNode);
+                for (int x = 0; x < cs2.Components[i].LODs.Count; x++)
+                {
+                    Node lodNode = new Node(cs2.Components[i].LODs[x].Name);
+                    componentNode.Children.Add(lodNode);
+                    for (int y = 0; y < cs2.Components[i].LODs[x].Submeshes.Count; y++)
+                    {
+                        Node submeshNode = new Node(y.ToString());
+                        lodNode.Children.Add(submeshNode);
+                        Materials.Material submeshMat = cs2.Components[i].LODs[x].Submeshes[y].Material;
+                        int meshMatIndex = (submeshMat != null && materialIndexes.ContainsKey(submeshMat)) ? materialIndexes[submeshMat] : 0;
+                        Mesh mesh = cs2.Components[i].LODs[x].Submeshes[y].ToMesh(meshMatIndex);
+                        mesh.Name = cs2.Name + " [" + x + "] -> " + lodNode.Name + " [" + i + "]";
+                        scene.Meshes.Add(mesh);
+                        submeshNode.MeshIndices.Add(scene.Meshes.Count - 1);
+                    }
+                }
+            }
+
+            using (AssimpContext exp = new AssimpContext())
+            {
+                exp.ExportFile(scene, filename, Path.GetExtension(filename).TrimStart('.').ToLowerInvariant());
+            }
         }
 
         public static CS2.Component.LOD.Submesh ToSubmesh(this Mesh mesh, ushort? customScaleFactor = null)

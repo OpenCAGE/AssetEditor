@@ -19,7 +19,6 @@ namespace AlienPAK
     /// </summary>
     public partial class ModelEditorControlsWPF : UserControl
     {
-        public Action OnExportRequested;
         public Action OnDeleteRequested;
         public Action OnReplaceRequested;
         public Action<SelectedModelType> OnAddRequested;
@@ -38,7 +37,13 @@ namespace AlienPAK
         public void SetModelPreview(Model3DGroup content, string filename, int vertCount, string material, int sf = -1, bool doZoom = true)
         {
             filePreviewModel.Content = content;
-            if (doZoom) filePreviewModelContainer.ZoomExtents();
+            if (doZoom)
+            {
+                filePreviewModelContainer.ModelUpDirection = new Vector3D(0, 1, 0);
+                filePreviewModelContainer.Camera.UpDirection = new Vector3D(0, 1, 0);
+                filePreviewModelContainer.Camera.LookDirection = new Vector3D(-0.5, -0.5, -1.0f);
+                filePreviewModelContainer.ZoomExtents();
+            }
 
             fileNameText.Text = filename;
             vertexCount.Text = vertCount.ToString();
@@ -52,7 +57,6 @@ namespace AlienPAK
 
         public void ShowContextualButtons(SelectedModelType type)
         {
-            exportBtn.Visibility = type != SelectedModelType.NONE ? Visibility.Visible : Visibility.Collapsed;
             replaceBtn.Visibility = type == SelectedModelType.SUBMESH ? Visibility.Visible : Visibility.Collapsed;
             editMaterialBtn.Visibility = type == SelectedModelType.SUBMESH ? Visibility.Visible : Visibility.Collapsed;
             deleteBtn.Visibility = type != SelectedModelType.CS2 && type != SelectedModelType.NONE ? Visibility.Visible : Visibility.Collapsed;
@@ -62,10 +66,6 @@ namespace AlienPAK
         }
 
         /* Button event triggers */
-        private void ExportBtn(object sender, RoutedEventArgs e)
-        {
-            OnExportRequested?.Invoke();
-        }
         private void DeleteBtn(object sender, RoutedEventArgs e)
         {
             OnDeleteRequested?.Invoke();

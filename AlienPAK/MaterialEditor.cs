@@ -1,5 +1,5 @@
-﻿using CATHODE;
-using CATHODE.LEGACY;
+using CATHODE;
+using CATHODE.ShaderTypes;
 using CathodeLib;
 using System;
 using System.Collections.Generic;
@@ -29,12 +29,14 @@ namespace AlienPAK
         Textures _texturesGlobal = null;
 
         List<Materials.Material> _sortedMaterials = new List<Materials.Material>();
-        ShadersPAK.ShaderMaterialMetadata _selectedMaterialMeta = null;
-        ShadersPAK.ShaderEntry _selectedMaterialShader = null;
+        Shaders.Shader _selectedMaterialShader = null;
+
+        //Sampler information: (sampler name, sampler index, texture reference index)
+        List<Tuple<string, int, int>> _samplerInfo = new List<Tuple<string, int, int>>();
 
         MaterialEditorControlsWPF _controls = null;
 
-        public Action<int> OnMaterialSelected;
+        public Action<Materials.Material> OnMaterialSelected;
 
         public MaterialEditor(Materials.Material material = null, Materials materials = null, Shaders shaders = null, Textures textures = null, Textures texturesGlobal = null)
         {
@@ -47,247 +49,335 @@ namespace AlienPAK
             if (_materials == null) return;
 
             _controls = (MaterialEditorControlsWPF)elementHost1.Child;
-            _controls.OnMaterialTextureIndexSelected += OnMaterialTextureIndexSelected;
-            _controls.FloatMaterialPropertyChanged += MaterialPropertyChanged;
-            _controls.Vec4MaterialPropertyChanged += MaterialPropertyChanged;
-            _controls.OnGlobalOptionChange += OnGlobalOptionChange;
-            _controls.OnTextureIndexChange += OnTextureIndexChange;
-            _controls.OnNameUpdated += OnNameUpdated;
+            _controls.OnSamplerSelected += OnSamplerSelected;
+            _controls.OnParameterSelected += OnParameterSelected;
+            _controls.OnPickTexture += OnPickTexture;
 
             PopulateUI(material);
         }
 
-        private void OnNameUpdated(string name)
+        private void MaterialEditor_Load(object sender, EventArgs e)
         {
-            if (materialList.SelectedIndex == -1) return;
-            _sortedMaterials[materialList.SelectedIndex].Name = name;
-            materialList.Items[materialList.SelectedIndex] = name;
-        }
-
-        //todo: this whole flow needs a bit of a refactor as i've changed quite a bit
-        private void OnGlobalOptionChange(bool global)
-        {
-            Console.WriteLine("OnGlobalOptionChange");
-            UpdateTextureDropdown(global, !_doingSelection);
-        }
-
-        private void UpdateTextureDropdown(bool global, bool changeIndex = false)
-        {
-            Console.WriteLine("UpdateTextureDropdown");
-            List<string> textures = new List<string>();
-            Textures textureDB = global ? _texturesGlobal : _textures;
-            for (int i = 0; i < textureDB.Entries.Count; i++) textures.Add(textureDB.Entries[i].Name);
-            textures.Add("NONE"); //temp holder for no texture
-            _controls.PopulateTextureDropdown(textures);
-
-            if (!changeIndex) return;
-            Console.WriteLine(" --> UPDATING INDEX");
-            _controls.textureFile.SelectedIndex = 0;
-            OnTextureIndexChange(0, global);
-        }
-
-        private void OnTextureIndexChange(int index, bool global)
-        {
-            Console.WriteLine("OnTextureIndexChange");
-            _doingSelection = true;
-            Textures texDB = (global ? _texturesGlobal : _textures);
-            ShadersPAK.MaterialTextureContext textureInfo = _selectedMaterialMeta.textures[_controls.materialTextureSelection.SelectedIndex];
-            if (textureInfo.TextureInfo == null)
+            if (materialList.SelectedItems.Count > 0)
             {
-                TexturePtr tex = new TexturePtr();
-                textureInfo.TextureInfo = tex;
-                _sortedMaterials[materialList.SelectedIndex].TextureReferences[_controls.materialTextureSelection.SelectedIndex] = tex;
+                materialList.SelectedItems[0].EnsureVisible();
+                materialList.EnsureVisible(materialList.SelectedItems[0].Index);
             }
-            if (index >= texDB.Entries.Count)
-            {
-                textureInfo.TextureInfo = null;
-                _sortedMaterials[materialList.SelectedIndex].TextureReferences[_controls.materialTextureSelection.SelectedIndex] = null;
-            }
+        }
+
+        private void OnSamplerSelected(int samplerTabIndex)
+        {
+            //todo
+        }
+
+        private void OnPickTexture()
+        {
+            if (materialList.SelectedItems.Count == 0 || _controls.SamplerTabControl.SelectedIndex < 0) return;
+
+            Materials.Material material = materialList.SelectedItems[0].Tag as Materials.Material;
+            if (material == null) return;
+            int samplerTabIndex = _controls.SamplerTabControl.SelectedIndex;
+            if (samplerTabIndex >= _samplerInfo.Count) return;
+            
+            var samplerInfo = _samplerInfo[samplerTabIndex];
+            string samplerName = samplerInfo.Item1;
+            int samplerIndex = samplerInfo.Item2;
+            int textureRefIndex = samplerInfo.Item3;
+
+            //todo!!
+        }
+
+        private void OnFeatureCheckboxChanged(Materials.Material material, int featureIndex, bool isChecked)
+        {
+            if (isChecked)
+                material.Shader.UbershaderFeatureFlags |= (1L << featureIndex);
             else
+                material.Shader.UbershaderFeatureFlags &= ~(1L << featureIndex);
+        }
+
+        private void OnParameterSelected(string parameterName)
+        {
+            _controls.ParameterDetailsPanel.Children.Clear();
+
+            if (materialList.SelectedItems.Count == 0) return;
+
+            Materials.Material material = materialList.SelectedItems[0].Tag as Materials.Material;
+            if (material == null) return;
+
+            int parameterIndex = ShaderUtility.GetShaderFunctionalityIndex(material.Shader.Ubershader, ShaderIndexType.PARAMETERS, parameterName).Value;
+            UberShaderParameterType parameterType = ShaderUtility.GetParameterType(material.Shader.Ubershader, parameterName).Value;
+            int remappedIndex = material.Shader.PixelShaderParameterRemaps[parameterIndex];
+            int floatCount = GetFloatCountForParameterType(parameterType);
+
+            TextBlock textBlock = new TextBlock { Margin = new System.Windows.Thickness(0, 0, 0, 5) };
+            if (floatCount == 1)
             {
-                textureInfo.TextureInfo.Index = texDB.GetWriteIndex(texDB.Entries[index]);
-                textureInfo.TextureInfo.Location = global ? TexturePtr.Source.GLOBAL : TexturePtr.Source.LEVEL;
+                float value = material.PixelShaderConstants[remappedIndex];
+                textBlock.Text = parameterType == UberShaderParameterType.Int ? ((int)value).ToString() : value.ToString("F6");
             }
-            ShowTextureForMaterial(_controls.materialTextureSelection.SelectedIndex);
-            _doingSelection = false;
+            else if (floatCount == 2)
+            {
+                float x = material.PixelShaderConstants[remappedIndex];
+                float y = remappedIndex + 1 < material.PixelShaderConstants.Count ? material.PixelShaderConstants[remappedIndex + 1] : 0;
+                textBlock.Text = $"X: {x:F6}, Y: {y:F6}";
+            }
+            else if (floatCount == 3)
+            {
+                float x = material.PixelShaderConstants[remappedIndex];
+                float y = remappedIndex + 1 < material.PixelShaderConstants.Count ? material.PixelShaderConstants[remappedIndex + 1] : 0;
+                float z = remappedIndex + 2 < material.PixelShaderConstants.Count ? material.PixelShaderConstants[remappedIndex + 2] : 0;
+                textBlock.Text = $"X: {x:F6}, Y: {y:F6}, Z: {z:F6}";
+            }
+            else if (floatCount == 4)
+            {
+                float x = material.PixelShaderConstants[remappedIndex];
+                float y = remappedIndex + 1 < material.PixelShaderConstants.Count ? material.PixelShaderConstants[remappedIndex + 1] : 0;
+                float z = remappedIndex + 2 < material.PixelShaderConstants.Count ? material.PixelShaderConstants[remappedIndex + 2] : 0;
+                float w = remappedIndex + 3 < material.PixelShaderConstants.Count ? material.PixelShaderConstants[remappedIndex + 3] : 0;
+                textBlock.Text = $"X: {x:F6}, Y: {y:F6}, Z: {z:F6}, W: {w:F6}";
+            }
+            _controls.ParameterDetailsPanel.Children.Add(textBlock);
+        }
+
+        private int GetFloatCountForParameterType(UberShaderParameterType parameterType)
+        {
+            switch (parameterType)
+            {
+                case UberShaderParameterType.Float:
+                case UberShaderParameterType.Half:
+                case UberShaderParameterType.Int:
+                    return 1;
+                case UberShaderParameterType.Float2:
+                case UberShaderParameterType.Half2:
+                    return 2;
+                case UberShaderParameterType.Float3:
+                case UberShaderParameterType.Half3:
+                    return 3;
+                case UberShaderParameterType.Float4:
+                case UberShaderParameterType.Half4:
+                    return 4;
+                default:
+                    return 1;
+            }
         }
 
         private void PopulateUI(Materials.Material material = null)
         {
-            Console.WriteLine("PopulateUI");
             _sortedMaterials.Clear();
             _sortedMaterials.AddRange(_materials.Entries);
             _sortedMaterials = _sortedMaterials.OrderBy(o => o.Name).ToList();
 
             materialList.BeginUpdate();
             materialList.Items.Clear();
-            for (int i = 0; i < _sortedMaterials.Count; i++)
+            materialList.Groups.Clear();
+            materialList.Columns.Clear();
+            
+            materialList.Columns.Add("Material Name", 360);
+            
+            var groupedMaterials = _sortedMaterials.Where(m => m.Shader != null).GroupBy(m => m.Shader.Ubershader).OrderBy(g => g.Key.ToString());
+
+            foreach (var group in groupedMaterials)
             {
-                materialList.Items.Add(_sortedMaterials[i].Name);
-                if (_sortedMaterials[i] == material) materialList.SelectedIndex = i;
+                string groupName = group.Key.ToString();
+                System.Windows.Forms.ListViewGroup listGroup = new System.Windows.Forms.ListViewGroup(groupName, groupName);
+                materialList.Groups.Add(listGroup);
+                
+                foreach (var mat in group.OrderBy(m => m.Name))
+                {
+                    System.Windows.Forms.ListViewItem item = new System.Windows.Forms.ListViewItem(mat.Name);
+                    item.Group = listGroup;
+                    item.Tag = mat;
+                    materialList.Items.Add(item);
+
+                    if (mat == material)
+                        item.Selected = true;
+                }
             }
             materialList.EndUpdate();
         }
 
-        private void MaterialPropertyChanged<T>(MaterialProperty property, T val)
-        {
-            /*
-            Console.WriteLine("MaterialPropertyChanged");
-            if (_selectedMaterialMeta == null || materialList.SelectedIndex == -1 || _sortedMaterials[materialList.SelectedIndex] == null || _selectedMaterialShader == null) return;
-            int offset = _sortedMaterials[materialList.SelectedIndex].ConstantBuffers[2].Offset;
-            switch (property)
-            {
-                case MaterialProperty.COLOUR:
-                    offset += _selectedMaterialShader.CSTLinks[2][_selectedMaterialMeta.cstIndexes.Diffuse0];
-                    break;
-                case MaterialProperty.DIFFUSE_SCALE:
-                    offset += _selectedMaterialShader.CSTLinks[2][_selectedMaterialMeta.cstIndexes.DiffuseMap0UVMultiplier];
-                    break;
-                //case MaterialProperty.DIFFUSE_OFFSET:
-                //    offset += _selectedMaterialShader.CSTLinks[2][_selectedMaterialMeta.cstIndexes.DiffuseMap0];
-                //    break;
-                case MaterialProperty.NORMAL_SCALE:
-                    offset += _selectedMaterialShader.CSTLinks[2][_selectedMaterialMeta.cstIndexes.NormalMap0UVMultiplier];
-                    break;
-                default:
-                    return;
-            }
-            BinaryWriter cstWriter = new BinaryWriter(new MemoryStream(_materials.CSTData[2]));
-            WriteToCST<T>(ref cstWriter, offset * 4, val);
-            cstWriter.Close();
-            */
-        }
 
-        private void OnMaterialTextureIndexSelected(int index)
-        {
-            Console.WriteLine("OnMaterialTextureIndexSelected");
-            ShowTextureForMaterial(_controls.materialTextureSelection.SelectedIndex);
-        }
-
-        bool _doingSelection = false; //temp hack for crap global implementation fix
         private void materialList_SelectedIndexChanged(object sender, EventArgs e)
         {
-            /*
-            Console.WriteLine("materialList_SelectedIndexChanged");
-            _doingSelection = true;
-            _selectedMaterialMeta = null;
-            _selectedMaterialShader = null;
-            if (materialList.SelectedIndex == -1)
+            _controls.SamplerTabControl.Items.Clear();
+            _samplerInfo.Clear();
+            _controls.ParameterSelection.Items.Clear();
+            _controls.FeatureDetailsPanel.Children.Clear();
+            _controls.ParameterDetailsPanel.Children.Clear();
+            _controls.ShaderType.Text = "";
+
+            if (materialList.SelectedItems.Count == 0) return;
+
+            Materials.Material material = materialList.SelectedItems[0].Tag as Materials.Material;
+            if (material == null) return;
+
+            _controls.ShaderType.Text = material.Shader.Ubershader.ToString();
+
+            List<string> samplers = ShaderUtility.GetSamplers(material.Shader.Ubershader);
+            int firstSamplerWithTextureIndex = -1;
+            for (int i = 0; i < samplers.Count; i++)
             {
-                _doingSelection = false;
-                return;
+                string sampler = samplers[i];
+                int? samplerIndexNullable = ShaderUtility.GetShaderFunctionalityIndex(material.Shader.Ubershader, ShaderIndexType.SAMPLERS, sampler);
+                if (!samplerIndexNullable.HasValue) continue;
+
+                int samplerIndex = samplerIndexNullable.Value;
+                int textureRefIndex = 255;
+                if (samplerIndex < material.Shader.SamplerRemaps.Count)
+                    textureRefIndex = material.Shader.SamplerRemaps[samplerIndex];
+
+                bool hasTexture = false;
+                Textures.TEX4 texture = null;
+                if (textureRefIndex != 255 && textureRefIndex < material.TextureReferences.Count)
+                {
+                    var textureRef = material.TextureReferences[textureRefIndex];
+                    if (textureRef?.Texture != null)
+                    {
+                        hasTexture = true;
+                        texture = textureRef.Texture;
+                    }
+                }
+
+                if (hasTexture && firstSamplerWithTextureIndex == -1)
+                    firstSamplerWithTextureIndex = _controls.SamplerTabControl.Items.Count;
+
+                TextBlock tabHeader = new System.Windows.Controls.TextBlock
+                {
+                    Text = sampler,
+                    FontWeight = hasTexture ? System.Windows.FontWeights.Bold : System.Windows.FontWeights.Normal
+                };
+
+                StackPanel tabContent = new StackPanel { Margin = new System.Windows.Thickness(10) };
+                
+                TextBlock textureFileText = new TextBlock 
+                { 
+                    Text = $"Sampler: {sampler}",
+                    TextWrapping = System.Windows.TextWrapping.Wrap,
+                    Margin = new System.Windows.Thickness(0, 0, 0, 10)
+                };
+                
+                ScrollViewer imageScrollViewer = new ScrollViewer
+                {
+                    VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+                    HorizontalScrollBarVisibility = ScrollBarVisibility.Auto
+                };
+                
+                System.Windows.Controls.Image texturePreview = new System.Windows.Controls.Image
+                {
+                    Source = texture?.ToDDS()?.ToBitmap()?.ToImageSource(),
+                    Stretch = Stretch.Uniform,
+                    MaxHeight = 400
+                };
+                imageScrollViewer.Content = texturePreview;
+                
+                /*
+                 * TODO!!
+                System.Windows.Controls.Button pickTextureButton = new System.Windows.Controls.Button
+                {
+                    Content = "Pick Texture...",
+                    Margin = new System.Windows.Thickness(0, 10, 0, 0),
+                    Tag = i
+                };
+                pickTextureButton.Click += (s, args) => OnPickTexture();
+                */
+
+                TextBlock detailsText = new TextBlock
+                {
+                    TextWrapping = System.Windows.TextWrapping.Wrap,
+                    Margin = new System.Windows.Thickness(0, 10, 0, 0)
+                };
+                
+                StringBuilder details = new StringBuilder();
+                details.AppendLine($"Sampler Name: {sampler}");
+                details.AppendLine($"Sampler Index: {samplerIndex}");
+                details.AppendLine($"Texture Reference Index: {(textureRefIndex == 255 ? "Not assigned" : textureRefIndex.ToString())}");
+                
+                if (hasTexture && texture != null)
+                {
+                    textureFileText.Text += $"\nTexture: {texture.Name}";
+                    details.AppendLine($"Texture Name: {texture.Name}");
+                    details.AppendLine($"Texture Format: {texture.Format}");
+                }
+                else if (textureRefIndex != 255 && textureRefIndex < material.TextureReferences.Count)
+                {
+                    textureFileText.Text += "\nTexture: (Empty slot)";
+                    details.AppendLine("Texture: Empty slot (no texture assigned)");
+                }
+                else
+                {
+                    textureFileText.Text += "\nTexture: (Not assigned)";
+                    details.AppendLine("Texture: Not assigned to this sampler");
+                }
+                
+                detailsText.Text = details.ToString();
+                
+                tabContent.Children.Add(textureFileText);
+                tabContent.Children.Add(imageScrollViewer);
+                //tabContent.Children.Add(pickTextureButton);  TODO
+                tabContent.Children.Add(detailsText);
+                
+                TabItem tabItem = new TabItem
+                {
+                    Header = tabHeader,
+                    Content = tabContent
+                };
+                
+                _controls.SamplerTabControl.Items.Add(tabItem);
+                _samplerInfo.Add(new Tuple<string, int, int>(sampler, samplerIndex, textureRefIndex));
             }
-            _selectedMaterialMeta = _shaders.GetMaterialMetadataFromShader(_sortedMaterials[materialList.SelectedIndex]);
-
-            int shaderIndex = _shadersIDX.Datas[_sortedMaterials[materialList.SelectedIndex].ShaderIndex].Index;
-            _selectedMaterialShader = _shaders.Shaders[shaderIndex];
-
-            _controls.fileNameText.Text = _sortedMaterials[materialList.SelectedIndex].Name;
-
-            _controls.materialTextureSelection.Items.Clear();
-            for (int i = 0; i < _selectedMaterialMeta.textures.Count; i++)
+            if (_controls.SamplerTabControl.Items.Count != 0)
             {
-                _controls.materialTextureSelection.Items.Add(_selectedMaterialMeta.textures[i].Type.ToString());
-                if (_selectedMaterialMeta.textures[i].Type == ShadersPAK.ShaderSlot.DIFFUSE_MAP) _controls.materialTextureSelection.SelectedIndex = i;
+                int selectedIndex = firstSamplerWithTextureIndex >= 0 ? firstSamplerWithTextureIndex : 0;
+                _controls.SamplerTabControl.SelectedIndex = selectedIndex;
             }
-            _controls.ShowTexturePreview(_selectedMaterialMeta.textures.Count != 0);
-            if (_controls.materialTextureSelection.SelectedIndex == -1 && _selectedMaterialMeta.textures.Count != 0)
-                _controls.materialTextureSelection.SelectedIndex = 0;
-            ShowTextureForMaterial(_controls.materialTextureSelection.SelectedIndex);
 
-            _controls.shaderName.Text = _selectedMaterialShader.Index + " (" + _selectedMaterialMeta.shaderCategory.ToString() + ")";
+            List<string> features = ShaderUtility.GetFeatures(material.Shader.Ubershader);
+            foreach (string feature in features)
+            {
+                int? featureIndexNullable = ShaderUtility.GetShaderFunctionalityIndex(material.Shader.Ubershader, ShaderIndexType.FEATURES, feature);
+                if (!featureIndexNullable.HasValue) continue;
 
-            UpdateShaderCSTInfo(_selectedMaterialMeta.cstIndexes, _selectedMaterialShader, _sortedMaterials[materialList.SelectedIndex]);
-            _doingSelection = false;
-            */
+                int featureIndex = featureIndexNullable.Value;
+                bool isEnabled = (material.Shader.UbershaderFeatureFlags & (1L << featureIndex)) != 0;
+
+                System.Windows.Controls.CheckBox checkBox = new System.Windows.Controls.CheckBox
+                {
+                    Content = feature,
+                    IsChecked = isEnabled,
+                    Margin = new System.Windows.Thickness(0, 0, 0, 5)
+                };
+
+                checkBox.Checked += (s, args) => OnFeatureCheckboxChanged(material, featureIndex, true);
+                checkBox.Unchecked += (s, args) => OnFeatureCheckboxChanged(material, featureIndex, false);
+
+                _controls.FeatureDetailsPanel.Children.Add(checkBox);
+            }
+
+            List<string> parameters = ShaderUtility.GetParameters(material.Shader.Ubershader);
+            foreach (string parameter in parameters)
+            {
+                int parameterIndex = ShaderUtility.GetShaderFunctionalityIndex(material.Shader.Ubershader, ShaderIndexType.PARAMETERS, parameter).Value;
+                if (parameterIndex >= material.Shader.PixelShaderParameterRemaps.Count) continue;
+
+                int remappedIndex = material.Shader.PixelShaderParameterRemaps[parameterIndex];
+                if (remappedIndex != 255 && remappedIndex < material.PixelShaderConstants.Count)
+                {
+                    _controls.ParameterSelection.Items.Add(parameter);
+                }
+            }
+            if (_controls.ParameterSelection.Items.Count != 0)
+                _controls.ParameterSelection.SelectedIndex = 0;
         }
 
-        private void UpdateShaderCSTInfo(ShadersPAK.MaterialPropertyIndex cstIndexes, ShadersPAK.ShaderEntry shader, Materials.Material InMaterial)
-        {
-            /*
-            BinaryReader cstReader = new BinaryReader(new MemoryStream(_materials.CSTData[2]));
-            int baseOffset = (InMaterial.ConstantBuffers[2].Offset * 4);
-
-            _controls.matColourLabel.Visibility = CSTIndexValid(cstIndexes.Diffuse0, ref shader) ? System.Windows.Visibility.Visible : System.Windows.Visibility.Collapsed;
-            _controls.matColour.Visibility = _controls.matColourLabel.Visibility;
-            if (_controls.matColour.Visibility == System.Windows.Visibility.Visible)
-            {
-                Vector4 colour = LoadFromCST<Vector4>(ref cstReader, baseOffset + (shader.CSTLinks[2][cstIndexes.Diffuse0] * 4));
-                System.Windows.Media.Color colour_c = System.Windows.Media.Color.FromArgb((byte)(int)(colour.W * 255.0f), (byte)(int)(colour.X * 255.0f), (byte)(int)(colour.Y * 255.0f), (byte)(int)(colour.Z * 255.0f));
-                _controls.matColour.Background = new SolidColorBrush(colour_c);
-            }
-
-            _controls.matDiffuseScaleLabel.Visibility = CSTIndexValid(cstIndexes.DiffuseMap0UVMultiplier, ref shader) ? System.Windows.Visibility.Visible : System.Windows.Visibility.Collapsed;
-            _controls.matDiffuseScale.Visibility = _controls.matDiffuseScaleLabel.Visibility;
-            if (_controls.matDiffuseScale.Visibility == System.Windows.Visibility.Visible)
-            {
-                float offset = LoadFromCST<float>(ref cstReader, baseOffset + (shader.CSTLinks[2][cstIndexes.DiffuseMap0UVMultiplier] * 4));
-                _controls.matDiffuseScale.Text = offset.ToString();
-            }
-
-            _controls.matDiffuseOffsetLabel.Visibility = System.Windows.Visibility.Hidden;
-            //_controls.matDiffuseOffsetLabel.Visibility = CSTIndexValid(cstIndexes.DiffuseMap0, ref shader) ? System.Windows.Visibility.Visible : System.Windows.Visibility.Collapsed;
-            //_controls.matDiffuseOffset.Visibility = _controls.matDiffuseOffsetLabel.Visibility;
-            //if (_controls.matDiffuseOffset.Visibility == System.Windows.Visibility.Visible)
-            //{
-            //    float offset = LoadFromCST<float>(ref cstReader, baseOffset + (shader.CSTLinks[2][cstIndexes.DiffuseMap0] * 4));
-            //    _controls.matDiffuseOffset.Text = offset.ToString();
-            //}
-
-            _controls.matNormalScaleLabel.Visibility = CSTIndexValid(cstIndexes.NormalMap0UVMultiplier, ref shader) ? System.Windows.Visibility.Visible : System.Windows.Visibility.Collapsed;
-            _controls.matNormalScale.Visibility = _controls.matNormalScaleLabel.Visibility;
-            if (_controls.matNormalScale.Visibility == System.Windows.Visibility.Visible)
-            {
-                float offset = LoadFromCST<float>(ref cstReader, baseOffset + (shader.CSTLinks[2][cstIndexes.NormalMap0UVMultiplier] * 4));
-                _controls.matNormalScale.Text = offset.ToString();
-            }
-
-            cstReader.Close();
-            */
-        }
-
-        private void ShowTextureForMaterial(int index)
-        {
-            Console.WriteLine("ShowTextureForMaterial");
-            _controls.materialTexturePreview.Source = null;
-            if (index == -1) return;
-            ShadersPAK.MaterialTextureContext mdlMetaDiff = _selectedMaterialMeta.textures[index];
-            if (mdlMetaDiff == null || mdlMetaDiff.TextureInfo == null)
-            {
-                _controls.textureFile.SelectedItem = "NONE";
-                _controls.materialTexturePreview.Source = null;
-                return;
-            }
-
-            bool isGlobal = mdlMetaDiff.TextureInfo.Location == TexturePtr.Source.GLOBAL;
-            if (isGlobal != _controls.textureUseGlobal.IsChecked || _controls.textureFile.Items.Count == 0)
-            {
-                _controls.textureUseGlobal.IsChecked = isGlobal;
-                UpdateTextureDropdown(isGlobal);
-            }
-            Textures.TEX4 diff = (mdlMetaDiff.TextureInfo.Location == TexturePtr.Source.GLOBAL ? _texturesGlobal : _textures).GetAtWriteIndex(mdlMetaDiff.TextureInfo.Index);
-            _controls.textureFile.SelectedItem = diff == null ? "NONE" : diff.Name;
-            _controls.materialTexturePreview.Source = diff?.ToDDS()?.ToBitmap()?.ToImageSource();
-        }
-
-        private T LoadFromCST<T>(ref BinaryReader cstReader, int offset)
-        {
-            cstReader.BaseStream.Position = offset;
-            return Utilities.Consume<T>(cstReader);
-        }
-        private void WriteToCST<T>(ref BinaryWriter cstWriter, int offset, T content)
-        {
-            cstWriter.BaseStream.Position = offset;
-            Utilities.Write<T>(cstWriter, content);
-        }
-        private bool CSTIndexValid(int i, ref ShadersPAK.ShaderEntry Shader)
-        {
-            return i >= 0 && i < Shader.Header.CSTCounts[2] && (int)Shader.CSTLinks[2][i] != -1 && Shader.CSTLinks[2][i] != 255;
-        }
 
         private void selectMaterial_Click(object sender, EventArgs e)
         {
-            OnMaterialSelected?.Invoke(_materials.GetWriteIndex(_sortedMaterials[materialList.SelectedIndex]));
+            if (materialList.SelectedItems.Count == 0) return;
+            
+            Materials.Material material = materialList.SelectedItems[0].Tag as Materials.Material;
+            if (material == null) return;
+            
+            OnMaterialSelected?.Invoke(material);
             this.Close();
         }
 

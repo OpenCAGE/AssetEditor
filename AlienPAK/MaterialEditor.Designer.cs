@@ -1,4 +1,4 @@
-﻿namespace AlienPAK
+namespace AlienPAK
 {
     partial class MaterialEditor
     {
@@ -29,7 +29,7 @@
         private void InitializeComponent()
         {
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MaterialEditor));
-            this.materialList = new System.Windows.Forms.ListBox();
+            this.materialList = new System.Windows.Forms.ListView();
             this.selectMaterial = new System.Windows.Forms.Button();
             this.duplicateMaterial = new System.Windows.Forms.Button();
             this.elementHost1 = new System.Windows.Forms.Integration.ElementHost();
@@ -38,11 +38,18 @@
             // 
             // materialList
             // 
-            this.materialList.FormattingEnabled = true;
+            this.materialList.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left)));
+            this.materialList.FullRowSelect = true;
+            this.materialList.HideSelection = false;
+            this.materialList.LabelWrap = false;
             this.materialList.Location = new System.Drawing.Point(1, 6);
+            this.materialList.MultiSelect = false;
             this.materialList.Name = "materialList";
             this.materialList.Size = new System.Drawing.Size(384, 641);
             this.materialList.TabIndex = 21;
+            this.materialList.UseCompatibleStateImageBehavior = false;
+            this.materialList.View = System.Windows.Forms.View.Details;
             this.materialList.SelectedIndexChanged += new System.EventHandler(this.materialList_SelectedIndexChanged);
             // 
             // selectMaterial
@@ -89,6 +96,7 @@
             this.Name = "MaterialEditor";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
             this.Text = "Material Editor";
+            this.Load += new System.EventHandler(this.MaterialEditor_Load);
             this.ResumeLayout(false);
 
         }
@@ -97,7 +105,7 @@
 
         private System.Windows.Forms.Integration.ElementHost elementHost1;
         private MaterialEditorControlsWPF materialEditorControlsWPF1;
-        private System.Windows.Forms.ListBox materialList;
+        private System.Windows.Forms.ListView materialList;
         private System.Windows.Forms.Button selectMaterial;
         private System.Windows.Forms.Button duplicateMaterial;
     }

@@ -12,9 +12,9 @@
         <StackPanel>
             <GroupBox x:Name="modelPreviewGroup" Header="Selected Preview" Margin="0 0 0 10">
                 <StackPanel>
-                    <HelixToolkit:HelixViewport3D x:Name="filePreviewModelContainer" Height="450" ZoomExtentsWhenLoaded="True" ShowViewCube="True" ViewCubeVerticalPosition="Top">
-                        <HelixToolkit:SunLight/>
-                        <ModelVisual3D x:Name="filePreviewModel" />
+                    <HelixToolkit:HelixViewport3D x:Name="filePreviewModelContainer" Height="300" ZoomExtentsWhenLoaded="True" ShowViewCube="True" ViewCubeVerticalPosition="Top" ShowCoordinateSystem="True" CoordinateSystemVerticalPosition="Top">
+                        <HelixToolkit:SunLight Altitude="160" Azimuth="120" Ambient="0.7" Brightness="1" />
+                        <ModelVisual3D x:Name="filePreviewModel"/>
                         <!--<HelixToolkit:GridLinesVisual3D Width="8" Length="8" MinorDistance="1" MajorDistance="1" Thickness="0.01"/>-->
                     </HelixToolkit:HelixViewport3D>
                     <CheckBox x:Name="renderMaterials" HorizontalAlignment="Right" Checked="OnRenderMaterialsChecked" Unchecked="OnRenderMaterialsChecked" Margin="0 -20 6 0">Materials</CheckBox>
@@ -56,7 +56,6 @@
 
             <GroupBox x:Name="utiltiesGroup" Header="Utilities" Margin="0 0 0 10">
                 <WrapPanel Margin="10">
-                    <Button x:Name="exportBtn" Click="ExportBtn" Padding="10 5">Export Selected</Button>
                     <Button x:Name="replaceBtn" Click="ReplaceBtn" Margin="10 0 0 0" Padding="10 5">Replace Selected</Button>
                     <Button x:Name="editMaterialBtn" Click="EditMaterialBtn" Margin="10 0 0 0" Padding="10 5">Edit Material</Button>
                     <Button x:Name="deleteBtn" Click="DeleteBtn" Margin="10 0 0 0" Padding="10 5">Delete Selected</Button>

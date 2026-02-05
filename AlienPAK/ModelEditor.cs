@@ -1,6 +1,5 @@
-﻿using Assimp;
+using Assimp;
 using CATHODE;
-using CATHODE.LEGACY;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -62,7 +61,6 @@ namespace AlienPAK
             _controls.OnAddRequested += OnAddRequested;
             _controls.OnReplaceRequested += OnReplaceRequested;
             _controls.OnDeleteRequested += OnDeleteRequested;
-            _controls.OnExportRequested += OnExportRequested;
             _controls.OnScaleFactorChanged += OnScaleFactorChanged;
         }
 
@@ -74,77 +72,30 @@ namespace AlienPAK
             lookup.submesh.VertexScale = (ushort)scaleFactor;
         }
 
-        /* Export model by selected part */
-        private void OnExportRequested()
-        {
-            StringMeshLookup lookup = _treeLookup.FirstOrDefault(o => o.String == FileTree.SelectedNode?.FullPath);
-
-            string fileName = Path.GetFileName(FileTree.SelectedNode.Text);
-            while (Path.GetExtension(fileName).Length != 0) fileName = fileName.Substring(0, fileName.Length - Path.GetExtension(fileName).Length); //Remove extensions from output filename
-
-            //Hotfix for empty part names
-            if ((fileName == " " || fileName == "") && FileTree.SelectedNode.Text.Substring(FileTree.SelectedNode.Text.Length - 2) == ": ") 
-                fileName = FileTree.SelectedNode.Text.Substring(0, FileTree.SelectedNode.Text.Length - 2);
-
-            SaveFileDialog picker = new SaveFileDialog();
-            picker.Filter = _fileFilter;
-            picker.FileName = fileName;
-            if (picker.ShowDialog() != DialogResult.OK) return;
-
-            try
-            {
-                Scene scene = new Scene();
-                scene.Materials.Add(new Assimp.Material());
-                scene.RootNode = new Node(_model.Name);
-                for (int i = 0; i < _model.Components.Count; i++)
-                {
-                    if (lookup != null && lookup.component != null && _model.Components[i] != lookup.component) continue;
-                    Node componentNode = new Node(i.ToString());
-                    scene.RootNode.Children.Add(componentNode);
-                    for (int x = 0; x < _model.Components[i].LODs.Count; x++)
-                    {
-                        if (lookup != null && lookup.lod != null && _model.Components[i].LODs[x] != lookup.lod) continue;
-                        Node lodNode = new Node(_model.Components[i].LODs[x].Name);
-                        componentNode.Children.Add(lodNode);
-                        for (int y = 0; y < _model.Components[i].LODs[x].Submeshes.Count; y++)
-                        {
-                            if (lookup != null && lookup.submesh != null && _model.Components[i].LODs[x].Submeshes[y] != lookup.submesh) continue;
-                            Node submeshNode = new Node(y.ToString());
-                            lodNode.Children.Add(submeshNode);
-
-                            Mesh mesh = _model.Components[i].LODs[x].Submeshes[y].ToMesh();
-                            mesh.Name = _model.Name + " [" + x + "] -> " + lodNode.Name + " [" + i + "]";
-                            scene.Meshes.Add(mesh);
-                            submeshNode.MeshIndices.Add(scene.Meshes.Count - 1);
-                        }
-                    }
-                }
-                AssimpContext exp = new AssimpContext();
-                exp.ExportFile(scene, picker.FileName, Path.GetExtension(picker.FileName).Replace(".", ""));
-                exp.Dispose();
-                MessageBox.Show("Successfully exported file!", "Export complete", MessageBoxButtons.OK, MessageBoxIcon.Information);
-            }
-            catch (Exception e)
-            {
-                MessageBox.Show(e.ToString(), "Export failed", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-        }
-
         /* Delete selected model part */
         private void OnDeleteRequested()
         {
             StringMeshLookup lookup = _treeLookup.FirstOrDefault(o => o.String == FileTree.SelectedNode?.FullPath);
+            if (lookup == null) return;
 
-            if (lookup?.cs2 != null)
+            if (lookup.cs2 != null)
+            {
                 lookup.cs2.Components.Clear();
-            if (lookup?.component != null)
-                lookup.component.LODs.Clear();
-            if (lookup?.lod != null)
-                lookup.lod.Submeshes.Clear();
-            if (lookup?.submesh != null)
+            }
+            else if (lookup.component != null)
+            {
+                _model.Components.Remove(lookup.component);
+            }
+            else if (lookup.lod != null && lookup.component != null)
+            {
+                lookup.component.LODs.Remove(lookup.lod);
+            }
+            else if (lookup.submesh != null)
+            {
                 for (int i = 0; i < _model.Components.Count; i++)
                     for (int x = 0; x < _model.Components[i].LODs.Count; x++)
                         _model.Components[i].LODs[x].Submeshes.Remove(lookup.submesh);
+            }
 
             RefreshTree();
             RefreshSelectedModelPreview();
@@ -192,6 +143,7 @@ namespace AlienPAK
         /* Refresh the model tree in UI */
         private void RefreshTree()
         {
+            _treeLookup.Clear();
             List<string> contents = new List<string>();
             string componentString = "";
             string lodString = "";
@@ -204,7 +156,7 @@ namespace AlienPAK
                 for (int x = 0; x < _model.Components[i].LODs.Count; x++)
                 {
                     lodString = componentString + "\\Part " + x + ": " + _model.Components[i].LODs[x].Name;
-                    _treeLookup.Add(new StringMeshLookup() { String = lodString, lod = _model.Components[i].LODs[x] });
+                    _treeLookup.Add(new StringMeshLookup() { String = lodString, lod = _model.Components[i].LODs[x], component = _model.Components[i] });
                     for (int y = 0; y < _model.Components[i].LODs[x].Submeshes.Count; y++)
                     {
                         submeshString = lodString + "\\Mesh " + y;
@@ -273,19 +225,19 @@ namespace AlienPAK
             if (FileTree.SelectedNode == null) return;
             StringMeshLookup lookup = _treeLookup.FirstOrDefault(o => o.String == FileTree.SelectedNode.FullPath);
             if (lookup == null || lookup.submesh == null) return;
-            Materials.Material material = _materials.GetAtWriteIndex(lookup.submesh.MaterialIndex);
+            Materials.Material material = lookup.submesh.Material;
             if (material == null) return;
 
             MaterialEditor materialEditor = new MaterialEditor(material, _materials, _shaders, _textures, _texturesGlobal);
             materialEditor.OnMaterialSelected += OnMaterialSelected;
             materialEditor.Show();
         }
-        private void OnMaterialSelected(int index)
+        private void OnMaterialSelected(Materials.Material material)
         {
             StringMeshLookup lookup = _treeLookup.FirstOrDefault(o => o.String == FileTree.SelectedNode.FullPath);
             Submesh submesh = lookup?.submesh;
             if (submesh == null) return;
-            submesh.MaterialIndex = index;
+            submesh.Material = material;
             RefreshSelectedModelPreview(false);
 
             this.Focus();
@@ -330,12 +282,10 @@ namespace AlienPAK
                         GeometryModel3D mdl = submesh.ToGeometryModel3D();
                         try
                         {
-                            Materials.Material material = _materials.GetAtWriteIndex(submesh.MaterialIndex);
-                            if (lookup?.submesh != null) materialInfo = material.Name;
+                            if (lookup?.submesh != null) materialInfo = submesh.Material.Name;
                             if (_controls.renderMaterials.IsChecked == true)
                             {
-                                Shaders.Shader shader = _shaders.Entries[material.ShaderIndex];
-                                MaterialApplier.ApplyMaterial(mdl, material, shader, _textures, _texturesGlobal);
+                                MaterialApplier.ApplyMaterial(mdl, submesh.Material);
                             }
                         }
                         catch (Exception ex2)
