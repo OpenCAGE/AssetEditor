@@ -76,17 +76,26 @@ namespace AlienPAK
         private void OnDeleteRequested()
         {
             StringMeshLookup lookup = _treeLookup.FirstOrDefault(o => o.String == FileTree.SelectedNode?.FullPath);
+            if (lookup == null) return;
 
-            if (lookup?.cs2 != null)
+            if (lookup.cs2 != null)
+            {
                 lookup.cs2.Components.Clear();
-            if (lookup?.component != null)
-                lookup.component.LODs.Clear();
-            if (lookup?.lod != null)
-                lookup.lod.Submeshes.Clear();
-            if (lookup?.submesh != null)
+            }
+            else if (lookup.component != null)
+            {
+                _model.Components.Remove(lookup.component);
+            }
+            else if (lookup.lod != null && lookup.component != null)
+            {
+                lookup.component.LODs.Remove(lookup.lod);
+            }
+            else if (lookup.submesh != null)
+            {
                 for (int i = 0; i < _model.Components.Count; i++)
                     for (int x = 0; x < _model.Components[i].LODs.Count; x++)
                         _model.Components[i].LODs[x].Submeshes.Remove(lookup.submesh);
+            }
 
             RefreshTree();
             RefreshSelectedModelPreview();
@@ -134,6 +143,7 @@ namespace AlienPAK
         /* Refresh the model tree in UI */
         private void RefreshTree()
         {
+            _treeLookup.Clear();
             List<string> contents = new List<string>();
             string componentString = "";
             string lodString = "";
@@ -146,7 +156,7 @@ namespace AlienPAK
                 for (int x = 0; x < _model.Components[i].LODs.Count; x++)
                 {
                     lodString = componentString + "\\Part " + x + ": " + _model.Components[i].LODs[x].Name;
-                    _treeLookup.Add(new StringMeshLookup() { String = lodString, lod = _model.Components[i].LODs[x] });
+                    _treeLookup.Add(new StringMeshLookup() { String = lodString, lod = _model.Components[i].LODs[x], component = _model.Components[i] });
                     for (int y = 0; y < _model.Components[i].LODs[x].Submeshes.Count; y++)
                     {
                         submeshString = lodString + "\\Mesh " + y;

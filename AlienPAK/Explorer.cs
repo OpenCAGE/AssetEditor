@@ -705,7 +705,7 @@ namespace AlienPAK
 
             Cursor.Current = Cursors.Default;
 
-            MessageBox.Show("Successfully saved", "All changes have been saved successfully.", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            MessageBox.Show("All changes have been saved successfully.", "Successfully saved", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
     }
 }
