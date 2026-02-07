@@ -106,10 +106,12 @@ namespace AlienPAK
         }
 
         /* Convert DDS to a TEX4 Part */
-        public static Textures.TEX4.Texture ToTEX4Part(this byte[] content, out Textures.TextureFormat format)
+        public static Textures.TEX4.Texture ToTEX4Part(this byte[] content, out Textures.TextureFormat format, out Textures.TextureStateFlag state, out Textures.TextureUsageFlag usage)
         {
             Textures.TEX4.Texture part = new TEX4.Texture();
             format = TextureFormat.AUTO;
+            state = TextureStateFlag.ALLOW_SRGB;
+            usage = TextureUsageFlag.DEFAULT | TextureUsageFlag.IS_LEVEL_PACK;
 
             using (MemoryStream stream = new MemoryStream(content))
             using (BinaryReader reader = new BinaryReader(stream))
@@ -123,6 +125,13 @@ namespace AlienPAK
 
                 if (dx10Header == null)
                     return null;
+
+                if (ddsHeader.mCaps2.HasFlag(DDSCaps2.DDSCAPS2_CUBEMAP))
+                    state |= TextureStateFlag.CUBE;
+                if (ddsHeader.mCaps2.HasFlag(DDSCaps2.DDSCAPS2_VOLUME))
+                    state |= TextureStateFlag.VOLUME;
+                if (ddsHeader.mPixelFormat.mFlags.HasFlag(DDSPixelFormat.DDPF_ALPHAPIXELS))
+                    state |= TextureStateFlag.NON_SOLID;
 
                 part.Depth = (short)ddsHeader.mDepth;
                 part.MipLevels = (short)ddsHeader.mMipMapCount;
