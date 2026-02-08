@@ -92,9 +92,10 @@ namespace AlienPAK
             filePreviewModel.Content = content;
 
             filePreviewModelContainer.ModelUpDirection = new Vector3D(0, 1, 0);
+            filePreviewModelContainer.Camera.NearPlaneDistance = 0.01f;
             filePreviewModelContainer.Camera.UpDirection = new Vector3D(0, 1, 0);
             filePreviewModelContainer.Camera.LookDirection = new Vector3D(-0.5, -0.5, -1.0f);
-            
+
             if (zoomExtents)
                 filePreviewModelContainer.ZoomExtents();
         }
@@ -112,6 +113,7 @@ namespace AlienPAK
             }
 
             filePreviewModelContainer.Camera = new PerspectiveCamera();
+            filePreviewModelContainer.Camera.NearPlaneDistance = 0.01f;
             filePreviewModelContainer.CameraMode = CameraMode.FixedPosition;
             filePreviewModelContainer.Camera.Position = new Point3D(0, 0, 0);
 
