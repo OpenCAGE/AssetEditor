@@ -564,14 +564,20 @@ namespace AlienPAK
             Mesh assimpMesh = new Mesh();
             assimpMesh.MaterialIndex = materialIndex;
 
-            if (!assimpMesh.SetIndices(cathodeMesh.Indices.Select(x => (int)x).ToArray(), 3))
+            int[] indices = cathodeMesh.Indices.Select(x => (int)x).ToArray();
+            for (int i = 0; i + 2 < indices.Length; i += 3)
+            {
+                int a = indices[i], b = indices[i + 1], c = indices[i + 2];
+                indices[i] = a; indices[i + 1] = c; indices[i + 2] = b;
+            }
+            if (!assimpMesh.SetIndices(indices, 3))
             {
                 return assimpMesh;
             }
 
             for (int i = 0; i < cathodeMesh.Vertices.Count; i++)
             {
-                assimpMesh.Vertices.Add(new Assimp.Vector3D((float)cathodeMesh.Vertices[i].X, (float)cathodeMesh.Vertices[i].Y, (float)cathodeMesh.Vertices[i].Z));
+                assimpMesh.Vertices.Add(new Assimp.Vector3D((float)cathodeMesh.Vertices[i].X, (float)cathodeMesh.Vertices[i].Y, -(float)cathodeMesh.Vertices[i].Z));
             }
             for (int i = 0; i < cathodeMesh.Normals.Count; i++)
             {
@@ -580,7 +586,7 @@ namespace AlienPAK
             //binormals?
             for (int i = 0; i < cathodeMesh.Tangents.Count; i++)
             {
-                assimpMesh.Tangents.Add(new Assimp.Vector3D((float)cathodeMesh.Tangents[i].X, (float)cathodeMesh.Tangents[i].Y, (float)cathodeMesh.Tangents[i].Z));
+                assimpMesh.Tangents.Add(new Assimp.Vector3D((float)cathodeMesh.Tangents[i].X, (float)cathodeMesh.Tangents[i].Y, -(float)cathodeMesh.Tangents[i].Z));
             }
             int exportedUVs = 0;
             for (int i = 0; i < cathodeMesh.UVs.Length; i++)
