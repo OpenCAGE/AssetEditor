@@ -440,7 +440,7 @@ namespace AlienPAK
 
                 for (int x = 0; x < cathodeMesh.UVs[i].Count; x++)
                 {
-                    uvs.Add(new System.Windows.Point(cathodeMesh.UVs[i][x].X, 1.0f - cathodeMesh.UVs[i][x].Y));
+                    uvs.Add(new System.Windows.Point(cathodeMesh.UVs[i][x].X, cathodeMesh.UVs[i][x].Y));
                 }
                 break;
             }
