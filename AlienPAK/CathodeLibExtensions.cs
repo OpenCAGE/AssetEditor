@@ -35,7 +35,7 @@ namespace AlienPAK
     public static class CathodeLibExtensions
     {
         /* Convert a TEX4 to DDS */
-        public static byte[] ToDDS(this Textures.TEX4 texture, bool forceLowRes = false)
+        public static byte[] ToDDS(this Textures.TEX4 texture)
         {
             Textures.TEX4.Texture part = texture?.TextureStreamed?.Content != null ? texture.TextureStreamed : texture?.TexturePersistent?.Content != null ? texture.TexturePersistent : null;
             if (part == null) return null;
@@ -188,12 +188,12 @@ namespace AlienPAK
         }
 
         /* Convert a TEX4 to Bitmap */
-        public static Bitmap ToBitmap(this Textures.TEX4 texture, bool forceLowRes = false)
+        public static Bitmap ToBitmap(this Textures.TEX4 texture)
         {
-            byte[] content = texture?.ToDDS(forceLowRes);
+            byte[] content = texture?.ToDDS();
             return content?.ToBitmap();
         }
-        public static Bitmap ToBitmap(this byte[] content, bool forceLowRes = false)
+        public static Bitmap ToBitmap(this byte[] content)
         {
             if (content == null) return null;
             try
