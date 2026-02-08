@@ -1,4 +1,3 @@
-using CATHODE;
 using CathodeLib;
 using HelixToolkit.Wpf;
 using System;
@@ -145,54 +144,72 @@ namespace AlienPAK
                     double z = sinPhi * Math.Sin(theta);
                     positions.Add(new Point3D(x, y, z));
 
-                    double u, v;
-                    if (isCubemapStrip)
-                    {
-                        double ax = Math.Abs(x), ay = Math.Abs(y), az = Math.Abs(z);
-                        int face;
-                        double uf, vf;
-                        if (ax >= ay && ax >= az)
-                        {
-                            face = x > 0 ? 0 : 1;
-                            if (x > 0) { uf = (-z + 1) * 0.5; vf = (-y + 1) * 0.5; }
-                            else { uf = (z + 1) * 0.5; vf = (-y + 1) * 0.5; }
-                        }
-                        else if (ay >= ax && ay >= az)
-                        {
-                            face = y > 0 ? 2 : 3;
-                            if (y > 0) { uf = (x + 1) * 0.5; vf = (z + 1) * 0.5; }
-                            else { uf = (x + 1) * 0.5; vf = (-z + 1) * 0.5; }
-                        }
-                        else
-                        {
-                            face = z > 0 ? 4 : 5;
-                            if (z > 0) { uf = (x + 1) * 0.5; vf = (-y + 1) * 0.5; }
-                            else { uf = (-x + 1) * 0.5; vf = (-y + 1) * 0.5; }
-                        }
-                        u = (face + uf) / 6.0;
-                        v = vf;
-                    }
-                    else
+                    if (!isCubemapStrip)
                     {
                         double lon = Math.Atan2(z, x);
                         double lat = Math.Asin(Math.Max(-1, Math.Min(1, y)));
-                        u = lon / (2 * Math.PI) + 0.5;
-                        v = 0.5 - lat / Math.PI;
+                        double u = lon / (2 * Math.PI) + 0.5;
+                        double v = 0.5 - lat / Math.PI;
+                        textureCoords.Add(new System.Windows.Point(u, v));
                     }
-                    textureCoords.Add(new System.Windows.Point(u, v));
                 }
             }
 
-            for (int j = 0; j < phiSegments; j++)
+            if (isCubemapStrip)
             {
-                for (int i = 0; i < thetaSegments; i++)
+                int facePixels = texture.Width / 6;
+                double eps = (facePixels > 1) ? 0.5 / facePixels : 0.0;
+
+                var outPositions = new Point3DCollection();
+                var outTextureCoords = new PointCollection();
+                var outIndices = new Int32Collection();
+
+                for (int j = 0; j < phiSegments; j++)
                 {
-                    int i0 = j * (thetaSegments + 1) + i;
-                    int i1 = i0 + 1;
-                    int i2 = i0 + (thetaSegments + 1);
-                    int i3 = i2 + 1;
-                    indices.Add(i0); indices.Add(i2); indices.Add(i1);
-                    indices.Add(i1); indices.Add(i2); indices.Add(i3);
+                    for (int i = 0; i < thetaSegments; i++)
+                    {
+                        int i0 = j * (thetaSegments + 1) + i;
+                        int i1 = i0 + 1;
+                        int i2 = i0 + (thetaSegments + 1);
+                        int i3 = i2 + 1;
+
+                        Point3D p0 = positions[i0], p1 = positions[i1], p2 = positions[i2];
+                        Point3D c1 = new Point3D(
+                            (p0.X + p2.X + p1.X) / 3,
+                            (p0.Y + p2.Y + p1.Y) / 3,
+                            (p0.Z + p2.Z + p1.Z) / 3);
+                        int baseIdx = outPositions.Count;
+                        CubemapFaceUV(c1, p0, p1, p2, eps, outPositions, outTextureCoords);
+                        outIndices.Add(baseIdx); outIndices.Add(baseIdx + 1); outIndices.Add(baseIdx + 2);
+
+                        p0 = positions[i1]; p1 = positions[i3]; p2 = positions[i2];
+                        Point3D c2 = new Point3D(
+                            (p0.X + p1.X + p2.X) / 3,
+                            (p0.Y + p1.Y + p2.Y) / 3,
+                            (p0.Z + p1.Z + p2.Z) / 3);
+                        baseIdx = outPositions.Count;
+                        CubemapFaceUV(c2, p0, p1, p2, eps, outPositions, outTextureCoords);
+                        outIndices.Add(baseIdx); outIndices.Add(baseIdx + 1); outIndices.Add(baseIdx + 2);
+                    }
+                }
+
+                positions = outPositions;
+                textureCoords = outTextureCoords;
+                indices = outIndices;
+            }
+            else
+            {
+                for (int j = 0; j < phiSegments; j++)
+                {
+                    for (int i = 0; i < thetaSegments; i++)
+                    {
+                        int i0 = j * (thetaSegments + 1) + i;
+                        int i1 = i0 + 1;
+                        int i2 = i0 + (thetaSegments + 1);
+                        int i3 = i2 + 1;
+                        indices.Add(i0); indices.Add(i2); indices.Add(i1);
+                        indices.Add(i1); indices.Add(i2); indices.Add(i3);
+                    }
                 }
             }
 
@@ -212,6 +229,43 @@ namespace AlienPAK
             var group = new Model3DGroup() { Transform = Transform3D.Identity };
             group.Children.Add(model);
             return group;
+        }
+        private static void CubemapFaceUV(Point3D centroid, Point3D p0, Point3D p1, Point3D p2, double eps, Point3DCollection outPositions, PointCollection outTextureCoords)
+        {
+            double cx = centroid.X, cy = centroid.Y, cz = centroid.Z;
+            double ax = Math.Abs(cx), ay = Math.Abs(cy), az = Math.Abs(cz);
+            int face;
+            if (ax >= ay && ax >= az)
+                face = cx > 0 ? 0 : 1;
+            else if (ay >= ax && ay >= az)
+                face = cy > 0 ? 2 : 3;
+            else
+                face = cz > 0 ? 4 : 5;
+
+            foreach (Point3D p in new[] { p0, p1, p2 })
+            {
+                double x = p.X, y = p.Y, z = p.Z;
+                double uf, vf;
+                double inv;
+                switch (face)
+                {
+                    case 0: inv = 1.0 / (Math.Abs(x) + 1e-10); uf = (-z * inv + 1) * 0.5; vf = (-y * inv + 1) * 0.5; break;
+                    case 1: inv = 1.0 / (Math.Abs(x) + 1e-10); uf = (z * inv + 1) * 0.5; vf = (-y * inv + 1) * 0.5; break;
+                    case 2: inv = 1.0 / (Math.Abs(y) + 1e-10); uf = (x * inv + 1) * 0.5; vf = (z * inv + 1) * 0.5; break;
+                    case 3: inv = 1.0 / (Math.Abs(y) + 1e-10); uf = (x * inv + 1) * 0.5; vf = (-z * inv + 1) * 0.5; break;
+                    case 4: inv = 1.0 / (Math.Abs(z) + 1e-10); uf = (x * inv + 1) * 0.5; vf = (-y * inv + 1) * 0.5; break;
+                    default: inv = 1.0 / (Math.Abs(z) + 1e-10); uf = (-x * inv + 1) * 0.5; vf = (-y * inv + 1) * 0.5; break;
+                }
+                uf = Math.Max(0, Math.Min(1, uf));
+                vf = Math.Max(0, Math.Min(1, vf));
+                double ufInset = uf * (1 - 2 * eps) + eps;
+                double vfInset = vf * (1 - 2 * eps) + eps;
+                double u = (face + ufInset) / 6.0;
+                double v = vfInset;
+
+                outPositions.Add(p);
+                outTextureCoords.Add(new System.Windows.Point(u, v));
+            }
         }
 
         /* Show the level selection dropdown if requested */
