@@ -538,7 +538,7 @@ namespace AlienPAK
             throw new Exception("Unsupported VertexFormatType");
         }
 
-        public static Assimp.Material ToAssimpMaterial(this Materials.Material cathodeMaterial, int materialIndex, string diffuseTextureFileName = null)
+        public static Assimp.Material ToAssimpMaterial(this Materials.Material cathodeMaterial, int materialIndex, string diffuseTextureFileName = null, string normalMapTextureFileName = null)
         {
             Assimp.Material mat = new Assimp.Material();
             if (cathodeMaterial == null) return mat;
@@ -552,6 +552,14 @@ namespace AlienPAK
                 Assimp.TextureSlot slot = new Assimp.TextureSlot();
                 slot.FilePath = diffuseTextureFileName;
                 slot.TextureType = Assimp.TextureType.Diffuse;
+                slot.TextureIndex = 0;
+                mat.AddMaterialTexture(slot);
+            }
+            if (!string.IsNullOrEmpty(normalMapTextureFileName))
+            {
+                Assimp.TextureSlot slot = new Assimp.TextureSlot();
+                slot.FilePath = normalMapTextureFileName;
+                slot.TextureType = Assimp.TextureType.Normals;
                 slot.TextureIndex = 0;
                 mat.AddMaterialTexture(slot);
             }
@@ -675,27 +683,17 @@ namespace AlienPAK
                 }
             }
 
-            Directory.CreateDirectory(Path.Combine(modelDir, modelBase + " Textures"));
             string[] diffuseFileNames = new string[materials.Count];
+            string[] normalMapFileNames = new string[materials.Count];
             for (int i = 0; i < materials.Count; i++)
             {
-                Materials.Material mat = materials[i];
-                Textures.TEX4 diffuseTex = MaterialApplier.GetDiffuseTexture(mat);
-                if (diffuseTex != null)
-                {
-                    byte[] dds = diffuseTex.ToDDS();
-                    if (dds != null && dds.Length > 0)
-                    {
-                        string ddsFileName = modelBase + " Textures/" + i + "_" + Path.GetFileNameWithoutExtension(diffuseTex.Name) + ".dds";
-                        diffuseFileNames[i] = ddsFileName;
-                        File.WriteAllBytes(Path.Combine(modelDir, ddsFileName), dds);
-                    }
-                }
+                ExportModelSampler(MaterialApplier.GetDiffuseTexture(materials[i]), ref diffuseFileNames, i);
+                ExportModelSampler(MaterialApplier.GetNormalMapTexture(materials[i]), ref normalMapFileNames, i);
             }
 
             Scene scene = new Scene();
             for (int matIdx = 0; matIdx < materials.Count; matIdx++)
-                scene.Materials.Add(materials[matIdx].ToAssimpMaterial(matIdx, diffuseFileNames[matIdx]));
+                scene.Materials.Add(materials[matIdx].ToAssimpMaterial(matIdx, diffuseFileNames[matIdx], normalMapFileNames[matIdx]));
             if (scene.Materials.Count == 0)
                 scene.Materials.Add(new Assimp.Material());
 
@@ -725,6 +723,21 @@ namespace AlienPAK
             using (AssimpContext exp = new AssimpContext())
             {
                 exp.ExportFile(scene, filename, Path.GetExtension(filename).TrimStart('.').ToLowerInvariant());
+            }
+
+            void ExportModelSampler(Textures.TEX4 texture, ref string[] filenames, int index)
+            {
+                if (texture == null) return;
+
+                byte[] dds = texture.ToDDS();
+                if (dds != null && dds.Length > 0)
+                {
+                    string file = Path.GetFileName(texture.Name);
+                    string dir = modelDir + "/" + modelBase + " Textures/" + texture.Name.Substring(0, texture.Name.Length - file.Length);
+                    filenames[index] = dir + file + ".dds";
+                    Directory.CreateDirectory(dir);
+                    File.WriteAllBytes(filenames[index], dds);
+                }
             }
         }
 
