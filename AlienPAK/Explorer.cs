@@ -526,9 +526,6 @@ namespace AlienPAK
                                         {
                                             GeometryModel3D submeshGeo = submesh.ToGeometryModel3D();
                                             verts += submesh.VertexCount;
-
-                                            MaterialApplier.ApplyMaterial(submeshGeo, submesh.Material);
-
                                             model.Children.Add(submeshGeo); //TODO: are there some offsets/scaling we should be accounting for here?
                                         }
                                     }
@@ -547,9 +544,6 @@ namespace AlienPAK
                                     {
                                         GeometryModel3D submeshGeo = submesh.ToGeometryModel3D();
                                         verts += submesh.VertexCount;
-
-                                        MaterialApplier.ApplyMaterial(submeshGeo, submesh.Material);
-
                                         model.Children.Add(submeshGeo); //TODO: are there some offsets/scaling we should be accounting for here?
                                     }
                                 }

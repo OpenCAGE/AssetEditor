@@ -279,21 +279,8 @@ namespace AlienPAK
                     foreach (Models.CS2.Component.LOD.Submesh submesh in lod.Submeshes)
                     {
                         if (lookup != null && lookup.submesh != null && submesh != lookup.submesh) continue;
-                        GeometryModel3D mdl = submesh.ToGeometryModel3D();
-                        try
-                        {
-                            if (lookup?.submesh != null) materialInfo = submesh.Material.Name;
-                            if (_controls.renderMaterials.IsChecked == true)
-                            {
-                                MaterialApplier.ApplyMaterial(mdl, submesh.Material);
-                            }
-                        }
-                        catch (Exception ex2)
-                        {
-                            Console.WriteLine(ex2.ToString());
-                        }
-                        MeshGeometry3D geo = (MeshGeometry3D)mdl.Geometry;
-                        if (geo != null) vertCount += geo.Positions.Count;
+                        GeometryModel3D mdl = submesh.ToGeometryModel3D(_controls.renderMaterials.IsChecked == true);
+                        vertCount += submesh.VertexCount;
                         model.Children.Add(mdl); //TODO: are there some offsets/scaling we should be accounting for here?
                     }
                 }
