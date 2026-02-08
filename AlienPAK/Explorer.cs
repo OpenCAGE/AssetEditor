@@ -3,12 +3,14 @@ using Assimp.Unmanaged;
 using CATHODE;
 using CathodeLib;
 using DirectXTexNet;
+using HelixToolkit.Wpf;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Numerics;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Runtime.Remoting.Metadata;
@@ -498,7 +500,10 @@ namespace AlienPAK
                             byte[] content = texture?.ToDDS();
                             preview.ShowFunctionButtons(Functionality, LaunchMode, true);
                             preview.SetFileInfo(Path.GetFileName(nodeVal), content?.Length.ToString());
-                            preview.SetImagePreview(content);
+                            if (texture != null && texture.StateFlags.HasFlag(Textures.TextureStateFlag.CUBE))
+                                preview.SetCubemapPreview(content);
+                            else
+                                preview.SetImagePreview(content);
                             break;
                     }
                     break;

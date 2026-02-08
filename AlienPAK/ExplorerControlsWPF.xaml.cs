@@ -1,5 +1,6 @@
 using CATHODE;
 using CathodeLib;
+using HelixToolkit.Wpf;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
@@ -10,6 +11,7 @@ using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Interop;
+using System.Windows.Media;
 using System.Windows.Media.Media3D;
 using System.Xml.Linq;
 
@@ -83,7 +85,7 @@ namespace AlienPAK
         }
 
         /* Show the model preview for the selected file in UI */
-        public void SetModelPreview(Model3DGroup content)
+        public void SetModelPreview(Model3DGroup content, bool zoomExtents = true)
         {
             modelPreviewGroup.Visibility = Visibility.Visible;
             imagePreviewGroup.Visibility = Visibility.Collapsed;
@@ -93,7 +95,123 @@ namespace AlienPAK
             filePreviewModelContainer.ModelUpDirection = new Vector3D(0, 1, 0);
             filePreviewModelContainer.Camera.UpDirection = new Vector3D(0, 1, 0);
             filePreviewModelContainer.Camera.LookDirection = new Vector3D(-0.5, -0.5, -1.0f);
-            filePreviewModelContainer.ZoomExtents();
+            
+            if (zoomExtents)
+                filePreviewModelContainer.ZoomExtents();
+        }
+
+        /* Show cubemap texture on a sphere in the model viewport so the user can orbit and look around */
+        public void SetCubemapPreview(byte[] ddsContent)
+        {
+            Bitmap bmp = ddsContent?.ToBitmap();
+            if (bmp == null)
+            {
+                modelPreviewGroup.Visibility = Visibility.Collapsed;
+                imagePreviewGroup.Visibility = Visibility.Collapsed;
+                UpdatePreviewRowHeight();
+                return;
+            }
+
+            filePreviewModelContainer.Camera = new PerspectiveCamera();
+            filePreviewModelContainer.CameraMode = CameraMode.FixedPosition;
+            filePreviewModelContainer.Camera.Position = new Point3D(0, 0, 0);
+
+            filePreviewModelContainer.IsZoomEnabled = false;
+            filePreviewModelContainer.IsMoveEnabled = false;
+            filePreviewModelContainer.ShowViewCube = false;
+
+            Model3DGroup cubemapModel = CreateSphereWithTexture(bmp);
+            SetModelPreview(cubemapModel, false);
+        }
+        private static Model3DGroup CreateSphereWithTexture(Bitmap texture)
+        {
+            const int thetaSegments = 48;
+            const int phiSegments = 24;
+            bool isCubemapStrip = texture.Width >= 4 * texture.Height;
+
+            var positions = new Point3DCollection();
+            var textureCoords = new PointCollection();
+            var indices = new Int32Collection();
+
+            for (int j = 0; j <= phiSegments; j++)
+            {
+                double phi = Math.PI * j / phiSegments;
+                double y = Math.Cos(phi);
+                double sinPhi = Math.Sin(phi);
+                for (int i = 0; i <= thetaSegments; i++)
+                {
+                    double theta = 2 * Math.PI * i / thetaSegments;
+                    double x = sinPhi * Math.Cos(theta);
+                    double z = sinPhi * Math.Sin(theta);
+                    positions.Add(new Point3D(x, y, z));
+
+                    double u, v;
+                    if (isCubemapStrip)
+                    {
+                        double ax = Math.Abs(x), ay = Math.Abs(y), az = Math.Abs(z);
+                        int face;
+                        double uf, vf;
+                        if (ax >= ay && ax >= az)
+                        {
+                            face = x > 0 ? 0 : 1;
+                            if (x > 0) { uf = (-z + 1) * 0.5; vf = (-y + 1) * 0.5; }
+                            else { uf = (z + 1) * 0.5; vf = (-y + 1) * 0.5; }
+                        }
+                        else if (ay >= ax && ay >= az)
+                        {
+                            face = y > 0 ? 2 : 3;
+                            if (y > 0) { uf = (x + 1) * 0.5; vf = (z + 1) * 0.5; }
+                            else { uf = (x + 1) * 0.5; vf = (-z + 1) * 0.5; }
+                        }
+                        else
+                        {
+                            face = z > 0 ? 4 : 5;
+                            if (z > 0) { uf = (x + 1) * 0.5; vf = (-y + 1) * 0.5; }
+                            else { uf = (-x + 1) * 0.5; vf = (-y + 1) * 0.5; }
+                        }
+                        u = (face + uf) / 6.0;
+                        v = vf;
+                    }
+                    else
+                    {
+                        double lon = Math.Atan2(z, x);
+                        double lat = Math.Asin(Math.Max(-1, Math.Min(1, y)));
+                        u = lon / (2 * Math.PI) + 0.5;
+                        v = 0.5 - lat / Math.PI;
+                    }
+                    textureCoords.Add(new System.Windows.Point(u, v));
+                }
+            }
+
+            for (int j = 0; j < phiSegments; j++)
+            {
+                for (int i = 0; i < thetaSegments; i++)
+                {
+                    int i0 = j * (thetaSegments + 1) + i;
+                    int i1 = i0 + 1;
+                    int i2 = i0 + (thetaSegments + 1);
+                    int i3 = i2 + 1;
+                    indices.Add(i0); indices.Add(i2); indices.Add(i1);
+                    indices.Add(i1); indices.Add(i2); indices.Add(i3);
+                }
+            }
+
+            var geometry = new MeshGeometry3D
+            {
+                Positions = positions,
+                TextureCoordinates = textureCoords,
+                TriangleIndices = indices
+            };
+
+            ImageSource imageSource = texture.ToImageSource();
+            var brush = new ImageBrush(imageSource);
+            var material = new DiffuseMaterial(brush);
+            var backMaterial = new DiffuseMaterial(brush);
+
+            var model = new GeometryModel3D(geometry, material) { BackMaterial = backMaterial };
+            var group = new Model3DGroup() { Transform = Transform3D.Identity };
+            group.Children.Add(model);
+            return group;
         }
 
         /* Show the level selection dropdown if requested */

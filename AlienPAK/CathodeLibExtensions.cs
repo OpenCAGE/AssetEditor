@@ -195,49 +195,207 @@ namespace AlienPAK
         }
         public static Bitmap ToBitmap(this byte[] content, bool forceLowRes = false)
         {
-            Bitmap toReturn = null;
             if (content == null) return null;
             try
             {
-                MemoryStream imageStream = new MemoryStream(content);
-                using (var image = Pfim.Pfim.FromStream(imageStream))
+                TryParseDdsCubemap(content, out uint width, out uint height, out uint mipCount, out DXGI_FORMAT dxgiFormat, out int pixelDataOffset, out bool isCubemap);
+                if (isCubemap)
                 {
-                    PixelFormat format = PixelFormat.DontCare;
-                    switch (image.Format)
-                    {
-                        case Pfim.ImageFormat.Rgba32:
-                            format = PixelFormat.Format32bppArgb;
-                            break;
-                        case Pfim.ImageFormat.Rgb24:
-                            format = PixelFormat.Format24bppRgb;
-                            break;
-                        case Pfim.ImageFormat.Rgb8:
-                            format = PixelFormat.Format8bppIndexed;
-                            break;
-                        default:
-                            Console.WriteLine("Unsupported DDS: " + image.Format);
-                            break;
-                    }
-                    if (format != PixelFormat.DontCare)
-                    {
-                        var handle = GCHandle.Alloc(image.Data, GCHandleType.Pinned);
-                        try
-                        {
-                            var data = Marshal.UnsafeAddrOfPinnedArrayElement(image.Data, 0);
-                            toReturn = new Bitmap(image.Width, image.Height, image.Stride, format, data);
-                        }
-                        finally
-                        {
-                            handle.Free();
-                        }
-                    }
+                    return ToBitmapCubemapStrip(content, width, height, mipCount, dxgiFormat, pixelDataOffset);
+                }
+                else
+                {
+                    return DecodeDdsToBitmap(content);
                 }
             }
             catch
             {
                 return null;
             }
-            return toReturn;
+        }
+
+        /* Parse DDS header to get dimensions, format, and whether it is a cubemap. Returns true if valid DX10 DDS. */
+        private static bool TryParseDdsCubemap(byte[] content, out uint width, out uint height, out uint mipCount, out DXGI_FORMAT dxgiFormat, out int pixelDataOffset, out bool isCubemap)
+        {
+            width = height = mipCount = 0;
+            dxgiFormat = 0;
+            pixelDataOffset = 0;
+            isCubemap = false;
+            if (content == null || content.Length < 148) return false;
+            try
+            {
+                using (var ms = new MemoryStream(content))
+                using (var reader = new BinaryReader(ms))
+                {
+                    if (reader.ReadUInt32() != 0x20534444) return false; // "DDS "
+                    DDSHeader ddsHeader = Utilities.Consume<DDSHeader>(reader);
+                    if (ddsHeader.mPixelFormat.mFourCC[0] != 'D' || ddsHeader.mPixelFormat.mFourCC[1] != 'X' ||
+                        ddsHeader.mPixelFormat.mFourCC[2] != '1' || ddsHeader.mPixelFormat.mFourCC[3] != '0')
+                        return false;
+                    DX10Header dx10Header = Utilities.Consume<DX10Header>(reader);
+                    pixelDataOffset = (int)reader.BaseStream.Position;
+                    width = ddsHeader.mWidth;
+                    height = ddsHeader.mHeight;
+                    mipCount = ddsHeader.mMipMapCount > 0 ? ddsHeader.mMipMapCount : 1;
+                    dxgiFormat = (DXGI_FORMAT)dx10Header.mDXGIFormat;
+                    isCubemap = ddsHeader.mCaps2.HasFlag(DDSCaps2.DDSCAPS2_CUBEMAP);
+                    return true;
+                }
+            }
+            catch { return false; }
+        }
+
+        /* Work out the total bytes for one face of a 2D texture (all mip levels). */
+        private static int GetDdsFaceSize(uint width, uint height, uint mipCount, DXGI_FORMAT format)
+        {
+            int total = 0;
+            uint w = width, h = height;
+            for (uint m = 0; m < mipCount; m++)
+            {
+                if (w == 0) w = 1;
+                if (h == 0) h = 1;
+                total += GetDdsSurfaceSize(w, h, format);
+                w /= 2; h /= 2;
+            }
+            return total;
+        }
+        private static int GetDdsSurfaceSize(uint width, uint height, DXGI_FORMAT format)
+        {
+            switch (format)
+            {
+                case DXGI_FORMAT.DXGI_FORMAT_BC1_UNORM:
+                case DXGI_FORMAT.DXGI_FORMAT_BC1_UNORM_SRGB:
+                    return (int)(((width + 3) / 4) * ((height + 3) / 4) * 8);
+                case DXGI_FORMAT.DXGI_FORMAT_BC2_UNORM:
+                case DXGI_FORMAT.DXGI_FORMAT_BC2_UNORM_SRGB:
+                case DXGI_FORMAT.DXGI_FORMAT_BC3_UNORM:
+                case DXGI_FORMAT.DXGI_FORMAT_BC3_UNORM_SRGB:
+                case DXGI_FORMAT.DXGI_FORMAT_BC5_UNORM:
+                    return (int)(((width + 3) / 4) * ((height + 3) / 4) * 16);
+                case DXGI_FORMAT.DXGI_FORMAT_BC6H_UF16:
+                case DXGI_FORMAT.DXGI_FORMAT_BC7_UNORM:
+                case DXGI_FORMAT.DXGI_FORMAT_BC7_UNORM_SRGB:
+                    return (int)(((width + 3) / 4) * ((height + 3) / 4) * 16);
+                case DXGI_FORMAT.DXGI_FORMAT_B8G8R8A8_UNORM:
+                case DXGI_FORMAT.DXGI_FORMAT_R8G8B8A8_UNORM:
+                    return (int)(width * height * 4);
+                case DXGI_FORMAT.DXGI_FORMAT_B8G8R8X8_UNORM:
+               //case DXGI_FORMAT.DXGI_FORMAT_R8G8B8_UNORM:
+                    return (int)(width * height * 4);
+                case DXGI_FORMAT.DXGI_FORMAT_A8_UNORM:
+                case DXGI_FORMAT.DXGI_FORMAT_R8_UNORM:
+                    return (int)(width * height);
+                case DXGI_FORMAT.DXGI_FORMAT_R16_FLOAT:
+                    return (int)(width * height * 2);
+                case DXGI_FORMAT.DXGI_FORMAT_R32G32B32A32_FLOAT:
+                    return (int)(width * height * 16);
+                case DXGI_FORMAT.DXGI_FORMAT_R16G16B16A16_UNORM:
+                    return (int)(width * height * 8);
+                default:
+                    return 0;
+            }
+        }
+
+        /* Decode all 6 cubemap faces and stitch into a horizontal strip bitmap */
+        private static Bitmap ToBitmapCubemapStrip(byte[] content, uint width, uint height, uint mipCount, DXGI_FORMAT dxgiFormat, int pixelDataOffset)
+        {
+            int faceSize = GetDdsFaceSize(width, height, mipCount, dxgiFormat);
+            if (faceSize <= 0) return null;
+            int totalFacesSize = faceSize * 6;
+            if (pixelDataOffset + totalFacesSize > content.Length) return null;
+
+            var faceBitmaps = new List<Bitmap>(6);
+            try
+            {
+                for (int face = 0; face < 6; face++)
+                {
+                    byte[] faceData = new byte[faceSize];
+                    Buffer.BlockCopy(content, pixelDataOffset + face * faceSize, faceData, 0, faceSize);
+                    byte[] singleFaceDds = BuildSingleFaceDds((int)width, (int)height, (int)mipCount, dxgiFormat, faceData);
+                    if (singleFaceDds == null) return null;
+                    Bitmap bmp = DecodeDdsToBitmap(singleFaceDds);
+                    if (bmp == null) return null;
+                    faceBitmaps.Add(bmp);
+                }
+                int stripWidth = (int)width * 6;
+                int stripHeight = (int)height;
+                var strip = new Bitmap(stripWidth, stripHeight, PixelFormat.Format32bppArgb);
+                using (var g = Graphics.FromImage(strip))
+                {
+                    for (int i = 0; i < 6; i++)
+                        g.DrawImage(faceBitmaps[i], i * (int)width, 0, (int)width, (int)height);
+                }
+                foreach (var b in faceBitmaps) b?.Dispose();
+                return strip;
+            }
+            catch
+            {
+                foreach (var b in faceBitmaps) b?.Dispose();
+                return null;
+            }
+        }
+
+        /* Build a minimal DX10 DDS containing a single 2D face (no cubemap) */
+        private static byte[] BuildSingleFaceDds(int width, int height, int mipCount, DXGI_FORMAT dxgiFormat, byte[] facePixelData)
+        {
+            var ddsHeader = new DDSHeader();
+            ddsHeader.mWidth = (uint)width;
+            ddsHeader.mHeight = (uint)height;
+            ddsHeader.mDepth = 1;
+            ddsHeader.mMipMapCount = (uint)mipCount;
+            ddsHeader.mFlags = DDSFlags.DDSD_CAPS | DDSFlags.DDSD_HEIGHT | DDSFlags.DDSD_WIDTH | DDSFlags.DDSD_PIXELFORMAT;
+            if (mipCount > 1) { ddsHeader.mFlags |= DDSFlags.DDSD_MIPMAPCOUNT; ddsHeader.mCaps1 |= DDSCaps.DDSCAPS_COMPLEX | DDSCaps.DDSCAPS_MIPMAP; }
+            ddsHeader.mCaps1 |= DDSCaps.DDSCAPS_TEXTURE;
+            ddsHeader.mCaps2 = 0;
+
+            var dx10Header = new DX10Header();
+            dx10Header.mDXGIFormat = dxgiFormat;
+            dx10Header.mResourceDimension = D3D10_RESOURCE_DIMENSION.D3D10_RESOURCE_DIMENSION_TEXTURE2D;
+            dx10Header.mMiscFlags = 0;
+            dx10Header.mArraySize = 1;
+
+            using (var ms = new MemoryStream())
+            using (var bw = new BinaryWriter(ms))
+            {
+                bw.Write(new char[] { 'D', 'D', 'S', ' ' });
+                Utilities.Write(bw, ddsHeader);
+                Utilities.Write(bw, dx10Header);
+                bw.Write(facePixelData);
+                return ms.ToArray();
+            }
+        }
+
+        /*  Decode DDS bytes to a Bitmap */
+        private static Bitmap DecodeDdsToBitmap(byte[] ddsContent)
+        {
+            if (ddsContent == null) return null;
+            try
+            {
+                using (var imageStream = new MemoryStream(ddsContent))
+                using (var image = Pfim.Pfim.FromStream(imageStream))
+                {
+                    PixelFormat format = PixelFormat.DontCare;
+                    switch (image.Format)
+                    {
+                        case Pfim.ImageFormat.Rgba32: format = PixelFormat.Format32bppArgb; break;
+                        case Pfim.ImageFormat.Rgb24: format = PixelFormat.Format24bppRgb; break;
+                        case Pfim.ImageFormat.Rgb8: format = PixelFormat.Format8bppIndexed; break;
+                        default: return null;
+                    }
+                    if (format == PixelFormat.DontCare) return null;
+                    Bitmap temp;
+                    var handle = GCHandle.Alloc(image.Data, GCHandleType.Pinned);
+                    try
+                    {
+                        var data = Marshal.UnsafeAddrOfPinnedArrayElement(image.Data, 0);
+                        temp = new Bitmap(image.Width, image.Height, image.Stride, format, data);
+                    }
+                    finally { handle.Free(); }
+                    using (temp)
+                        return new Bitmap(temp);
+                }
+            }
+            catch { return null; }
         }
 
         [DllImport("gdi32.dll", EntryPoint = "DeleteObject")]
