@@ -7,6 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
 using System.Windows.Media.Media3D;
 
 namespace AlienPAK
@@ -73,6 +74,15 @@ namespace AlienPAK
             if (brush != null)
             {
                 System.Windows.Media.Color tintColor = GetDiffuseTint(material);
+                if (!IsColorTransparentOrWhite(tintColor))
+                {
+                    ImageSource tintedSource = ApplyTintToImageSource(brush.ImageSource, tintColor);
+                    if (tintedSource != null)
+                    {
+                        brush = new ImageBrush(tintedSource);
+                        tintColor = System.Windows.Media.Colors.White;
+                    }
+                }
 
                 float uvScale = GetDiffuseUvScale(material);
                 if (geometryModel.Geometry is MeshGeometry3D meshGeometry && meshGeometry.TextureCoordinates != null)
@@ -105,6 +115,40 @@ namespace AlienPAK
             Textures.TEX4 tex = GetDiffuseTexture(material);
             ImageSource imageSource = tex?.ToDDS()?.ToBitmap()?.ToImageSource();
             return imageSource != null ? new ImageBrush(imageSource) : null;
+        }
+
+        private static ImageSource ApplyTintToImageSource(ImageSource source, System.Windows.Media.Color tint)
+        {
+            if (source == null) return null;
+            BitmapSource bitmap = source as BitmapSource;
+            if (bitmap == null) return source;
+
+            if (bitmap.Format != System.Windows.Media.PixelFormats.Bgra32)
+            {
+                var converted = new FormatConvertedBitmap(bitmap, System.Windows.Media.PixelFormats.Bgra32, null, 0);
+                converted.Freeze();
+                bitmap = converted;
+            }
+
+            int w = bitmap.PixelWidth;
+            int h = bitmap.PixelHeight;
+            int stride = (w * 4 + 3) & ~3;
+            byte[] pixels = new byte[h * stride];
+            bitmap.CopyPixels(pixels, stride, 0);
+
+            float tr = tint.R / 255f, tg = tint.G / 255f, tb = tint.B / 255f, ta = tint.A / 255f;
+            for (int i = 0; i < pixels.Length; i += 4)
+            {
+                pixels[i] = (byte)Math.Max(0, Math.Min(255, (int)(pixels[i] * tb)));
+                pixels[i + 1] = (byte)Math.Max(0, Math.Min(255, (int)(pixels[i + 1] * tg)));
+                pixels[i + 2] = (byte)Math.Max(0, Math.Min(255, (int)(pixels[i + 2] * tr)));
+                pixels[i + 3] = (byte)Math.Max(0, Math.Min(255, (int)(pixels[i + 3] * ta)));
+            }
+
+            var result = new WriteableBitmap(w, h, bitmap.DpiX, bitmap.DpiY, System.Windows.Media.PixelFormats.Bgra32, null);
+            result.WritePixels(new Int32Rect(0, 0, w, h), pixels, stride, 0);
+            result.Freeze();
+            return result;
         }
 
         private static float GetDiffuseUvScale(Materials.Material material)
