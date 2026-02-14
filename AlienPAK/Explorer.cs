@@ -271,7 +271,10 @@ namespace AlienPAK
 
             switch (nodeType)
             {
+                case TreeItemType.DIRECTORY:
                 case TreeItemType.EXPORTABLE_FILE:
+                    if (nodeType == TreeItemType.DIRECTORY && LaunchMode != PAKType.MODELS) return;
+
                     DialogResult ConfirmRemoval = MessageBox.Show("Are you sure you would like to remove this file?", "About to remove selected file...", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
                     if (ConfirmRemoval != DialogResult.Yes) return;
 
@@ -333,7 +336,7 @@ namespace AlienPAK
                     if (nodeType == TreeItemType.DIRECTORY)
                         break;
 
-                    string filter = "File|*" + Path.GetExtension(FileTree.SelectedNode.Text);
+                    string filter = "File|*" + (LaunchMode == PAKType.TEXTURES ? ".DDS" : Path.GetExtension(FileTree.SelectedNode.Text));
 
                     OpenFileDialog FilePicker = new OpenFileDialog();
                     FilePicker.Filter = filter;
@@ -694,6 +697,22 @@ namespace AlienPAK
                 }
                 catch { }
             }
+
+            PatchManager.Platform? platform = null;
+            switch (OpenCAGE.SettingsManager.GetString("META_GameVersion"))
+            {
+                case "STEAM":
+                    platform = PatchManager.Platform.STEAM;
+                    break;
+                case "EPIC_GAMES_STORE":
+                    platform = PatchManager.Platform.EPIC_GAMES_STORE;
+                    break;
+                case "GOG":
+                    platform = PatchManager.Platform.GOG;
+                    break;
+            }
+            if (platform.HasValue)
+                PatchManager.PerformRecommendedPatches(platform.Value, SharedData.pathToAI);
 
             Archive?.Save();
             LevelContent?.Save();
