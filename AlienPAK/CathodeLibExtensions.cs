@@ -35,7 +35,7 @@ namespace AlienPAK
     public static class CathodeLibExtensions
     {
         /* Convert a TEX4 to DDS */
-        public static byte[] ToDDS(this Textures.TEX4 texture, bool forceLowRes = false)
+        public static byte[] ToDDS(this Textures.TEX4 texture)
         {
             Textures.TEX4.Texture part = texture?.TextureStreamed?.Content != null ? texture.TextureStreamed : texture?.TexturePersistent?.Content != null ? texture.TexturePersistent : null;
             if (part == null) return null;
@@ -106,10 +106,12 @@ namespace AlienPAK
         }
 
         /* Convert DDS to a TEX4 Part */
-        public static Textures.TEX4.Texture ToTEX4Part(this byte[] content, out Textures.TextureFormat format)
+        public static Textures.TEX4.Texture ToTEX4Part(this byte[] content, out Textures.TextureFormat format, out Textures.TextureStateFlag state, out Textures.TextureUsageFlag usage)
         {
             Textures.TEX4.Texture part = new TEX4.Texture();
             format = TextureFormat.AUTO;
+            state = TextureStateFlag.ALLOW_SRGB;
+            usage = TextureUsageFlag.DEFAULT | TextureUsageFlag.IS_LEVEL_PACK;
 
             using (MemoryStream stream = new MemoryStream(content))
             using (BinaryReader reader = new BinaryReader(stream))
@@ -123,6 +125,13 @@ namespace AlienPAK
 
                 if (dx10Header == null)
                     return null;
+
+                if (ddsHeader.mCaps2.HasFlag(DDSCaps2.DDSCAPS2_CUBEMAP))
+                    state |= TextureStateFlag.CUBE;
+                if (ddsHeader.mCaps2.HasFlag(DDSCaps2.DDSCAPS2_VOLUME))
+                    state |= TextureStateFlag.VOLUME;
+                if (ddsHeader.mPixelFormat.mFlags.HasFlag(DDSPixelFormat.DDPF_ALPHAPIXELS))
+                    state |= TextureStateFlag.NON_SOLID;
 
                 part.Depth = (short)ddsHeader.mDepth;
                 part.MipLevels = (short)ddsHeader.mMipMapCount;
@@ -179,56 +188,214 @@ namespace AlienPAK
         }
 
         /* Convert a TEX4 to Bitmap */
-        public static Bitmap ToBitmap(this Textures.TEX4 texture, bool forceLowRes = false)
+        public static Bitmap ToBitmap(this Textures.TEX4 texture)
         {
-            byte[] content = texture?.ToDDS(forceLowRes);
+            byte[] content = texture?.ToDDS();
             return content?.ToBitmap();
         }
-        public static Bitmap ToBitmap(this byte[] content, bool forceLowRes = false)
+        public static Bitmap ToBitmap(this byte[] content)
         {
-            Bitmap toReturn = null;
             if (content == null) return null;
             try
             {
-                MemoryStream imageStream = new MemoryStream(content);
-                using (var image = Pfim.Pfim.FromStream(imageStream))
+                TryParseDdsCubemap(content, out uint width, out uint height, out uint mipCount, out DXGI_FORMAT dxgiFormat, out int pixelDataOffset, out bool isCubemap);
+                if (isCubemap)
                 {
-                    PixelFormat format = PixelFormat.DontCare;
-                    switch (image.Format)
-                    {
-                        case Pfim.ImageFormat.Rgba32:
-                            format = PixelFormat.Format32bppArgb;
-                            break;
-                        case Pfim.ImageFormat.Rgb24:
-                            format = PixelFormat.Format24bppRgb;
-                            break;
-                        case Pfim.ImageFormat.Rgb8:
-                            format = PixelFormat.Format8bppIndexed;
-                            break;
-                        default:
-                            Console.WriteLine("Unsupported DDS: " + image.Format);
-                            break;
-                    }
-                    if (format != PixelFormat.DontCare)
-                    {
-                        var handle = GCHandle.Alloc(image.Data, GCHandleType.Pinned);
-                        try
-                        {
-                            var data = Marshal.UnsafeAddrOfPinnedArrayElement(image.Data, 0);
-                            toReturn = new Bitmap(image.Width, image.Height, image.Stride, format, data);
-                        }
-                        finally
-                        {
-                            handle.Free();
-                        }
-                    }
+                    return ToBitmapCubemapStrip(content, width, height, mipCount, dxgiFormat, pixelDataOffset);
+                }
+                else
+                {
+                    return DecodeDdsToBitmap(content);
                 }
             }
             catch
             {
                 return null;
             }
-            return toReturn;
+        }
+
+        /* Parse DDS header to get dimensions, format, and whether it is a cubemap. Returns true if valid DX10 DDS. */
+        private static bool TryParseDdsCubemap(byte[] content, out uint width, out uint height, out uint mipCount, out DXGI_FORMAT dxgiFormat, out int pixelDataOffset, out bool isCubemap)
+        {
+            width = height = mipCount = 0;
+            dxgiFormat = 0;
+            pixelDataOffset = 0;
+            isCubemap = false;
+            if (content == null || content.Length < 148) return false;
+            try
+            {
+                using (var ms = new MemoryStream(content))
+                using (var reader = new BinaryReader(ms))
+                {
+                    if (reader.ReadUInt32() != 0x20534444) return false; // "DDS "
+                    DDSHeader ddsHeader = Utilities.Consume<DDSHeader>(reader);
+                    if (ddsHeader.mPixelFormat.mFourCC[0] != 'D' || ddsHeader.mPixelFormat.mFourCC[1] != 'X' ||
+                        ddsHeader.mPixelFormat.mFourCC[2] != '1' || ddsHeader.mPixelFormat.mFourCC[3] != '0')
+                        return false;
+                    DX10Header dx10Header = Utilities.Consume<DX10Header>(reader);
+                    pixelDataOffset = (int)reader.BaseStream.Position;
+                    width = ddsHeader.mWidth;
+                    height = ddsHeader.mHeight;
+                    mipCount = ddsHeader.mMipMapCount > 0 ? ddsHeader.mMipMapCount : 1;
+                    dxgiFormat = (DXGI_FORMAT)dx10Header.mDXGIFormat;
+                    isCubemap = ddsHeader.mCaps2.HasFlag(DDSCaps2.DDSCAPS2_CUBEMAP);
+                    return true;
+                }
+            }
+            catch { return false; }
+        }
+
+        /* Work out the total bytes for one face of a 2D texture (all mip levels). */
+        private static int GetDdsFaceSize(uint width, uint height, uint mipCount, DXGI_FORMAT format)
+        {
+            int total = 0;
+            uint w = width, h = height;
+            for (uint m = 0; m < mipCount; m++)
+            {
+                if (w == 0) w = 1;
+                if (h == 0) h = 1;
+                total += GetDdsSurfaceSize(w, h, format);
+                w /= 2; h /= 2;
+            }
+            return total;
+        }
+        private static int GetDdsSurfaceSize(uint width, uint height, DXGI_FORMAT format)
+        {
+            switch (format)
+            {
+                case DXGI_FORMAT.DXGI_FORMAT_BC1_UNORM:
+                case DXGI_FORMAT.DXGI_FORMAT_BC1_UNORM_SRGB:
+                    return (int)(((width + 3) / 4) * ((height + 3) / 4) * 8);
+                case DXGI_FORMAT.DXGI_FORMAT_BC2_UNORM:
+                case DXGI_FORMAT.DXGI_FORMAT_BC2_UNORM_SRGB:
+                case DXGI_FORMAT.DXGI_FORMAT_BC3_UNORM:
+                case DXGI_FORMAT.DXGI_FORMAT_BC3_UNORM_SRGB:
+                case DXGI_FORMAT.DXGI_FORMAT_BC5_UNORM:
+                    return (int)(((width + 3) / 4) * ((height + 3) / 4) * 16);
+                case DXGI_FORMAT.DXGI_FORMAT_BC6H_UF16:
+                case DXGI_FORMAT.DXGI_FORMAT_BC7_UNORM:
+                case DXGI_FORMAT.DXGI_FORMAT_BC7_UNORM_SRGB:
+                    return (int)(((width + 3) / 4) * ((height + 3) / 4) * 16);
+                case DXGI_FORMAT.DXGI_FORMAT_B8G8R8A8_UNORM:
+                case DXGI_FORMAT.DXGI_FORMAT_R8G8B8A8_UNORM:
+                    return (int)(width * height * 4);
+                case DXGI_FORMAT.DXGI_FORMAT_B8G8R8X8_UNORM:
+               //case DXGI_FORMAT.DXGI_FORMAT_R8G8B8_UNORM:
+                    return (int)(width * height * 4);
+                case DXGI_FORMAT.DXGI_FORMAT_A8_UNORM:
+                case DXGI_FORMAT.DXGI_FORMAT_R8_UNORM:
+                    return (int)(width * height);
+                case DXGI_FORMAT.DXGI_FORMAT_R16_FLOAT:
+                    return (int)(width * height * 2);
+                case DXGI_FORMAT.DXGI_FORMAT_R32G32B32A32_FLOAT:
+                    return (int)(width * height * 16);
+                case DXGI_FORMAT.DXGI_FORMAT_R16G16B16A16_UNORM:
+                    return (int)(width * height * 8);
+                default:
+                    return 0;
+            }
+        }
+
+        /* Decode all 6 cubemap faces and stitch into a horizontal strip bitmap */
+        private static Bitmap ToBitmapCubemapStrip(byte[] content, uint width, uint height, uint mipCount, DXGI_FORMAT dxgiFormat, int pixelDataOffset)
+        {
+            int faceSize = GetDdsFaceSize(width, height, mipCount, dxgiFormat);
+            if (faceSize <= 0) return null;
+            int totalFacesSize = faceSize * 6;
+            if (pixelDataOffset + totalFacesSize > content.Length) return null;
+
+            var faceBitmaps = new List<Bitmap>(6);
+            try
+            {
+                for (int face = 0; face < 6; face++)
+                {
+                    byte[] faceData = new byte[faceSize];
+                    Buffer.BlockCopy(content, pixelDataOffset + face * faceSize, faceData, 0, faceSize);
+                    byte[] singleFaceDds = BuildSingleFaceDds((int)width, (int)height, (int)mipCount, dxgiFormat, faceData);
+                    if (singleFaceDds == null) return null;
+                    Bitmap bmp = DecodeDdsToBitmap(singleFaceDds);
+                    if (bmp == null) return null;
+                    faceBitmaps.Add(bmp);
+                }
+                int stripWidth = (int)width * 6;
+                int stripHeight = (int)height;
+                var strip = new Bitmap(stripWidth, stripHeight, PixelFormat.Format32bppArgb);
+                using (var g = Graphics.FromImage(strip))
+                {
+                    for (int i = 0; i < 6; i++)
+                        g.DrawImage(faceBitmaps[i], i * (int)width, 0, (int)width, (int)height);
+                }
+                foreach (var b in faceBitmaps) b?.Dispose();
+                return strip;
+            }
+            catch
+            {
+                foreach (var b in faceBitmaps) b?.Dispose();
+                return null;
+            }
+        }
+
+        /* Build a minimal DX10 DDS containing a single 2D face (no cubemap) */
+        private static byte[] BuildSingleFaceDds(int width, int height, int mipCount, DXGI_FORMAT dxgiFormat, byte[] facePixelData)
+        {
+            var ddsHeader = new DDSHeader();
+            ddsHeader.mWidth = (uint)width;
+            ddsHeader.mHeight = (uint)height;
+            ddsHeader.mDepth = 1;
+            ddsHeader.mMipMapCount = (uint)mipCount;
+            ddsHeader.mFlags = DDSFlags.DDSD_CAPS | DDSFlags.DDSD_HEIGHT | DDSFlags.DDSD_WIDTH | DDSFlags.DDSD_PIXELFORMAT;
+            if (mipCount > 1) { ddsHeader.mFlags |= DDSFlags.DDSD_MIPMAPCOUNT; ddsHeader.mCaps1 |= DDSCaps.DDSCAPS_COMPLEX | DDSCaps.DDSCAPS_MIPMAP; }
+            ddsHeader.mCaps1 |= DDSCaps.DDSCAPS_TEXTURE;
+            ddsHeader.mCaps2 = 0;
+
+            var dx10Header = new DX10Header();
+            dx10Header.mDXGIFormat = dxgiFormat;
+            dx10Header.mResourceDimension = D3D10_RESOURCE_DIMENSION.D3D10_RESOURCE_DIMENSION_TEXTURE2D;
+            dx10Header.mMiscFlags = 0;
+            dx10Header.mArraySize = 1;
+
+            using (var ms = new MemoryStream())
+            using (var bw = new BinaryWriter(ms))
+            {
+                bw.Write(new char[] { 'D', 'D', 'S', ' ' });
+                Utilities.Write(bw, ddsHeader);
+                Utilities.Write(bw, dx10Header);
+                bw.Write(facePixelData);
+                return ms.ToArray();
+            }
+        }
+
+        /*  Decode DDS bytes to a Bitmap */
+        private static Bitmap DecodeDdsToBitmap(byte[] ddsContent)
+        {
+            if (ddsContent == null) return null;
+            try
+            {
+                using (var imageStream = new MemoryStream(ddsContent))
+                using (var image = Pfim.Pfim.FromStream(imageStream))
+                {
+                    PixelFormat format = PixelFormat.DontCare;
+                    switch (image.Format)
+                    {
+                        case Pfim.ImageFormat.Rgba32: format = PixelFormat.Format32bppArgb; break;
+                        case Pfim.ImageFormat.Rgb24: format = PixelFormat.Format24bppRgb; break;
+                        case Pfim.ImageFormat.Rgb8: format = PixelFormat.Format8bppIndexed; break;
+                        default: return null;
+                    }
+                    if (format == PixelFormat.DontCare) return null;
+                    Bitmap temp;
+                    var handle = GCHandle.Alloc(image.Data, GCHandleType.Pinned);
+                    try
+                    {
+                        var data = Marshal.UnsafeAddrOfPinnedArrayElement(image.Data, 0);
+                        temp = new Bitmap(image.Width, image.Height, image.Stride, format, data);
+                    }
+                    finally { handle.Free(); }
+                    using (temp)
+                        return new Bitmap(temp);
+                }
+            }
+            catch { return null; }
         }
 
         [DllImport("gdi32.dll", EntryPoint = "DeleteObject")]
@@ -246,132 +413,60 @@ namespace AlienPAK
             finally { DeleteObject(handle); }
         }
 
-        public static GeometryModel3D ToGeometryModel3D(this CS2.Component.LOD.Submesh submesh)
+        public static GeometryModel3D ToGeometryModel3D(this CS2.Component.LOD.Submesh submesh, bool applyMaterials = true)
         {
             if (submesh.Data.Length == 0)
                 return new GeometryModel3D();
 
-            Int32Collection indices = new Int32Collection();
+            cMesh cathodeMesh = ModelUtility.ToMesh(submesh);
+            if (cathodeMesh.Vertices.Count == 0) return new GeometryModel3D();
+
+            int[] indices = cathodeMesh.Indices.Select(x => (int)x).ToArray();
+            for (int i = 0; i + 2 < indices.Length; i += 3)
+            {
+                int a = indices[i], b = indices[i + 1], c = indices[i + 2];
+                indices[i] = a; indices[i + 1] = c; indices[i + 2] = b;
+            }
+
             Point3DCollection vertices = new Point3DCollection();
-            PointCollection[] uvs = new PointCollection[0];
-
-            using (BinaryReader reader = new BinaryReader(new MemoryStream(submesh.Data)))
+            PointCollection uvs = new PointCollection();
+            for (int i = 0; i < cathodeMesh.Vertices.Count; i++)
             {
-                for (int i = 0; i < submesh.VertexFormatFull.Attributes.Count; ++i)
+                vertices.Add(new Point3D((float)cathodeMesh.Vertices[i].X, (float)cathodeMesh.Vertices[i].Y, -(float)cathodeMesh.Vertices[i].Z));
+            }
+            for (int i = 0; i < cathodeMesh.UVs.Length; i++)
+            {
+                if (cathodeMesh.UVs[i] == null) continue;
+
+                for (int x = 0; x < cathodeMesh.UVs[i].Count; x++)
                 {
-                    if (i == submesh.VertexFormatFull.Attributes.Count - 1)
-                    {
-                        for (int x = 0; x < submesh.IndexCount; x++)
-                            indices.Add(reader.ReadUInt16());
-                        continue;
-                    }
-
-                    for (int x = 0; x < submesh.VertexCount; ++x)
-                    {
-                        for (int y = 0; y < submesh.VertexFormatFull.Attributes[i].Count; ++y)
-                        {
-                            VertexFormat.Attribute attr = submesh.VertexFormatFull.Attributes[i][y];
-                            Vector4 v = ReadVertexData(reader, attr.Type);
-
-                            switch (attr.Usage)
-                            {
-                                case VertexFormat.Usage.Position:
-                                    vertices.Add(new Point3D(v.X * submesh.VertexScale, v.Y * submesh.VertexScale, -v.Z * submesh.VertexScale));
-                                    break;
-                                case VertexFormat.Usage.TexCoord:
-                                    if (attr.Index >= uvs.Length)
-                                        Array.Resize(ref uvs, attr.Index + 1);
-                                    if (uvs[attr.Index] == null)
-                                        uvs[attr.Index] = new PointCollection();
-                                    uvs[attr.Index].Add(new System.Windows.Point(v.X * 16.0f, v.Y * 16.0f));
-                                    break;
-                                //TODO: support more data
-                            }
-                        }
-                    }
-                    Utilities.Align(reader, 16);
+                    uvs.Add(new System.Windows.Point(cathodeMesh.UVs[i][x].X, cathodeMesh.UVs[i][x].Y));
                 }
+                break;
             }
 
-            if (vertices.Count == 0) return new GeometryModel3D();
-
-            Int32Collection reversedIndices = new Int32Collection();
-            for (int i = 0; i < indices.Count; i += 3)
+            GeometryModel3D geometry = new GeometryModel3D()
             {
-                if (i + 2 < indices.Count)
+                Geometry = new MeshGeometry3D
                 {
-                    reversedIndices.Add(indices[i]);
-                    reversedIndices.Add(indices[i + 2]);
-                    reversedIndices.Add(indices[i + 1]);
+                    Positions = vertices,
+                    TriangleIndices = new Int32Collection(indices),
+                    TextureCoordinates = uvs,
                 }
-            }
-
-            PointCollection uv = new PointCollection();
-            for (int i = 0; i < uvs.Length; i++)
-            {
-                if (uvs[i] != null)
-                {
-                    uv = uvs[i];
-                    break;
-                }
-            }
-
-            MeshGeometry3D geometry = new MeshGeometry3D
-            {
-                Positions = vertices,
-                TriangleIndices = reversedIndices,
-                TextureCoordinates = uv,
             };
-            return new GeometryModel3D
+            if (applyMaterials)
             {
-                Geometry = geometry,
-                Material = new DiffuseMaterial(new SolidColorBrush(Color.FromRgb(255, 255, 0))),
-                BackMaterial = new DiffuseMaterial(new SolidColorBrush(Color.FromRgb(255, 255, 0)))
-            };
+                MaterialApplier.ApplyMaterial(geometry, submesh.Material);
+            }
+            else
+            {
+                geometry.Material = new DiffuseMaterial(new SolidColorBrush(Color.FromRgb(255, 255, 0)));
+                geometry.BackMaterial = new DiffuseMaterial(new SolidColorBrush(Color.FromRgb(255, 255, 0)));
+            }
+            return geometry;
         }
 
-        private static Vector4 ReadVertexData(BinaryReader reader, VertexFormat.Type type)
-        {
-            switch (type)
-            {
-                case VertexFormat.Type.FP32_1:
-                    return new Vector4(reader.ReadSingle(), 0, 0, 0);
-                case VertexFormat.Type.FP32_2:
-                    return new Vector4(reader.ReadSingle(), reader.ReadSingle(), 0, 0);
-                case VertexFormat.Type.FP32_3:
-                    return new Vector4(reader.ReadSingle(), reader.ReadSingle(), reader.ReadSingle(), 0);
-                case VertexFormat.Type.FP32_4:
-                    return new Vector4(reader.ReadSingle(), reader.ReadSingle(), reader.ReadSingle(), reader.ReadSingle());
-                case VertexFormat.Type.Color:
-                    uint data = reader.ReadUInt32();
-                    return new Vector4((float)((data & 0xFF000000) >> 24) / 255.0f, (float)((data & 0x00FF0000) >> 16) / 255.0f, (float)((data & 0x0000FF00) >> 8) / 255.0f, (float)((data & 0x000000FF) >> 0) / 255.0f);
-                case VertexFormat.Type.U8_4:
-                    return new Vector4(reader.ReadByte(), reader.ReadByte(), reader.ReadByte(), reader.ReadByte());
-                case VertexFormat.Type.S16_2:
-                    return new Vector4(reader.ReadInt16(), reader.ReadInt16(), 0, 0);
-                case VertexFormat.Type.S16_4:
-                    return new Vector4(reader.ReadInt16(), reader.ReadInt16(), reader.ReadInt16(), reader.ReadInt16());
-                case VertexFormat.Type.U8_4N:
-                    return new Vector4((float)reader.ReadByte() / 255.0f, (float)reader.ReadByte() / 255.0f, (float)reader.ReadByte() / 255.0f, (float)reader.ReadByte() / 255.0f);
-                case VertexFormat.Type.S16_2N:
-                    return new Vector4((float)reader.ReadInt16() / (float)Int16.MaxValue, (float)reader.ReadInt16() / (float)Int16.MaxValue, 0, 0);
-                case VertexFormat.Type.S16_4N:
-                    return new Vector4((float)reader.ReadInt16() / (float)Int16.MaxValue, (float)reader.ReadInt16() / (float)Int16.MaxValue, (float)reader.ReadInt16() / (float)Int16.MaxValue, (float)reader.ReadInt16() / (float)Int16.MaxValue);
-                case VertexFormat.Type.U16_2N:
-                    return new Vector4((float)reader.ReadUInt16() / (float)UInt16.MaxValue, (float)reader.ReadUInt16() / (float)UInt16.MaxValue, 0, 0);
-                case VertexFormat.Type.U16_4N:
-                    return new Vector4((float)reader.ReadUInt16() / (float)UInt16.MaxValue, (float)reader.ReadUInt16() / (float)UInt16.MaxValue, (float)reader.ReadUInt16() / (float)UInt16.MaxValue, (float)reader.ReadUInt16() / (float)UInt16.MaxValue);
-                case VertexFormat.Type.Dec3N:
-                    uint val = reader.ReadUInt32();
-                    short sx = (short)((val >> 20) & 0x3ff);
-                    short sy = (short)((val >> 10) & 0x3ff);
-                    short sz = (short)((val) & 0x3ff);
-                    return new Vector4(((sx < 512) ? sx : (sx - 1024)) / 511.0f, ((sy < 512) ? sy : (sy - 1024)) / 511.0f, ((sz < 512) ? sz : (sz - 1024)) / 511.0f, 0);
-            }
-            throw new Exception("Unsupported VertexFormatType");
-        }
-
-        public static Assimp.Material ToAssimpMaterial(this Materials.Material cathodeMaterial, int materialIndex, string diffuseTextureFileName = null)
+        public static Assimp.Material ToAssimpMaterial(this Materials.Material cathodeMaterial, int materialIndex, string diffuseTextureFileName = null, string normalMapTextureFileName = null)
         {
             Assimp.Material mat = new Assimp.Material();
             if (cathodeMaterial == null) return mat;
@@ -388,6 +483,14 @@ namespace AlienPAK
                 slot.TextureIndex = 0;
                 mat.AddMaterialTexture(slot);
             }
+            if (!string.IsNullOrEmpty(normalMapTextureFileName))
+            {
+                Assimp.TextureSlot slot = new Assimp.TextureSlot();
+                slot.FilePath = normalMapTextureFileName;
+                slot.TextureType = Assimp.TextureType.Normals;
+                slot.TextureIndex = 0;
+                mat.AddMaterialTexture(slot);
+            }
             return mat;
         }
 
@@ -397,14 +500,20 @@ namespace AlienPAK
             Mesh assimpMesh = new Mesh();
             assimpMesh.MaterialIndex = materialIndex;
 
-            if (!assimpMesh.SetIndices(cathodeMesh.Indices.Select(x => (int)x).ToArray(), 3))
+            int[] indices = cathodeMesh.Indices.Select(x => (int)x).ToArray();
+            for (int i = 0; i + 2 < indices.Length; i += 3)
+            {
+                int a = indices[i], b = indices[i + 1], c = indices[i + 2];
+                indices[i] = a; indices[i + 1] = c; indices[i + 2] = b;
+            }
+            if (!assimpMesh.SetIndices(indices, 3))
             {
                 return assimpMesh;
             }
 
             for (int i = 0; i < cathodeMesh.Vertices.Count; i++)
             {
-                assimpMesh.Vertices.Add(new Assimp.Vector3D((float)cathodeMesh.Vertices[i].X, (float)cathodeMesh.Vertices[i].Y, (float)cathodeMesh.Vertices[i].Z));
+                assimpMesh.Vertices.Add(new Assimp.Vector3D((float)cathodeMesh.Vertices[i].X, (float)cathodeMesh.Vertices[i].Y, -(float)cathodeMesh.Vertices[i].Z));
             }
             for (int i = 0; i < cathodeMesh.Normals.Count; i++)
             {
@@ -413,7 +522,7 @@ namespace AlienPAK
             //binormals?
             for (int i = 0; i < cathodeMesh.Tangents.Count; i++)
             {
-                assimpMesh.Tangents.Add(new Assimp.Vector3D((float)cathodeMesh.Tangents[i].X, (float)cathodeMesh.Tangents[i].Y, (float)cathodeMesh.Tangents[i].Z));
+                assimpMesh.Tangents.Add(new Assimp.Vector3D((float)cathodeMesh.Tangents[i].X, (float)cathodeMesh.Tangents[i].Y, -(float)cathodeMesh.Tangents[i].Z));
             }
             int exportedUVs = 0;
             for (int i = 0; i < cathodeMesh.UVs.Length; i++)
@@ -502,27 +611,17 @@ namespace AlienPAK
                 }
             }
 
-            Directory.CreateDirectory(Path.Combine(modelDir, modelBase + " Textures"));
             string[] diffuseFileNames = new string[materials.Count];
+            string[] normalMapFileNames = new string[materials.Count];
             for (int i = 0; i < materials.Count; i++)
             {
-                Materials.Material mat = materials[i];
-                Textures.TEX4 diffuseTex = MaterialApplier.GetDiffuseTexture(mat);
-                if (diffuseTex != null)
-                {
-                    byte[] dds = diffuseTex.ToDDS();
-                    if (dds != null && dds.Length > 0)
-                    {
-                        string ddsFileName = modelBase + " Textures/" + i + "_" + Path.GetFileNameWithoutExtension(diffuseTex.Name) + ".dds";
-                        diffuseFileNames[i] = ddsFileName;
-                        File.WriteAllBytes(Path.Combine(modelDir, ddsFileName), dds);
-                    }
-                }
+                ExportModelSampler(MaterialApplier.GetDiffuseTexture(materials[i]), ref diffuseFileNames, i);
+                ExportModelSampler(MaterialApplier.GetNormalMapTexture(materials[i]), ref normalMapFileNames, i);
             }
 
             Scene scene = new Scene();
             for (int matIdx = 0; matIdx < materials.Count; matIdx++)
-                scene.Materials.Add(materials[matIdx].ToAssimpMaterial(matIdx, diffuseFileNames[matIdx]));
+                scene.Materials.Add(materials[matIdx].ToAssimpMaterial(matIdx, diffuseFileNames[matIdx], normalMapFileNames[matIdx]));
             if (scene.Materials.Count == 0)
                 scene.Materials.Add(new Assimp.Material());
 
@@ -552,6 +651,21 @@ namespace AlienPAK
             using (AssimpContext exp = new AssimpContext())
             {
                 exp.ExportFile(scene, filename, Path.GetExtension(filename).TrimStart('.').ToLowerInvariant());
+            }
+
+            void ExportModelSampler(Textures.TEX4 texture, ref string[] filenames, int index)
+            {
+                if (texture == null) return;
+
+                byte[] dds = texture.ToDDS();
+                if (dds != null && dds.Length > 0)
+                {
+                    string file = Path.GetFileName(texture.Name);
+                    string dir = modelDir + "/" + modelBase + " Textures/" + texture.Name.Substring(0, texture.Name.Length - file.Length);
+                    filenames[index] = dir + file + ".dds";
+                    Directory.CreateDirectory(dir);
+                    File.WriteAllBytes(filenames[index], dds);
+                }
             }
         }
 

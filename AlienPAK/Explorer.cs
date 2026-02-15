@@ -3,12 +3,14 @@ using Assimp.Unmanaged;
 using CATHODE;
 using CathodeLib;
 using DirectXTexNet;
+using HelixToolkit.Wpf;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Numerics;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Runtime.Remoting.Metadata;
@@ -201,16 +203,12 @@ namespace AlienPAK
                     case PAKType.TEXTURES:
                         newFileName += ".dds";
                         Textures.TEX4 texture = new Textures.TEX4() { Name = Path.GetFileName(FilePicker.FileName) };
-                        byte[] content = File.ReadAllBytes(FilePicker.FileName);
-                        //TODO: perhaps we need a custom UI for this to allow swapping high/low res assets individually
-                        Textures.TEX4.Texture part = content?.ToTEX4Part(out texture.Format);
+                        Textures.TEX4.Texture part = File.ReadAllBytes(FilePicker.FileName)?.ToTEX4Part(out texture.Format, out texture.StateFlags, out texture.UsageFlags);
                         if (part == null)
                         {
                             MessageBox.Show("Please select a DX10 DDS image!\nIf you have converted this DDS yourself, you've converted it wrong - try using a tool like Nvidia Texture Tools Exporter.", "Import failed", MessageBoxButtons.OK, MessageBoxIcon.Error);
                             break;
                         }
-                        texture.UsageFlags = Textures.TextureUsageFlag.DEFAULT | Textures.TextureUsageFlag.IS_LEVEL_PACK; //todo: ui to allow selection of this
-                        //texture.StateFlags = Textures.TextureStateFlag. //todo: ui to allow selection of this
                         texture.TextureStreamed = part.Copy(); 
                         texture.TexturePersistent = part.Copy(); //todo: i think we can just set persistent or streamed?
                         LevelContent.Textures.Entries.Add(texture);
@@ -273,7 +271,10 @@ namespace AlienPAK
 
             switch (nodeType)
             {
+                case TreeItemType.DIRECTORY:
                 case TreeItemType.EXPORTABLE_FILE:
+                    if (nodeType == TreeItemType.DIRECTORY && LaunchMode != PAKType.MODELS) return;
+
                     DialogResult ConfirmRemoval = MessageBox.Show("Are you sure you would like to remove this file?", "About to remove selected file...", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
                     if (ConfirmRemoval != DialogResult.Yes) return;
 
@@ -335,7 +336,7 @@ namespace AlienPAK
                     if (nodeType == TreeItemType.DIRECTORY)
                         break;
 
-                    string filter = "File|*" + Path.GetExtension(FileTree.SelectedNode.Text);
+                    string filter = "File|*" + (LaunchMode == PAKType.TEXTURES ? ".DDS" : Path.GetExtension(FileTree.SelectedNode.Text));
 
                     OpenFileDialog FilePicker = new OpenFileDialog();
                     FilePicker.Filter = filter;
@@ -353,14 +354,14 @@ namespace AlienPAK
                             case PAKType.TEXTURES:
                                 Textures.TEX4 texture = LevelContent.Textures.Entries.FirstOrDefault(o => o.Name.Replace('\\', '/') == nodeVal.Replace('\\', '/'));
                                 byte[] content = File.ReadAllBytes(FilePicker.FileName);
-                                Textures.TEX4.Texture part = content?.ToTEX4Part(out texture.Format);
+                                Textures.TEX4.Texture part = content?.ToTEX4Part(out texture.Format, out texture.StateFlags, out texture.UsageFlags);
                                 if (part == null)
                                 {
                                     MessageBox.Show("Please select a DX10 DDS image!\nIf you have converted this DDS yourself, you've converted it wrong - try using a tool like Nvidia Texture Tools Exporter.", "Import failed", MessageBoxButtons.OK, MessageBoxIcon.Error);
                                     break;
                                 }
-                                if (texture.TextureStreamed?.Content != null) texture.TextureStreamed = part;
-                                if (texture.TexturePersistent?.Content != null) texture.TexturePersistent = part;
+                                texture.TextureStreamed = part.Copy();
+                                texture.TexturePersistent = part.Copy();
                                 break;
                         }
                     }
@@ -502,7 +503,10 @@ namespace AlienPAK
                             byte[] content = texture?.ToDDS();
                             preview.ShowFunctionButtons(Functionality, LaunchMode, true);
                             preview.SetFileInfo(Path.GetFileName(nodeVal), content?.Length.ToString());
-                            preview.SetImagePreview(content);
+                            if (texture != null && texture.StateFlags.HasFlag(Textures.TextureStateFlag.CUBE))
+                                preview.SetCubemapPreview(content);
+                            else
+                                preview.SetImagePreview(content);
                             break;
                     }
                     break;
@@ -525,9 +529,6 @@ namespace AlienPAK
                                         {
                                             GeometryModel3D submeshGeo = submesh.ToGeometryModel3D();
                                             verts += submesh.VertexCount;
-
-                                            MaterialApplier.ApplyMaterial(submeshGeo, submesh.Material);
-
                                             model.Children.Add(submeshGeo); //TODO: are there some offsets/scaling we should be accounting for here?
                                         }
                                     }
@@ -546,9 +547,6 @@ namespace AlienPAK
                                     {
                                         GeometryModel3D submeshGeo = submesh.ToGeometryModel3D();
                                         verts += submesh.VertexCount;
-
-                                        MaterialApplier.ApplyMaterial(submeshGeo, submesh.Material);
-
                                         model.Children.Add(submeshGeo); //TODO: are there some offsets/scaling we should be accounting for here?
                                     }
                                 }
@@ -699,6 +697,22 @@ namespace AlienPAK
                 }
                 catch { }
             }
+
+            PatchManager.Platform? platform = null;
+            switch (OpenCAGE.SettingsManager.GetString("META_GameVersion"))
+            {
+                case "STEAM":
+                    platform = PatchManager.Platform.STEAM;
+                    break;
+                case "EPIC_GAMES_STORE":
+                    platform = PatchManager.Platform.EPIC_GAMES_STORE;
+                    break;
+                case "GOG":
+                    platform = PatchManager.Platform.GOG;
+                    break;
+            }
+            if (platform.HasValue)
+                PatchManager.PerformRecommendedPatches(platform.Value, SharedData.pathToAI);
 
             Archive?.Save();
             LevelContent?.Save();

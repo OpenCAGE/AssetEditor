@@ -7,6 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
 using System.Windows.Media.Media3D;
 
 namespace AlienPAK
@@ -22,6 +23,16 @@ namespace AlienPAK
             int diffuseMapIndex = material.Shader.SamplerRemaps[diffuseMap];
             if (diffuseMapIndex == 255 || diffuseMapIndex >= material.TextureReferences.Count) return null;
             return material.TextureReferences[diffuseMapIndex]?.Texture;
+        }
+
+        public static Textures.TEX4 GetNormalMapTexture(Materials.Material material)
+        {
+            if (material == null || material.Shader == null) return null;
+            int normalMap = GetNormalMapSamplerIndex(material.Shader);
+            if (normalMap == -1 || normalMap >= material.Shader.SamplerRemaps.Count) return null;
+            int normalMapIndex = material.Shader.SamplerRemaps[normalMap];
+            if (normalMapIndex == 255 || normalMapIndex >= material.TextureReferences.Count) return null;
+            return material.TextureReferences[normalMapIndex]?.Texture;
         }
 
         public static void GetDiffuseTintForExport(Materials.Material material, out float r, out float g, out float b)
@@ -63,6 +74,27 @@ namespace AlienPAK
             }
         }
 
+        private static int GetNormalMapSamplerIndex(Shaders.Shader shader)
+        {
+            switch (shader.Ubershader)
+            {
+                case SHADER_LIST.CA_ENVIRONMENT: return (int)CA_ENVIRONMENT.SAMPLERS.NORMAL_MAP;
+                case SHADER_LIST.CA_DECAL_ENVIRONMENT: return (int)CA_DECAL_ENVIRONMENT.SAMPLERS.NORMAL_MAP;
+                case SHADER_LIST.CA_CHARACTER: return (int)CA_CHARACTER.SAMPLERS.NORMAL_MAP;
+                case SHADER_LIST.CA_SKIN: return (int)CA_SKIN.SAMPLERS.NORMAL_MAP;
+                case SHADER_LIST.CA_HAIR: return (int)CA_HAIR.SAMPLERS.NORMAL_MAP;
+                case SHADER_LIST.CA_DECAL: return (int)CA_DECAL.SAMPLERS.NORMAL_MAP;
+                case SHADER_LIST.CA_SURFACE_EFFECTS: return (int)CA_SURFACE_EFFECTS.SAMPLERS.NORMAL_MAP;
+                case SHADER_LIST.CA_TERRAIN: return (int)CA_TERRAIN.SAMPLERS.NORMAL_MAP;
+                case SHADER_LIST.CA_LIGHTMAP_ENVIRONMENT: return (int)CA_LIGHTMAP_ENVIRONMENT.SAMPLERS.NORMAL_MAP;
+                case SHADER_LIST.CA_STREAMER: return (int)CA_STREAMER.SAMPLERS.NORMAL_MAP;
+                case SHADER_LIST.CA_LOW_LOD_CHARACTER: return (int)CA_LOW_LOD_CHARACTER.SAMPLERS.NORMAL_MAP;
+                case SHADER_LIST.CA_LIQUID_ENVIRONMENT: return (int)CA_LIQUID_ENVIRONMENT.SAMPLERS.NORMAL_MAP;
+                case SHADER_LIST.CA_LIQUID_CHARACTER: return (int)CA_LIQUID_CHARACTER.SAMPLERS.NORMAL_MAP;
+                default: return -1;
+            }
+        }
+
         public static void ApplyMaterial(GeometryModel3D geometryModel, Materials.Material material)
         {
             if (geometryModel == null || material == null || material.Shader == null)
@@ -73,6 +105,15 @@ namespace AlienPAK
             if (brush != null)
             {
                 System.Windows.Media.Color tintColor = GetDiffuseTint(material);
+                if (!IsColorTransparentOrWhite(tintColor))
+                {
+                    ImageSource tintedSource = ApplyTintToImageSource(brush.ImageSource, tintColor);
+                    if (tintedSource != null)
+                    {
+                        brush = new ImageBrush(tintedSource);
+                        tintColor = System.Windows.Media.Colors.White;
+                    }
+                }
 
                 float uvScale = GetDiffuseUvScale(material);
                 if (geometryModel.Geometry is MeshGeometry3D meshGeometry && meshGeometry.TextureCoordinates != null)
@@ -97,7 +138,33 @@ namespace AlienPAK
 
                 Material mat = CreateMaterialWithEffects(brush, material, tintColor);
                 SetMaterialsWithBackface(geometryModel, mat);
+
+                ImageBrush normalMapBrush = GetNormalMapTextureBrush(material);
+                if (normalMapBrush != null)
+                {
+                    normalMapBrush.TileMode = TileMode.Tile;
+                    normalMapBrush.Viewport = new Rect(0, 0, 1, 1);
+                    normalMapBrush.ViewportUnits = BrushMappingMode.Absolute;
+                    SetMaterialTextureBrushes(geometryModel, new MaterialTextureBrushes { DiffuseBrush = brush, NormalMapBrush = normalMapBrush });
+                }
             }
+        }
+
+        public class MaterialTextureBrushes
+        {
+            public ImageBrush DiffuseBrush { get; set; }
+            public ImageBrush NormalMapBrush { get; set; }
+        }
+
+        public static readonly DependencyProperty MaterialTextureBrushesProperty = DependencyProperty.RegisterAttached("MaterialTextureBrushes", typeof(MaterialTextureBrushes), typeof(MaterialApplier), new PropertyMetadata(null));
+        public static void SetMaterialTextureBrushes(Model3D element, MaterialTextureBrushes value) { element?.SetValue(MaterialTextureBrushesProperty, value); }
+        public static MaterialTextureBrushes GetMaterialTextureBrushes(Model3D element) { return (MaterialTextureBrushes)(element?.GetValue(MaterialTextureBrushesProperty)); }
+
+        public static ImageBrush GetNormalMapTextureBrush(Materials.Material material)
+        {
+            Textures.TEX4 tex = GetNormalMapTexture(material);
+            ImageSource imageSource = tex?.ToDDS()?.ToBitmap()?.ToImageSource();
+            return imageSource != null ? new ImageBrush(imageSource) : null;
         }
 
         private static ImageBrush GetDiffuseTextureBrush(Materials.Material material)
@@ -105,6 +172,40 @@ namespace AlienPAK
             Textures.TEX4 tex = GetDiffuseTexture(material);
             ImageSource imageSource = tex?.ToDDS()?.ToBitmap()?.ToImageSource();
             return imageSource != null ? new ImageBrush(imageSource) : null;
+        }
+
+        private static ImageSource ApplyTintToImageSource(ImageSource source, System.Windows.Media.Color tint)
+        {
+            if (source == null) return null;
+            BitmapSource bitmap = source as BitmapSource;
+            if (bitmap == null) return source;
+
+            if (bitmap.Format != System.Windows.Media.PixelFormats.Bgra32)
+            {
+                var converted = new FormatConvertedBitmap(bitmap, System.Windows.Media.PixelFormats.Bgra32, null, 0);
+                converted.Freeze();
+                bitmap = converted;
+            }
+
+            int w = bitmap.PixelWidth;
+            int h = bitmap.PixelHeight;
+            int stride = (w * 4 + 3) & ~3;
+            byte[] pixels = new byte[h * stride];
+            bitmap.CopyPixels(pixels, stride, 0);
+
+            float tr = tint.R / 255f, tg = tint.G / 255f, tb = tint.B / 255f, ta = tint.A / 255f;
+            for (int i = 0; i < pixels.Length; i += 4)
+            {
+                pixels[i] = (byte)Math.Max(0, Math.Min(255, (int)(pixels[i] * tb)));
+                pixels[i + 1] = (byte)Math.Max(0, Math.Min(255, (int)(pixels[i + 1] * tg)));
+                pixels[i + 2] = (byte)Math.Max(0, Math.Min(255, (int)(pixels[i + 2] * tr)));
+                pixels[i + 3] = (byte)Math.Max(0, Math.Min(255, (int)(pixels[i + 3] * ta)));
+            }
+
+            var result = new WriteableBitmap(w, h, bitmap.DpiX, bitmap.DpiY, System.Windows.Media.PixelFormats.Bgra32, null);
+            result.WritePixels(new Int32Rect(0, 0, w, h), pixels, stride, 0);
+            result.Freeze();
+            return result;
         }
 
         private static float GetDiffuseUvScale(Materials.Material material)

@@ -1,5 +1,5 @@
-using CATHODE;
 using CathodeLib;
+using HelixToolkit.Wpf;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
@@ -10,6 +10,7 @@ using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Interop;
+using System.Windows.Media;
 using System.Windows.Media.Media3D;
 using System.Xml.Linq;
 
@@ -83,7 +84,7 @@ namespace AlienPAK
         }
 
         /* Show the model preview for the selected file in UI */
-        public void SetModelPreview(Model3DGroup content)
+        public void SetModelPreview(Model3DGroup content, bool zoomExtents = true)
         {
             modelPreviewGroup.Visibility = Visibility.Visible;
             imagePreviewGroup.Visibility = Visibility.Collapsed;
@@ -91,9 +92,182 @@ namespace AlienPAK
             filePreviewModel.Content = content;
 
             filePreviewModelContainer.ModelUpDirection = new Vector3D(0, 1, 0);
+            filePreviewModelContainer.Camera.NearPlaneDistance = 0.01f;
             filePreviewModelContainer.Camera.UpDirection = new Vector3D(0, 1, 0);
             filePreviewModelContainer.Camera.LookDirection = new Vector3D(-0.5, -0.5, -1.0f);
-            filePreviewModelContainer.ZoomExtents();
+
+            if (zoomExtents)
+                filePreviewModelContainer.ZoomExtents();
+        }
+
+        /* Show cubemap texture on a sphere in the model viewport so the user can orbit and look around */
+        public void SetCubemapPreview(byte[] ddsContent)
+        {
+            Bitmap bmp = ddsContent?.ToBitmap();
+            if (bmp == null)
+            {
+                modelPreviewGroup.Visibility = Visibility.Collapsed;
+                imagePreviewGroup.Visibility = Visibility.Collapsed;
+                UpdatePreviewRowHeight();
+                return;
+            }
+
+            filePreviewModelContainer.Camera = new PerspectiveCamera();
+            filePreviewModelContainer.Camera.NearPlaneDistance = 0.01f;
+            filePreviewModelContainer.CameraMode = CameraMode.FixedPosition;
+            filePreviewModelContainer.Camera.Position = new Point3D(0, 0, 0);
+
+            filePreviewModelContainer.IsZoomEnabled = false;
+            filePreviewModelContainer.IsMoveEnabled = false;
+            filePreviewModelContainer.ShowViewCube = false;
+
+            Model3DGroup cubemapModel = CreateSphereWithTexture(bmp);
+            SetModelPreview(cubemapModel, false);
+        }
+        private static Model3DGroup CreateSphereWithTexture(Bitmap texture)
+        {
+            const int thetaSegments = 48;
+            const int phiSegments = 24;
+            bool isCubemapStrip = texture.Width >= 4 * texture.Height;
+
+            var positions = new Point3DCollection();
+            var textureCoords = new PointCollection();
+            var indices = new Int32Collection();
+
+            for (int j = 0; j <= phiSegments; j++)
+            {
+                double phi = Math.PI * j / phiSegments;
+                double y = Math.Cos(phi);
+                double sinPhi = Math.Sin(phi);
+                for (int i = 0; i <= thetaSegments; i++)
+                {
+                    double theta = 2 * Math.PI * i / thetaSegments;
+                    double x = sinPhi * Math.Cos(theta);
+                    double z = sinPhi * Math.Sin(theta);
+                    positions.Add(new Point3D(x, y, z));
+
+                    if (!isCubemapStrip)
+                    {
+                        double lon = Math.Atan2(z, x);
+                        double lat = Math.Asin(Math.Max(-1, Math.Min(1, y)));
+                        double u = lon / (2 * Math.PI) + 0.5;
+                        double v = 0.5 - lat / Math.PI;
+                        textureCoords.Add(new System.Windows.Point(u, v));
+                    }
+                }
+            }
+
+            if (isCubemapStrip)
+            {
+                int facePixels = texture.Width / 6;
+                double eps = (facePixels > 1) ? 0.5 / facePixels : 0.0;
+
+                var outPositions = new Point3DCollection();
+                var outTextureCoords = new PointCollection();
+                var outIndices = new Int32Collection();
+
+                for (int j = 0; j < phiSegments; j++)
+                {
+                    for (int i = 0; i < thetaSegments; i++)
+                    {
+                        int i0 = j * (thetaSegments + 1) + i;
+                        int i1 = i0 + 1;
+                        int i2 = i0 + (thetaSegments + 1);
+                        int i3 = i2 + 1;
+
+                        Point3D p0 = positions[i0], p1 = positions[i1], p2 = positions[i2];
+                        Point3D c1 = new Point3D(
+                            (p0.X + p2.X + p1.X) / 3,
+                            (p0.Y + p2.Y + p1.Y) / 3,
+                            (p0.Z + p2.Z + p1.Z) / 3);
+                        int baseIdx = outPositions.Count;
+                        CubemapFaceUV(c1, p0, p1, p2, eps, outPositions, outTextureCoords);
+                        outIndices.Add(baseIdx); outIndices.Add(baseIdx + 1); outIndices.Add(baseIdx + 2);
+
+                        p0 = positions[i1]; p1 = positions[i3]; p2 = positions[i2];
+                        Point3D c2 = new Point3D(
+                            (p0.X + p1.X + p2.X) / 3,
+                            (p0.Y + p1.Y + p2.Y) / 3,
+                            (p0.Z + p1.Z + p2.Z) / 3);
+                        baseIdx = outPositions.Count;
+                        CubemapFaceUV(c2, p0, p1, p2, eps, outPositions, outTextureCoords);
+                        outIndices.Add(baseIdx); outIndices.Add(baseIdx + 1); outIndices.Add(baseIdx + 2);
+                    }
+                }
+
+                positions = outPositions;
+                textureCoords = outTextureCoords;
+                indices = outIndices;
+            }
+            else
+            {
+                for (int j = 0; j < phiSegments; j++)
+                {
+                    for (int i = 0; i < thetaSegments; i++)
+                    {
+                        int i0 = j * (thetaSegments + 1) + i;
+                        int i1 = i0 + 1;
+                        int i2 = i0 + (thetaSegments + 1);
+                        int i3 = i2 + 1;
+                        indices.Add(i0); indices.Add(i2); indices.Add(i1);
+                        indices.Add(i1); indices.Add(i2); indices.Add(i3);
+                    }
+                }
+            }
+
+            var geometry = new MeshGeometry3D
+            {
+                Positions = positions,
+                TextureCoordinates = textureCoords,
+                TriangleIndices = indices
+            };
+
+            ImageSource imageSource = texture.ToImageSource();
+            var brush = new ImageBrush(imageSource);
+            var material = new DiffuseMaterial(brush);
+            var backMaterial = new DiffuseMaterial(brush);
+
+            var model = new GeometryModel3D(geometry, material) { BackMaterial = backMaterial };
+            var group = new Model3DGroup() { Transform = Transform3D.Identity };
+            group.Children.Add(model);
+            return group;
+        }
+        private static void CubemapFaceUV(Point3D centroid, Point3D p0, Point3D p1, Point3D p2, double eps, Point3DCollection outPositions, PointCollection outTextureCoords)
+        {
+            double cx = centroid.X, cy = centroid.Y, cz = centroid.Z;
+            double ax = Math.Abs(cx), ay = Math.Abs(cy), az = Math.Abs(cz);
+            int face;
+            if (ax >= ay && ax >= az)
+                face = cx > 0 ? 0 : 1;
+            else if (ay >= ax && ay >= az)
+                face = cy > 0 ? 2 : 3;
+            else
+                face = cz > 0 ? 4 : 5;
+
+            foreach (Point3D p in new[] { p0, p1, p2 })
+            {
+                double x = p.X, y = p.Y, z = p.Z;
+                double uf, vf;
+                double inv;
+                switch (face)
+                {
+                    case 0: inv = 1.0 / (Math.Abs(x) + 1e-10); uf = (-z * inv + 1) * 0.5; vf = (-y * inv + 1) * 0.5; break;
+                    case 1: inv = 1.0 / (Math.Abs(x) + 1e-10); uf = (z * inv + 1) * 0.5; vf = (-y * inv + 1) * 0.5; break;
+                    case 2: inv = 1.0 / (Math.Abs(y) + 1e-10); uf = (x * inv + 1) * 0.5; vf = (z * inv + 1) * 0.5; break;
+                    case 3: inv = 1.0 / (Math.Abs(y) + 1e-10); uf = (x * inv + 1) * 0.5; vf = (-z * inv + 1) * 0.5; break;
+                    case 4: inv = 1.0 / (Math.Abs(z) + 1e-10); uf = (x * inv + 1) * 0.5; vf = (-y * inv + 1) * 0.5; break;
+                    default: inv = 1.0 / (Math.Abs(z) + 1e-10); uf = (-x * inv + 1) * 0.5; vf = (-y * inv + 1) * 0.5; break;
+                }
+                uf = Math.Max(0, Math.Min(1, uf));
+                vf = Math.Max(0, Math.Min(1, vf));
+                double ufInset = uf * (1 - 2 * eps) + eps;
+                double vfInset = vf * (1 - 2 * eps) + eps;
+                double u = (face + ufInset) / 6.0;
+                double v = vfInset;
+
+                outPositions.Add(p);
+                outTextureCoords.Add(new System.Windows.Point(u, v));
+            }
         }
 
         /* Show the level selection dropdown if requested */
@@ -104,7 +278,7 @@ namespace AlienPAK
             if (show)
             {
                 levelSelectDropdown.Items.Clear();
-                List<string> levels = Level.GetLevels(SharedData.pathToAI, (type == PAKType.COMMANDS || type == PAKType.MATERIAL_MAPPINGS));
+                List<string> levels = Level.GetLevels(SharedData.pathToAI);
                 for (int i = 0; i < levels.Count; i++) levelSelectDropdown.Items.Add(levels[i]);
                 //if (type == PAKType.TEXTURES || type == PAKType.MODELS) levelSelectDropdown.Items.Add("GLOBAL");
                 levelSelectDropdown.SelectedIndex = 0;
