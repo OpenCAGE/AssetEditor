@@ -215,39 +215,25 @@ namespace AlienPAK
                         break;
                     case PAKType.MODELS:
                         newFileName += ".cs2";
-                        Models.CS2 cs2 = new Models.CS2();
-                        cs2.Name = newFileName;
-                        cs2.Components.Add(new Models.CS2.Component());
-                        cs2.Components[0].LODs.Add(new Models.CS2.Component.LOD(newFileName));
+                        Scene importScene = null;
                         using (AssimpContext importer = new AssimpContext())
                         {
-                            //TODO: utilise aiProcess_SplitLargeMeshes to avoid passing our vert limit
-                            Scene model = importer.ImportFile(FilePicker.FileName,
-                                PostProcessSteps.Triangulate | PostProcessSteps.FindDegenerates | PostProcessSteps.LimitBoneWeights | 
+                            importScene = importer.ImportFile(FilePicker.FileName,
+                                PostProcessSteps.Triangulate | PostProcessSteps.FindDegenerates | PostProcessSteps.LimitBoneWeights |
                                 PostProcessSteps.GenerateBoundingBoxes | PostProcessSteps.FlipUVs | PostProcessSteps.FlipWindingOrder | PostProcessSteps.MakeLeftHanded);
-                            ushort biggestSF = 0;
-                            for (int i = 0; i < model.Meshes.Count; i++)
-                            {
-                                ushort newSF = model.Meshes[i].CalculateScaleFactor();
-                                if (newSF > biggestSF) biggestSF = newSF;
-                            }
-                            for (int i = 0; i < model.Meshes.Count; i++)
-                            {
-                                Models.CS2.Component.LOD.Submesh submesh = model.Meshes[i].ToSubmesh(biggestSF);
-                                if (submesh == null)
-                                {
-                                    MessageBox.Show("Failed to generate CS2 submesh from imported model submesh " + i + ".\nPlease check your submesh polycount - each may not exceed " + Int16.MaxValue + " verts.", "Import failed", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                                    return;
-                                }
-                                cs2.Components[0].LODs[0].Submeshes.Add(submesh);
-                            }
                         }
-                        if (cs2.Components[0].LODs[0].Submeshes.Count == 0)
+                        if (importScene == null || importScene.MeshCount == 0)
                         {
-                            MessageBox.Show("Failed to generate CS2 from selected model: could not find any mesh data! Please ensure all meshes are children of the scene's root node.", "Import failed", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                            MessageBox.Show("Failed to load model or no mesh data found. Ensure meshes are under the scene root.", "Import failed", MessageBoxButtons.OK, MessageBoxIcon.Error);
                             return;
                         }
-                        LevelContent.Models.Entries.Add(cs2);
+                        using (var previewForm = new ModelImportPreviewForm(importScene, FilePicker.FileName,
+                            LevelContent.Textures, LevelContent.Global?.Textures, LevelContent.Materials, LevelContent.Shaders))
+                        {
+                            if (previewForm.ShowDialog(this) != DialogResult.OK || previewForm.ResultCs2 == null)
+                                break;
+                            LevelContent.Models.Entries.Add(previewForm.ResultCs2);
+                        }
                         break;
                     default:
                         return;
