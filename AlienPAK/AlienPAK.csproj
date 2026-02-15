@@ -273,14 +273,14 @@
     <Compile Include="ModelEditorControlsWPF.xaml.cs">
       <DependentUpon>ModelEditorControlsWPF.xaml</DependentUpon>
     </Compile>
-    <Compile Include="ModelImportPreviewWPF.xaml.cs">
-      <DependentUpon>ModelImportPreviewWPF.xaml</DependentUpon>
-    </Compile>
-    <Compile Include="ModelImportPreviewForm.cs">
+    <Compile Include="ModelImportPreview.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="ModelImportPreviewForm.Designer.cs">
-      <DependentUpon>ModelImportPreviewForm.cs</DependentUpon>
+    <Compile Include="ModelImportPreview.Designer.cs">
+      <DependentUpon>ModelImportPreview.cs</DependentUpon>
+    </Compile>
+    <Compile Include="ModelImportPreviewWPF.xaml.cs">
+      <DependentUpon>ModelImportPreviewWPF.xaml</DependentUpon>
     </Compile>
     <Compile Include="ExplorerControlsWPF.xaml.cs">
       <DependentUpon>ExplorerControlsWPF.xaml</DependentUpon>
@@ -325,8 +325,8 @@
     <EmbeddedResource Include="ModelEditor.resx">
       <DependentUpon>ModelEditor.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="ModelImportPreviewForm.resx">
-      <DependentUpon>ModelImportPreviewForm.cs</DependentUpon>
+    <EmbeddedResource Include="ModelImportPreview.resx">
+      <DependentUpon>ModelImportPreview.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
