@@ -227,7 +227,7 @@ namespace AlienPAK
                             MessageBox.Show("Failed to load model or no mesh data found. Ensure meshes are under the scene root.", "Import failed", MessageBoxButtons.OK, MessageBoxIcon.Error);
                             return;
                         }
-                        using (var previewForm = new ModelImportPreviewForm(importScene, FilePicker.FileName,
+                        using (var previewForm = new ModelImportPreview(importScene, FilePicker.FileName,
                             LevelContent.Textures, LevelContent.Global?.Textures, LevelContent.Materials, LevelContent.Shaders))
                         {
                             if (previewForm.ShowDialog(this) != DialogResult.OK || previewForm.ResultCs2 == null)
