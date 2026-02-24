@@ -309,6 +309,12 @@
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
     <Compile Include="SettingsManager.cs" />
+    <Compile Include="TexturePicker.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="TexturePicker.Designer.cs">
+      <DependentUpon>TexturePicker.cs</DependentUpon>
+    </Compile>
     <Compile Include="TreeUtility.cs" />
     <EmbeddedResource Include="BulkExportTypeSelection.resx">
       <DependentUpon>BulkExportTypeSelection.cs</DependentUpon>

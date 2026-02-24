@@ -68,7 +68,7 @@ namespace AlienPAK
 
         private void OnSamplerSelected(int samplerTabIndex)
         {
-            //todo
+            // Sampler tab changed - no additional behaviour needed for now.
         }
 
         private void OnPickTexture()
@@ -81,11 +81,84 @@ namespace AlienPAK
             if (samplerTabIndex >= _samplerInfo.Count) return;
             
             var samplerInfo = _samplerInfo[samplerTabIndex];
-            string samplerName = samplerInfo.Item1;
             int samplerIndex = samplerInfo.Item2;
             int textureRefIndex = samplerInfo.Item3;
 
-            //todo!!
+            if (_textures == null && _texturesGlobal == null)
+            {
+                MessageBox.Show("No texture data is loaded for this material.", "Cannot pick texture", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+
+            Textures.TEX4 currentTexture = null;
+            if (textureRefIndex != 255 && textureRefIndex < material.TextureReferences.Count)
+            {
+                var textureRef = material.TextureReferences[textureRefIndex];
+                currentTexture = textureRef?.Texture;
+            }
+
+            using (var picker = new TexturePicker(_textures, _texturesGlobal, currentTexture))
+            {
+                if (picker.ShowDialog(this) != DialogResult.OK)
+                    return;
+
+                var chosenTexture = picker.SelectedTexture;
+                if (chosenTexture == null)
+                    return;
+
+                if (textureRefIndex != 255 && textureRefIndex < material.TextureReferences.Count)
+                {
+                    var textureRef = material.TextureReferences[textureRefIndex];
+                    textureRef.Texture = chosenTexture;
+                }
+                else
+                {
+                    if (material.Shader.SamplerRemaps.Count <= samplerIndex)
+                    {
+                        while (material.Shader.SamplerRemaps.Count <= samplerIndex)
+                            material.Shader.SamplerRemaps.Add(255);
+                    }
+
+                    textureRefIndex = material.TextureReferences.Count;
+                    TexturePtr texturePtr = new TexturePtr
+                    {
+                        Texture = chosenTexture
+                    };
+                    material.TextureReferences.Add(texturePtr);
+                    material.Shader.SamplerRemaps[samplerIndex] = textureRefIndex;
+
+                    _samplerInfo[samplerTabIndex] = new Tuple<string, int, int>(samplerInfo.Item1, samplerIndex, textureRefIndex);
+                }
+            }
+
+            materialList_SelectedIndexChanged(null, EventArgs.Empty);
+        }
+
+        private void ClearSamplerTexture()
+        {
+            if (materialList.SelectedItems.Count == 0 || _controls.SamplerTabControl.SelectedIndex < 0) return;
+
+            Materials.Material material = materialList.SelectedItems[0].Tag as Materials.Material;
+            if (material == null) return;
+            int samplerTabIndex = _controls.SamplerTabControl.SelectedIndex;
+            if (samplerTabIndex >= _samplerInfo.Count) return;
+
+            var samplerInfo = _samplerInfo[samplerTabIndex];
+            int samplerIndex = samplerInfo.Item2;
+            int textureRefIndex = samplerInfo.Item3;
+
+            if (textureRefIndex != 255 && textureRefIndex < material.TextureReferences.Count)
+            {
+                var textureRef = material.TextureReferences[textureRefIndex];
+                textureRef.Texture = null;
+            }
+
+            if (samplerIndex < material.Shader.SamplerRemaps.Count)
+                material.Shader.SamplerRemaps[samplerIndex] = 255;
+
+            _samplerInfo[samplerTabIndex] = new Tuple<string, int, int>(samplerInfo.Item1, samplerIndex, 255);
+
+            materialList_SelectedIndexChanged(null, EventArgs.Empty);
         }
 
         private void OnFeatureCheckboxChanged(Materials.Material material, int featureIndex, bool isChecked)
@@ -314,17 +387,30 @@ namespace AlienPAK
                     MaxHeight = 400
                 };
                 imageScrollViewer.Content = texturePreview;
-                
-                /*
-                 * TODO!!
+
+                System.Windows.Controls.StackPanel samplerButtonsPanel = new System.Windows.Controls.StackPanel
+                {
+                    Orientation = System.Windows.Controls.Orientation.Horizontal,
+                    Margin = new System.Windows.Thickness(0, 10, 0, 0)
+                };
+
                 System.Windows.Controls.Button pickTextureButton = new System.Windows.Controls.Button
                 {
-                    Content = "Pick Texture...",
-                    Margin = new System.Windows.Thickness(0, 10, 0, 0),
-                    Tag = i
+                    Content = hasTexture ? "Edit Texture..." : "Pick Texture...",
+                    Margin = new System.Windows.Thickness(0, 0, 10, 0)
                 };
                 pickTextureButton.Click += (s, args) => OnPickTexture();
-                */
+
+                System.Windows.Controls.Button clearTextureButton = new System.Windows.Controls.Button
+                {
+                    Content = "Clear Texture",
+                    IsEnabled = textureRefIndex != 255,
+                    Margin = new System.Windows.Thickness(0, 0, 0, 0)
+                };
+                clearTextureButton.Click += (s, args) => ClearSamplerTexture();
+
+                samplerButtonsPanel.Children.Add(pickTextureButton);
+                samplerButtonsPanel.Children.Add(clearTextureButton);
 
                 TextBlock detailsText = new TextBlock
                 {
@@ -358,7 +444,7 @@ namespace AlienPAK
                 
                 tabContent.Children.Add(textureFileText);
                 tabContent.Children.Add(imageScrollViewer);
-                //tabContent.Children.Add(pickTextureButton);  TODO
+                tabContent.Children.Add(samplerButtonsPanel);
                 tabContent.Children.Add(detailsText);
                 
                 TabItem tabItem = new TabItem
