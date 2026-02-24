@@ -33,6 +33,9 @@ namespace AlienPAK
             this.selectedNameLabel = new System.Windows.Forms.Label();
             this.okButton = new System.Windows.Forms.Button();
             this.cancelButton = new System.Windows.Forms.Button();
+            this.textureSearchTextBox = new System.Windows.Forms.TextBox();
+            this.textureSearchButton = new System.Windows.Forms.Button();
+            this.textureSearchClearButton = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this.previewImage)).BeginInit();
             this.SuspendLayout();
             // 
@@ -40,9 +43,9 @@ namespace AlienPAK
             // 
             this.fileTree.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
             | System.Windows.Forms.AnchorStyles.Left)));
-            this.fileTree.Location = new System.Drawing.Point(12, 12);
+            this.fileTree.Location = new System.Drawing.Point(12, 38);
             this.fileTree.Name = "fileTree";
-            this.fileTree.Size = new System.Drawing.Size(280, 406);
+            this.fileTree.Size = new System.Drawing.Size(280, 380);
             this.fileTree.TabIndex = 0;
             this.fileTree.AfterSelect += new System.Windows.Forms.TreeViewEventHandler(this.fileTree_AfterSelect);
             this.fileTree.NodeMouseDoubleClick += new System.Windows.Forms.TreeNodeMouseClickEventHandler(this.fileTree_NodeMouseDoubleClick);
@@ -52,9 +55,9 @@ namespace AlienPAK
             this.previewImage.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
             | System.Windows.Forms.AnchorStyles.Right)));
             this.previewImage.BackColor = System.Drawing.SystemColors.ControlDark;
-            this.previewImage.Location = new System.Drawing.Point(298, 35);
+            this.previewImage.Location = new System.Drawing.Point(298, 61);
             this.previewImage.Name = "previewImage";
-            this.previewImage.Size = new System.Drawing.Size(330, 383);
+            this.previewImage.Size = new System.Drawing.Size(330, 357);
             this.previewImage.SizeMode = System.Windows.Forms.PictureBoxSizeMode.Zoom;
             this.previewImage.TabIndex = 1;
             this.previewImage.TabStop = false;
@@ -64,7 +67,7 @@ namespace AlienPAK
             this.selectedNameLabel.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
             this.selectedNameLabel.AutoEllipsis = true;
-            this.selectedNameLabel.Location = new System.Drawing.Point(295, 12);
+            this.selectedNameLabel.Location = new System.Drawing.Point(295, 9);
             this.selectedNameLabel.Name = "selectedNameLabel";
             this.selectedNameLabel.Size = new System.Drawing.Size(333, 20);
             this.selectedNameLabel.TabIndex = 2;
@@ -92,11 +95,42 @@ namespace AlienPAK
             this.cancelButton.UseVisualStyleBackColor = true;
             this.cancelButton.Click += new System.EventHandler(this.cancelButton_Click);
             // 
+            // textureSearchTextBox
+            // 
+            this.textureSearchTextBox.Location = new System.Drawing.Point(12, 12);
+            this.textureSearchTextBox.Name = "textureSearchTextBox";
+            this.textureSearchTextBox.Size = new System.Drawing.Size(181, 20);
+            this.textureSearchTextBox.TabIndex = 5;
+            this.textureSearchTextBox.KeyDown += new System.Windows.Forms.KeyEventHandler(this.textureSearchTextBox_KeyDown);
+            // 
+            // textureSearchButton
+            // 
+            this.textureSearchButton.Location = new System.Drawing.Point(199, 10);
+            this.textureSearchButton.Name = "textureSearchButton";
+            this.textureSearchButton.Size = new System.Drawing.Size(46, 23);
+            this.textureSearchButton.TabIndex = 6;
+            this.textureSearchButton.Text = "Search";
+            this.textureSearchButton.UseVisualStyleBackColor = true;
+            this.textureSearchButton.Click += new System.EventHandler(this.textureSearchButton_Click);
+            // 
+            // textureSearchClearButton
+            // 
+            this.textureSearchClearButton.Location = new System.Drawing.Point(251, 10);
+            this.textureSearchClearButton.Name = "textureSearchClearButton";
+            this.textureSearchClearButton.Size = new System.Drawing.Size(41, 23);
+            this.textureSearchClearButton.TabIndex = 7;
+            this.textureSearchClearButton.Text = "Clear";
+            this.textureSearchClearButton.UseVisualStyleBackColor = true;
+            this.textureSearchClearButton.Click += new System.EventHandler(this.textureSearchClearButton_Click);
+            // 
             // TexturePicker
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(640, 459);
+            this.Controls.Add(this.textureSearchClearButton);
+            this.Controls.Add(this.textureSearchButton);
+            this.Controls.Add(this.textureSearchTextBox);
             this.Controls.Add(this.cancelButton);
             this.Controls.Add(this.okButton);
             this.Controls.Add(this.selectedNameLabel);
@@ -121,6 +155,9 @@ namespace AlienPAK
         private System.Windows.Forms.Label selectedNameLabel;
         private System.Windows.Forms.Button okButton;
         private System.Windows.Forms.Button cancelButton;
+        private System.Windows.Forms.TextBox textureSearchTextBox;
+        private System.Windows.Forms.Button textureSearchButton;
+        private System.Windows.Forms.Button textureSearchClearButton;
     }
 }
 

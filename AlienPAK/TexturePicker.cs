@@ -13,6 +13,7 @@ namespace AlienPAK
         private readonly Textures _textures;
         private readonly Textures _texturesGlobal;
         private TreeUtility _treeHelper;
+        private readonly List<string> _allTexturePaths = new List<string>();
 
         public Textures.TEX4 SelectedTexture { get; private set; }
 
@@ -29,14 +30,14 @@ namespace AlienPAK
 
         private void BuildTree()
         {
-            var paths = new List<string>();
+            _allTexturePaths.Clear();
 
             if (_textures != null)
             {
                 foreach (var tex in _textures.Entries)
                 {
                     if (!string.IsNullOrEmpty(tex.Name))
-                        paths.Add(tex.Name.Replace('\\', '/'));
+                        _allTexturePaths.Add(tex.Name.Replace('\\', '/'));
                 }
             }
 
@@ -45,12 +46,12 @@ namespace AlienPAK
                 foreach (var tex in _texturesGlobal.Entries)
                 {
                     if (!string.IsNullOrEmpty(tex.Name))
-                        paths.Add(tex.Name.Replace('\\', '/'));
+                        _allTexturePaths.Add(tex.Name.Replace('\\', '/'));
                 }
             }
 
             _treeHelper = new TreeUtility(fileTree);
-            _treeHelper.UpdateFileTree(paths, null);
+            ApplyTextureSearch();
         }
 
         private void PreselectInitialTexture(Textures.TEX4 initialTexture)
@@ -63,6 +64,47 @@ namespace AlienPAK
 
             if (fileTree.SelectedNode != null)
                 UpdateSelectionFromNode(fileTree.SelectedNode);
+        }
+
+        private void ApplyTextureSearch()
+        {
+            if (_treeHelper == null)
+                return;
+
+            IEnumerable<string> source = _allTexturePaths;
+            string filter = textureSearchTextBox.Text;
+            if (!string.IsNullOrWhiteSpace(filter))
+            {
+                string trimmed = filter.Trim();
+                source = source.Where(p => p.IndexOf(trimmed, StringComparison.OrdinalIgnoreCase) >= 0);
+            }
+
+            _treeHelper.UpdateFileTree(source.ToList(), null);
+
+            SelectedTexture = null;
+            previewImage.Image = null;
+            selectedNameLabel.Text = source.Any() ? "No texture selected" : "No textures match search";
+        }
+
+        private void textureSearchButton_Click(object sender, EventArgs e)
+        {
+            ApplyTextureSearch();
+        }
+
+        private void textureSearchClearButton_Click(object sender, EventArgs e)
+        {
+            textureSearchTextBox.Text = string.Empty;
+            ApplyTextureSearch();
+        }
+
+        private void textureSearchTextBox_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.KeyCode == Keys.Enter)
+            {
+                ApplyTextureSearch();
+                e.Handled = true;
+                e.SuppressKeyPress = true;
+            }
         }
 
         private void fileTree_AfterSelect(object sender, TreeViewEventArgs e)
