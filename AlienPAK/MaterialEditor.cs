@@ -1,4 +1,5 @@
 using CATHODE;
+using CATHODE.Enums;
 using CATHODE.ShaderTypes;
 using CathodeLib;
 using System;
@@ -383,42 +384,33 @@ namespace AlienPAK
 
         private void duplicateMaterial_Click(object sender, EventArgs e)
         {
-            /*
-            Materials.Material newMaterial = _sortedMaterials[materialList.SelectedIndex].Copy();
-            newMaterial.Name += " Clone";
-            for (int i = 0; i < newMaterial.ConstantBuffers.Length; i++)
-            {
-                if (newMaterial.ConstantBuffers == null) continue;
-                byte[] cstData = null;
-                using (MemoryStream stream = new MemoryStream(_materials.CSTData[i]))
-                {
-                    using (BinaryReader cstReader = new BinaryReader(stream))
-                    {
-                        cstReader.BaseStream.Position = newMaterial.ConstantBuffers[i].Offset * 4;
-                        cstData = cstReader.ReadBytes(newMaterial.ConstantBuffers[i].Length * 4);
-                    }
-                }
-                newMaterial.ConstantBuffers[i] = new Materials.Material.ConstantBuffer();
-                if (cstData != null)
-                {
-                    using (MemoryStream stream = new MemoryStream())
-                    {
-                        using (BinaryWriter cstWriter = new BinaryWriter(stream))
-                        {
-                            cstWriter.Write(_materials.CSTData[i]);
-                            newMaterial.ConstantBuffers[i].Offset = (int)cstWriter.BaseStream.Position / 4;
-                            newMaterial.ConstantBuffers[i].Length = cstData.Length / 4;
-                            cstWriter.Write(cstData);
+            if (materialList.SelectedItems.Count == 0) return;
 
-                            _materials.CSTData[i] = stream.ToArray();
-                        }
-                    }
-                }
+            Materials.Material material = materialList.SelectedItems[0].Tag as Materials.Material;
+            Materials.Material newMaterial = new Materials.Material();
+
+            newMaterial.Name = material.Name + " Clone";
+            for (int i = 0; i < material.TextureReferences.Count; i++)
+            {
+                TexturePtr texturePtr = new TexturePtr();
+                texturePtr.Texture = material.TextureReferences[i].Texture;
+                texturePtr.Location = material.TextureReferences[i].Location;
+                newMaterial.TextureReferences.Add(texturePtr);
             }
+            newMaterial.EngineConstants = new List<float>(material.EngineConstants);
+            newMaterial.VertexShaderConstants = new List<float>(material.VertexShaderConstants);
+            newMaterial.PixelShaderConstants = new List<float>(material.PixelShaderConstants);
+            newMaterial.HullShaderConstants = new List<float>(material.HullShaderConstants);
+            newMaterial.DomainShaderConstants = new List<float>(material.DomainShaderConstants);
+            newMaterial.OfflineLightFeatures = material.OfflineLightFeatures.Copy();
+            newMaterial.Shader = material.Shader;
+            newMaterial.PhysicalMaterialIndex = material.PhysicalMaterialIndex;
+            newMaterial.EnvironmentMapIndex = material.EnvironmentMapIndex;
+            newMaterial.Priority = material.Priority;
+
             _materials.Entries.Add(newMaterial);
-            Explorer.SaveTexturesAndUpdateMaterials(_textures, _materials);
             PopulateUI(newMaterial);
-            */
+            //ensure we select the new one
         }
     }
 }
