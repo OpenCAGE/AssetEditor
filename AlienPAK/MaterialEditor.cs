@@ -390,6 +390,7 @@ namespace AlienPAK
             
             var groupedMaterials = _sortedMaterials.Where(m => m.Shader != null).GroupBy(m => m.Shader.Ubershader).OrderBy(g => g.Key.ToString());
 
+            _controls.Visibility = System.Windows.Visibility.Hidden;
             foreach (var group in groupedMaterials)
             {
                 string groupName = group.Key.ToString();
@@ -404,7 +405,10 @@ namespace AlienPAK
                     materialList.Items.Add(item);
 
                     if (mat == material)
+                    {
                         item.Selected = true;
+                        _controls.Visibility = System.Windows.Visibility.Visible;
+                    }
                 }
             }
             materialList.EndUpdate();
