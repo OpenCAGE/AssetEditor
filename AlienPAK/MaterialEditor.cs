@@ -162,10 +162,19 @@ namespace AlienPAK
             }
         }
 
-        private void PopulateUI(Materials.Material material = null)
+        private void PopulateUI(Materials.Material material = null, string filter = null)
         {
             _sortedMaterials.Clear();
-            _sortedMaterials.AddRange(_materials.Entries);
+            IEnumerable<Materials.Material> source = _materials.Entries;
+
+            if (!string.IsNullOrWhiteSpace(filter))
+            {
+                string trimmedFilter = filter.Trim();
+                source = source.Where(m => !string.IsNullOrEmpty(m.Name) &&
+                                           m.Name.IndexOf(trimmedFilter, StringComparison.OrdinalIgnoreCase) >= 0);
+            }
+
+            _sortedMaterials.AddRange(source);
             _sortedMaterials = _sortedMaterials.OrderBy(o => o.Name).ToList();
 
             materialList.BeginUpdate();
@@ -197,6 +206,41 @@ namespace AlienPAK
             materialList.EndUpdate();
         }
 
+        private void ApplyMaterialSearch()
+        {
+            string filter = materialSearchTextBox.Text;
+
+            Materials.Material selectedMaterial = null;
+            if (materialList.SelectedItems.Count > 0)
+                selectedMaterial = materialList.SelectedItems[0].Tag as Materials.Material;
+
+            PopulateUI(selectedMaterial, filter);
+        }
+
+        private void materialSearchButton_Click(object sender, EventArgs e)
+        {
+            ApplyMaterialSearch();
+        }
+
+        private void materialSearchClearButton_Click(object sender, EventArgs e)
+        {
+            Materials.Material selectedMaterial = null;
+            if (materialList.SelectedItems.Count > 0)
+                selectedMaterial = materialList.SelectedItems[0].Tag as Materials.Material;
+
+            materialSearchTextBox.Text = string.Empty;
+            PopulateUI(selectedMaterial);
+        }
+
+        private void materialSearchTextBox_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.KeyCode == Keys.Enter)
+            {
+                materialSearchButton.PerformClick();
+                e.Handled = true;
+                e.SuppressKeyPress = true;
+            }
+        }
 
         private void materialList_SelectedIndexChanged(object sender, EventArgs e)
         {

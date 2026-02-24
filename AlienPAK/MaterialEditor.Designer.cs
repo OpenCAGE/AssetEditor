@@ -30,6 +30,9 @@ namespace AlienPAK
         {
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MaterialEditor));
             this.materialList = new System.Windows.Forms.ListView();
+            this.materialSearchTextBox = new System.Windows.Forms.TextBox();
+            this.materialSearchButton = new System.Windows.Forms.Button();
+            this.materialSearchClearButton = new System.Windows.Forms.Button();
             this.selectMaterial = new System.Windows.Forms.Button();
             this.duplicateMaterial = new System.Windows.Forms.Button();
             this.elementHost1 = new System.Windows.Forms.Integration.ElementHost();
@@ -43,14 +46,42 @@ namespace AlienPAK
             this.materialList.FullRowSelect = true;
             this.materialList.HideSelection = false;
             this.materialList.LabelWrap = false;
-            this.materialList.Location = new System.Drawing.Point(1, 6);
+            this.materialList.Location = new System.Drawing.Point(1, 35);
             this.materialList.MultiSelect = false;
             this.materialList.Name = "materialList";
-            this.materialList.Size = new System.Drawing.Size(384, 641);
+            this.materialList.Size = new System.Drawing.Size(384, 612);
             this.materialList.TabIndex = 21;
             this.materialList.UseCompatibleStateImageBehavior = false;
             this.materialList.View = System.Windows.Forms.View.Details;
             this.materialList.SelectedIndexChanged += new System.EventHandler(this.materialList_SelectedIndexChanged);
+            // 
+            // materialSearchTextBox
+            // 
+            this.materialSearchTextBox.Location = new System.Drawing.Point(1, 8);
+            this.materialSearchTextBox.Name = "materialSearchTextBox";
+            this.materialSearchTextBox.Size = new System.Drawing.Size(226, 20);
+            this.materialSearchTextBox.TabIndex = 24;
+            this.materialSearchTextBox.KeyDown += new System.Windows.Forms.KeyEventHandler(this.materialSearchTextBox_KeyDown);
+            // 
+            // materialSearchButton
+            // 
+            this.materialSearchButton.Location = new System.Drawing.Point(233, 6);
+            this.materialSearchButton.Name = "materialSearchButton";
+            this.materialSearchButton.Size = new System.Drawing.Size(70, 23);
+            this.materialSearchButton.TabIndex = 25;
+            this.materialSearchButton.Text = "Search";
+            this.materialSearchButton.UseVisualStyleBackColor = true;
+            this.materialSearchButton.Click += new System.EventHandler(this.materialSearchButton_Click);
+            // 
+            // materialSearchClearButton
+            // 
+            this.materialSearchClearButton.Location = new System.Drawing.Point(309, 6);
+            this.materialSearchClearButton.Name = "materialSearchClearButton";
+            this.materialSearchClearButton.Size = new System.Drawing.Size(76, 23);
+            this.materialSearchClearButton.TabIndex = 26;
+            this.materialSearchClearButton.Text = "Clear";
+            this.materialSearchClearButton.UseVisualStyleBackColor = true;
+            this.materialSearchClearButton.Click += new System.EventHandler(this.materialSearchClearButton_Click);
             // 
             // selectMaterial
             // 
@@ -86,6 +117,9 @@ namespace AlienPAK
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(845, 681);
+            this.Controls.Add(this.materialSearchClearButton);
+            this.Controls.Add(this.materialSearchButton);
+            this.Controls.Add(this.materialSearchTextBox);
             this.Controls.Add(this.duplicateMaterial);
             this.Controls.Add(this.selectMaterial);
             this.Controls.Add(this.materialList);
@@ -106,6 +140,9 @@ namespace AlienPAK
         private System.Windows.Forms.Integration.ElementHost elementHost1;
         private MaterialEditorControlsWPF materialEditorControlsWPF1;
         private System.Windows.Forms.ListView materialList;
+        private System.Windows.Forms.TextBox materialSearchTextBox;
+        private System.Windows.Forms.Button materialSearchButton;
+        private System.Windows.Forms.Button materialSearchClearButton;
         private System.Windows.Forms.Button selectMaterial;
         private System.Windows.Forms.Button duplicateMaterial;
     }
