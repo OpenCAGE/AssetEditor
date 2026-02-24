@@ -25,6 +25,8 @@ namespace AlienPAK
     public partial class Explorer : Form
     {
         Level LevelContent = null;
+        Global GlobalContent = null;
+        bool _isGlobalTextureLevel = false;
         private PAK2 Archive = null;
 
         TreeUtility treeHelper;
@@ -80,6 +82,8 @@ namespace AlienPAK
         {
             Archive = null;
             LevelContent = null;
+            GlobalContent = null;
+            _isGlobalTextureLevel = false;
 
             string path = SharedData.pathToAI + "/DATA/";
             Cursor.Current = Cursors.WaitCursor;
@@ -92,11 +96,32 @@ namespace AlienPAK
                     Archive = new PAK2(path + "UI.PAK");
                     break;
                 default:
-                    LevelContent = Utilities.LoadLevel(SharedData.pathToAI, level);
+                    if (LaunchMode == PAKType.TEXTURES && string.Equals(level, "GLOBAL", StringComparison.OrdinalIgnoreCase))
+                    {
+                        LoadGlobalTexturesAsLevel();
+                    }
+                    else
+                    {
+                        LevelContent = Utilities.LoadLevel(SharedData.pathToAI, level);
+                    }
                     break;
             }
             UpdateUI();
             Cursor.Current = Cursors.Default;
+        }
+
+        private void LoadGlobalTexturesAsLevel()
+        {
+            string pathToAI = SharedData.pathToAI;
+
+            PAK2 animPAK = new PAK2(pathToAI + "\\DATA\\GLOBAL\\ANIMATION.PAK");
+            GlobalContent = new Global(pathToAI + "\\DATA\\ENV\\GLOBAL\\", animPAK);
+
+            // Create a lightweight Level wrapper that uses the global textures as its texture collection.
+            LevelContent = new Level(pathToAI + "\\DATA\\ENV\\GLOBAL", GlobalContent, loadImmediately: false);
+            LevelContent.Textures = GlobalContent.Textures;
+
+            _isGlobalTextureLevel = true;
         }
 
         private void UpdateUI()
@@ -454,6 +479,7 @@ namespace AlienPAK
         private void Explorer_FormClosed(object sender, FormClosedEventArgs e)
         {
             LevelContent = null;
+            GlobalContent = null;
             treeHelper.UpdateFileTree(new List<string>());
             treeHelper = null;
             preview = null;
@@ -701,7 +727,15 @@ namespace AlienPAK
                 PatchManager.PerformRecommendedPatches(platform.Value, SharedData.pathToAI);
 
             Archive?.Save();
-            LevelContent?.Save();
+            if (_isGlobalTextureLevel && LaunchMode == PAKType.TEXTURES)
+            {
+                // When viewing the synthetic GLOBAL level in texture mode, only save the global textures.
+                GlobalContent?.Textures?.Save();
+            }
+            else
+            {
+                LevelContent?.Save();
+            }
 
             Cursor.Current = Cursors.Default;
 
