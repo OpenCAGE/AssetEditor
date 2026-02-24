@@ -29,6 +29,9 @@ namespace AlienPAK
         private void InitializeComponent()
         {
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(TexturePicker));
+            this.textureScopeTabs = new System.Windows.Forms.TabControl();
+            this.levelTexturesTabPage = new System.Windows.Forms.TabPage();
+            this.globalTexturesTabPage = new System.Windows.Forms.TabPage();
             this.fileTree = new System.Windows.Forms.TreeView();
             this.previewImage = new System.Windows.Forms.PictureBox();
             this.selectedNameLabel = new System.Windows.Forms.Label();
@@ -37,16 +40,50 @@ namespace AlienPAK
             this.textureSearchTextBox = new System.Windows.Forms.TextBox();
             this.textureSearchButton = new System.Windows.Forms.Button();
             this.textureSearchClearButton = new System.Windows.Forms.Button();
+            this.textureScopeTabs.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.previewImage)).BeginInit();
             this.SuspendLayout();
+            // 
+            // textureScopeTabs
+            // 
+            this.textureScopeTabs.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.textureScopeTabs.Controls.Add(this.levelTexturesTabPage);
+            this.textureScopeTabs.Controls.Add(this.globalTexturesTabPage);
+            this.textureScopeTabs.Location = new System.Drawing.Point(12, 38);
+            this.textureScopeTabs.Name = "textureScopeTabs";
+            this.textureScopeTabs.SelectedIndex = 0;
+            this.textureScopeTabs.Size = new System.Drawing.Size(280, 24);
+            this.textureScopeTabs.TabIndex = 8;
+            this.textureScopeTabs.SelectedIndexChanged += new System.EventHandler(this.textureScopeTabs_SelectedIndexChanged);
+            // 
+            // levelTexturesTabPage
+            // 
+            this.levelTexturesTabPage.Location = new System.Drawing.Point(4, 22);
+            this.levelTexturesTabPage.Name = "levelTexturesTabPage";
+            this.levelTexturesTabPage.Padding = new System.Windows.Forms.Padding(3);
+            this.levelTexturesTabPage.Size = new System.Drawing.Size(272, 0);
+            this.levelTexturesTabPage.TabIndex = 0;
+            this.levelTexturesTabPage.Text = "Level";
+            this.levelTexturesTabPage.UseVisualStyleBackColor = true;
+            // 
+            // globalTexturesTabPage
+            // 
+            this.globalTexturesTabPage.Location = new System.Drawing.Point(4, 22);
+            this.globalTexturesTabPage.Name = "globalTexturesTabPage";
+            this.globalTexturesTabPage.Padding = new System.Windows.Forms.Padding(3);
+            this.globalTexturesTabPage.Size = new System.Drawing.Size(272, 0);
+            this.globalTexturesTabPage.TabIndex = 1;
+            this.globalTexturesTabPage.Text = "Global";
+            this.globalTexturesTabPage.UseVisualStyleBackColor = true;
             // 
             // fileTree
             // 
             this.fileTree.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
             | System.Windows.Forms.AnchorStyles.Left)));
-            this.fileTree.Location = new System.Drawing.Point(12, 38);
+            this.fileTree.Location = new System.Drawing.Point(12, 68);
             this.fileTree.Name = "fileTree";
-            this.fileTree.Size = new System.Drawing.Size(280, 380);
+            this.fileTree.Size = new System.Drawing.Size(280, 350);
             this.fileTree.TabIndex = 0;
             this.fileTree.AfterSelect += new System.Windows.Forms.TreeViewEventHandler(this.fileTree_AfterSelect);
             this.fileTree.NodeMouseDoubleClick += new System.Windows.Forms.TreeNodeMouseClickEventHandler(this.fileTree_NodeMouseDoubleClick);
@@ -130,6 +167,7 @@ namespace AlienPAK
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(640, 459);
+            this.Controls.Add(this.textureScopeTabs);
             this.Controls.Add(this.textureSearchClearButton);
             this.Controls.Add(this.textureSearchButton);
             this.Controls.Add(this.textureSearchTextBox);
@@ -145,6 +183,7 @@ namespace AlienPAK
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
             this.Text = "Texture Picker";
             this.FormClosed += new System.Windows.Forms.FormClosedEventHandler(this.TexturePicker_FormClosed);
+            this.textureScopeTabs.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.previewImage)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
@@ -161,6 +200,9 @@ namespace AlienPAK
         private System.Windows.Forms.TextBox textureSearchTextBox;
         private System.Windows.Forms.Button textureSearchButton;
         private System.Windows.Forms.Button textureSearchClearButton;
+        private System.Windows.Forms.TabControl textureScopeTabs;
+        private System.Windows.Forms.TabPage levelTexturesTabPage;
+        private System.Windows.Forms.TabPage globalTexturesTabPage;
     }
 }
 
