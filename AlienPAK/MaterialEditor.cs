@@ -14,6 +14,7 @@ using System.Numerics;
 using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
+using System.Globalization;
 using System.Threading.Tasks;
 using System.Windows.Controls;
 using System.Windows.Forms;
@@ -183,34 +184,164 @@ namespace AlienPAK
             int remappedIndex = material.Shader.PixelShaderParameterRemaps[parameterIndex];
             int floatCount = GetFloatCountForParameterType(parameterType);
 
-            TextBlock textBlock = new TextBlock { Margin = new System.Windows.Thickness(0, 0, 0, 5) };
+            bool isInt = parameterType == UberShaderParameterType.Int;
+            bool isColorLike =
+                (parameterType == UberShaderParameterType.Float3 || parameterType == UberShaderParameterType.Float4 ||
+                 parameterType == UberShaderParameterType.Half3 || parameterType == UberShaderParameterType.Half4) &&
+                (parameterName.IndexOf("color", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                 parameterName.IndexOf("colour", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                 parameterName.IndexOf("tint", StringComparison.OrdinalIgnoreCase) >= 0);
+
+            TextBlock header = new TextBlock
+            {
+                Margin = new System.Windows.Thickness(0, 0, 0, 5),
+                Text = $"{parameterName} ({parameterType})"
+            };
+            _controls.ParameterDetailsPanel.Children.Add(header);
+
+            System.Windows.Controls.StackPanel row = new System.Windows.Controls.StackPanel
+            {
+                Orientation = System.Windows.Controls.Orientation.Horizontal,
+                Margin = new System.Windows.Thickness(0, 0, 0, 5)
+            };
+
+            Func<float, string> toString = v => v.ToString("F6", CultureInfo.InvariantCulture);
+
+            Action<System.Windows.Controls.TextBox, int> attachFloatHandler = (box, componentOffset) =>
+            {
+                box.LostKeyboardFocus += (s, eArgs) =>
+                {
+                    if (remappedIndex + componentOffset >= material.PixelShaderConstants.Count)
+                        return;
+
+                    float current = material.PixelShaderConstants[remappedIndex + componentOffset];
+
+                    if (isInt)
+                    {
+                        if (int.TryParse(box.Text, NumberStyles.Integer, CultureInfo.InvariantCulture, out int intVal))
+                        {
+                            material.PixelShaderConstants[remappedIndex + componentOffset] = intVal;
+                            box.Text = intVal.ToString(CultureInfo.InvariantCulture);
+                        }
+                        else
+                        {
+                            box.Text = ((int)current).ToString(CultureInfo.InvariantCulture);
+                        }
+                    }
+                    else
+                    {
+                        if (float.TryParse(box.Text, NumberStyles.Float, CultureInfo.InvariantCulture, out float val))
+                        {
+                            material.PixelShaderConstants[remappedIndex + componentOffset] = val;
+                            box.Text = toString(val);
+                        }
+                        else
+                        {
+                            box.Text = toString(current);
+                        }
+                    }
+                };
+            };
+
             if (floatCount == 1)
             {
-                float value = material.PixelShaderConstants[remappedIndex];
-                textBlock.Text = parameterType == UberShaderParameterType.Int ? ((int)value).ToString() : value.ToString("F6");
+                float v = remappedIndex < material.PixelShaderConstants.Count ? material.PixelShaderConstants[remappedIndex] : 0f;
+
+                TextBlock label = new TextBlock
+                {
+                    Text = isInt ? "Value (int):" : "Value:",
+                    Margin = new System.Windows.Thickness(0, 0, 5, 0),
+                    VerticalAlignment = System.Windows.VerticalAlignment.Center
+                };
+                row.Children.Add(label);
+
+                System.Windows.Controls.TextBox box = new System.Windows.Controls.TextBox
+                {
+                    Width = 100,
+                    Text = isInt ? ((int)v).ToString(CultureInfo.InvariantCulture) : toString(v)
+                };
+                attachFloatHandler(box, 0);
+                row.Children.Add(box);
             }
-            else if (floatCount == 2)
+            else
             {
-                float x = material.PixelShaderConstants[remappedIndex];
-                float y = remappedIndex + 1 < material.PixelShaderConstants.Count ? material.PixelShaderConstants[remappedIndex + 1] : 0;
-                textBlock.Text = $"X: {x:F6}, Y: {y:F6}";
+                string[] labels = floatCount == 2
+                    ? new[] { "X:", "Y:" }
+                    : floatCount == 3 ? new[] { "X:", "Y:", "Z:" } : new[] { "X:", "Y:", "Z:", "W:" };
+
+                for (int i = 0; i < floatCount; i++)
+                {
+                    float v = (remappedIndex + i) < material.PixelShaderConstants.Count
+                        ? material.PixelShaderConstants[remappedIndex + i]
+                        : 0f;
+
+                    TextBlock label = new TextBlock
+                    {
+                        Text = labels[i],
+                        Margin = new System.Windows.Thickness(i == 0 ? 0 : 10, 0, 5, 0),
+                        VerticalAlignment = System.Windows.VerticalAlignment.Center
+                    };
+                    row.Children.Add(label);
+
+                    System.Windows.Controls.TextBox box = new System.Windows.Controls.TextBox
+                    {
+                        Width = 80,
+                        Text = isInt ? ((int)v).ToString(CultureInfo.InvariantCulture) : toString(v)
+                    };
+                    attachFloatHandler(box, i);
+                    row.Children.Add(box);
+                }
             }
-            else if (floatCount == 3)
+
+            _controls.ParameterDetailsPanel.Children.Add(row);
+
+            if (isColorLike)
             {
-                float x = material.PixelShaderConstants[remappedIndex];
-                float y = remappedIndex + 1 < material.PixelShaderConstants.Count ? material.PixelShaderConstants[remappedIndex + 1] : 0;
-                float z = remappedIndex + 2 < material.PixelShaderConstants.Count ? material.PixelShaderConstants[remappedIndex + 2] : 0;
-                textBlock.Text = $"X: {x:F6}, Y: {y:F6}, Z: {z:F6}";
+                System.Windows.Controls.Button colorButton = new System.Windows.Controls.Button
+                {
+                    Content = "Pick Color...",
+                    Margin = new System.Windows.Thickness(0, 5, 0, 0),
+                    Width = 100
+                };
+
+                colorButton.Click += (s, eArgs) =>
+                {
+                    float r = remappedIndex + 0 < material.PixelShaderConstants.Count ? material.PixelShaderConstants[remappedIndex + 0] : 0f;
+                    float g = remappedIndex + 1 < material.PixelShaderConstants.Count ? material.PixelShaderConstants[remappedIndex + 1] : 0f;
+                    float b = remappedIndex + 2 < material.PixelShaderConstants.Count ? material.PixelShaderConstants[remappedIndex + 2] : 0f;
+                    float a = remappedIndex + 3 < material.PixelShaderConstants.Count ? material.PixelShaderConstants[remappedIndex + 3] : 1f;
+
+                    using (var dialog = new ColorDialog())
+                    {
+                        int clampByte(float f) => Math.Max(0, Math.Min(255, (int)Math.Round(f * 255f)));
+
+                        dialog.Color = System.Drawing.Color.FromArgb(
+                            clampByte(a),
+                            clampByte(r),
+                            clampByte(g),
+                            clampByte(b));
+
+                        if (dialog.ShowDialog() != DialogResult.OK)
+                            return;
+
+                        float fromByte(byte c) => c / 255f;
+
+                        if (remappedIndex + 0 < material.PixelShaderConstants.Count)
+                            material.PixelShaderConstants[remappedIndex + 0] = fromByte(dialog.Color.R);
+                        if (remappedIndex + 1 < material.PixelShaderConstants.Count)
+                            material.PixelShaderConstants[remappedIndex + 1] = fromByte(dialog.Color.G);
+                        if (remappedIndex + 2 < material.PixelShaderConstants.Count)
+                            material.PixelShaderConstants[remappedIndex + 2] = fromByte(dialog.Color.B);
+                        if (floatCount == 4 && remappedIndex + 3 < material.PixelShaderConstants.Count)
+                            material.PixelShaderConstants[remappedIndex + 3] = fromByte(dialog.Color.A);
+
+                        // Refresh UI by re-invoking this handler
+                        OnParameterSelected(parameterName);
+                    }
+                };
+
+                _controls.ParameterDetailsPanel.Children.Add(colorButton);
             }
-            else if (floatCount == 4)
-            {
-                float x = material.PixelShaderConstants[remappedIndex];
-                float y = remappedIndex + 1 < material.PixelShaderConstants.Count ? material.PixelShaderConstants[remappedIndex + 1] : 0;
-                float z = remappedIndex + 2 < material.PixelShaderConstants.Count ? material.PixelShaderConstants[remappedIndex + 2] : 0;
-                float w = remappedIndex + 3 < material.PixelShaderConstants.Count ? material.PixelShaderConstants[remappedIndex + 3] : 0;
-                textBlock.Text = $"X: {x:F6}, Y: {y:F6}, Z: {z:F6}, W: {w:F6}";
-            }
-            _controls.ParameterDetailsPanel.Children.Add(textBlock);
         }
 
         private int GetFloatCountForParameterType(UberShaderParameterType parameterType)
