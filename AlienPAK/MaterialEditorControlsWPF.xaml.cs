@@ -26,6 +26,7 @@ namespace AlienPAK
         public Action OnPickTexture;
 
         public TabControl SamplerTabControl => samplerTabControl;
+        public TextBlock MaterialName => materialNameText;
         public StackPanel FeatureDetailsPanel => featureDetailsPanel;
         public ComboBox ParameterSelection => parameterSelection;
         public StackPanel ParameterDetailsPanel => parameterDetailsPanel;

@@ -28,6 +28,7 @@ namespace AlienPAK
         /// </summary>
         private void InitializeComponent()
         {
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(TexturePicker));
             this.fileTree = new System.Windows.Forms.TreeView();
             this.previewImage = new System.Windows.Forms.PictureBox();
             this.selectedNameLabel = new System.Windows.Forms.Label();
@@ -52,7 +53,8 @@ namespace AlienPAK
             // 
             // previewImage
             // 
-            this.previewImage.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            this.previewImage.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
             this.previewImage.BackColor = System.Drawing.SystemColors.ControlDark;
             this.previewImage.Location = new System.Drawing.Point(298, 61);
@@ -136,7 +138,7 @@ namespace AlienPAK
             this.Controls.Add(this.selectedNameLabel);
             this.Controls.Add(this.previewImage);
             this.Controls.Add(this.fileTree);
-            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;
+            this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.MaximizeBox = false;
             this.MinimizeBox = false;
             this.Name = "TexturePicker";
@@ -145,6 +147,7 @@ namespace AlienPAK
             this.FormClosed += new System.Windows.Forms.FormClosedEventHandler(this.TexturePicker_FormClosed);
             ((System.ComponentModel.ISupportInitialize)(this.previewImage)).EndInit();
             this.ResumeLayout(false);
+            this.PerformLayout();
 
         }
 

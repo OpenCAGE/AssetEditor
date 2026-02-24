@@ -339,6 +339,9 @@
       <SubType>Designer</SubType>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
     </EmbeddedResource>
+    <EmbeddedResource Include="TexturePicker.resx">
+      <DependentUpon>TexturePicker.cs</DependentUpon>
+    </EmbeddedResource>
     <Resource Include="Fonts\Isolation_Isolation.ttf" />
     <Resource Include="Fonts\JixellationBold_Jixellation.ttf" />
     <None Include="packages.config" />

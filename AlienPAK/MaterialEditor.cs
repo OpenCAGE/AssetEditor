@@ -454,12 +454,14 @@ namespace AlienPAK
             _controls.FeatureDetailsPanel.Children.Clear();
             _controls.ParameterDetailsPanel.Children.Clear();
             _controls.ShaderType.Text = "";
+            _controls.MaterialName.Text = "";
 
             if (materialList.SelectedItems.Count == 0) return;
 
             Materials.Material material = materialList.SelectedItems[0].Tag as Materials.Material;
             if (material == null) return;
 
+            _controls.MaterialName.Text = material.Name;
             _controls.ShaderType.Text = material.Shader.Ubershader.ToString();
 
             List<string> samplers = ShaderUtility.GetSamplers(material.Shader.Ubershader);

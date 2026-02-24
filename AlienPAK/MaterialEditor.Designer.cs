@@ -29,6 +29,7 @@ namespace AlienPAK
         private void InitializeComponent()
         {
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MaterialEditor));
+            this.splitContainer1 = new System.Windows.Forms.SplitContainer();
             this.materialList = new System.Windows.Forms.ListView();
             this.materialSearchTextBox = new System.Windows.Forms.TextBox();
             this.materialSearchButton = new System.Windows.Forms.Button();
@@ -37,19 +38,44 @@ namespace AlienPAK
             this.duplicateMaterial = new System.Windows.Forms.Button();
             this.elementHost1 = new System.Windows.Forms.Integration.ElementHost();
             this.materialEditorControlsWPF1 = new AlienPAK.MaterialEditorControlsWPF();
+            ((System.ComponentModel.ISupportInitialize)(this.splitContainer1)).BeginInit();
+            this.splitContainer1.Panel1.SuspendLayout();
+            this.splitContainer1.Panel2.SuspendLayout();
             this.SuspendLayout();
+            // 
+            // splitContainer1
+            // 
+            this.splitContainer1.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.splitContainer1.Location = new System.Drawing.Point(0, 0);
+            this.splitContainer1.Name = "splitContainer1";
+            // 
+            // splitContainer1.Panel1
+            // 
+            this.splitContainer1.Panel1.Controls.Add(this.materialList);
+            this.splitContainer1.Panel1.Controls.Add(this.materialSearchClearButton);
+            this.splitContainer1.Panel1.Controls.Add(this.materialSearchButton);
+            this.splitContainer1.Panel1.Controls.Add(this.materialSearchTextBox);
+            // 
+            // splitContainer1.Panel2
+            // 
+            this.splitContainer1.Panel2.Controls.Add(this.selectMaterial);
+            this.splitContainer1.Panel2.Controls.Add(this.elementHost1);
+            this.splitContainer1.Size = new System.Drawing.Size(845, 681);
+            this.splitContainer1.SplitterDistance = 390;
+            this.splitContainer1.TabIndex = 0;
             // 
             // materialList
             // 
-            this.materialList.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
-            | System.Windows.Forms.AnchorStyles.Left)));
+            this.materialList.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
             this.materialList.FullRowSelect = true;
             this.materialList.HideSelection = false;
             this.materialList.LabelWrap = false;
-            this.materialList.Location = new System.Drawing.Point(1, 35);
+            this.materialList.Location = new System.Drawing.Point(3, 35);
             this.materialList.MultiSelect = false;
             this.materialList.Name = "materialList";
-            this.materialList.Size = new System.Drawing.Size(384, 612);
+            this.materialList.Size = new System.Drawing.Size(384, 606);
             this.materialList.TabIndex = 21;
             this.materialList.UseCompatibleStateImageBehavior = false;
             this.materialList.View = System.Windows.Forms.View.Details;
@@ -57,7 +83,9 @@ namespace AlienPAK
             // 
             // materialSearchTextBox
             // 
-            this.materialSearchTextBox.Location = new System.Drawing.Point(1, 8);
+            this.materialSearchTextBox.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.materialSearchTextBox.Location = new System.Drawing.Point(3, 8);
             this.materialSearchTextBox.Name = "materialSearchTextBox";
             this.materialSearchTextBox.Size = new System.Drawing.Size(226, 20);
             this.materialSearchTextBox.TabIndex = 24;
@@ -65,7 +93,8 @@ namespace AlienPAK
             // 
             // materialSearchButton
             // 
-            this.materialSearchButton.Location = new System.Drawing.Point(233, 6);
+            this.materialSearchButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.materialSearchButton.Location = new System.Drawing.Point(235, 6);
             this.materialSearchButton.Name = "materialSearchButton";
             this.materialSearchButton.Size = new System.Drawing.Size(70, 23);
             this.materialSearchButton.TabIndex = 25;
@@ -75,7 +104,8 @@ namespace AlienPAK
             // 
             // materialSearchClearButton
             // 
-            this.materialSearchClearButton.Location = new System.Drawing.Point(309, 6);
+            this.materialSearchClearButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.materialSearchClearButton.Location = new System.Drawing.Point(311, 6);
             this.materialSearchClearButton.Name = "materialSearchClearButton";
             this.materialSearchClearButton.Size = new System.Drawing.Size(76, 23);
             this.materialSearchClearButton.TabIndex = 26;
@@ -85,7 +115,8 @@ namespace AlienPAK
             // 
             // selectMaterial
             // 
-            this.selectMaterial.Location = new System.Drawing.Point(693, 639);
+            this.selectMaterial.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
+            this.selectMaterial.Location = new System.Drawing.Point(442, 639);
             this.selectMaterial.Name = "selectMaterial";
             this.selectMaterial.Size = new System.Drawing.Size(140, 30);
             this.selectMaterial.TabIndex = 22;
@@ -95,6 +126,8 @@ namespace AlienPAK
             // 
             // duplicateMaterial
             // 
+            this.duplicateMaterial.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
             this.duplicateMaterial.Location = new System.Drawing.Point(1, 652);
             this.duplicateMaterial.Name = "duplicateMaterial";
             this.duplicateMaterial.Size = new System.Drawing.Size(384, 24);
@@ -105,9 +138,10 @@ namespace AlienPAK
             // 
             // elementHost1
             // 
-            this.elementHost1.Location = new System.Drawing.Point(391, 2);
+            this.elementHost1.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.elementHost1.Location = new System.Drawing.Point(0, 0);
             this.elementHost1.Name = "elementHost1";
-            this.elementHost1.Size = new System.Drawing.Size(450, 676);
+            this.elementHost1.Size = new System.Drawing.Size(451, 681);
             this.elementHost1.TabIndex = 20;
             this.elementHost1.Text = "elementHost1";
             this.elementHost1.Child = this.materialEditorControlsWPF1;
@@ -117,20 +151,20 @@ namespace AlienPAK
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(845, 681);
-            this.Controls.Add(this.materialSearchClearButton);
-            this.Controls.Add(this.materialSearchButton);
-            this.Controls.Add(this.materialSearchTextBox);
+            this.Controls.Add(this.splitContainer1);
             this.Controls.Add(this.duplicateMaterial);
-            this.Controls.Add(this.selectMaterial);
-            this.Controls.Add(this.materialList);
-            this.Controls.Add(this.elementHost1);
-            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedToolWindow;
+            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.Sizable;
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
-            this.MaximizeBox = false;
+            this.MaximizeBox = true;
+            this.MinimumSize = new System.Drawing.Size(900, 700);
             this.Name = "MaterialEditor";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
             this.Text = "Material Editor";
             this.Load += new System.EventHandler(this.MaterialEditor_Load);
+            this.splitContainer1.Panel1.ResumeLayout(false);
+            this.splitContainer1.Panel1.PerformLayout();
+            this.splitContainer1.Panel2.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)(this.splitContainer1)).EndInit();
             this.ResumeLayout(false);
 
         }
@@ -145,5 +179,6 @@ namespace AlienPAK
         private System.Windows.Forms.Button materialSearchClearButton;
         private System.Windows.Forms.Button selectMaterial;
         private System.Windows.Forms.Button duplicateMaterial;
+        private System.Windows.Forms.SplitContainer splitContainer1;
     }
 }
