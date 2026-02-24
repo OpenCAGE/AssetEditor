@@ -456,7 +456,9 @@ namespace AlienPAK
             _controls.ShaderType.Text = "";
             _controls.MaterialName.Text = "";
 
+            _controls.Visibility = System.Windows.Visibility.Hidden;
             if (materialList.SelectedItems.Count == 0) return;
+            _controls.Visibility = System.Windows.Visibility.Visible;
 
             Materials.Material material = materialList.SelectedItems[0].Tag as Materials.Material;
             if (material == null) return;
