@@ -16,25 +16,20 @@
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
 
-            <GroupBox x:Name="materialPreviewGroup" Header="Samplers" Margin="0 0 0 10" Grid.Row="0">
-                <TabControl x:Name="samplerTabControl" Margin="10" TabStripPlacement="Top" SelectionChanged="SamplerTabControl_SelectionChanged" />
-            </GroupBox>
-
-            <GroupBox x:Name="featureGroup" Header="Features" Margin="0 0 0 10" Grid.Row="1">
-                <ScrollViewer VerticalScrollBarVisibility="Auto" MaxHeight="600">
-                    <StackPanel x:Name="featureDetailsPanel" Margin="10"></StackPanel>
-                </ScrollViewer>
-            </GroupBox>
-
-            <GroupBox x:Name="parameterGroup" Header="Parameters" Margin="0 0 0 10" Grid.Row="2">
-                <StackPanel>
-                    <ComboBox x:Name="parameterSelection" Margin="10 10 10 0" SelectionChanged="ParameterSelectionChanged"></ComboBox>
-                    <StackPanel x:Name="parameterDetailsPanel" Margin="10"></StackPanel>
-                </StackPanel>
-            </GroupBox>
-
-            <StackPanel Grid.Row="3">
-                <WrapPanel Margin="10">
+            <StackPanel Grid.Row="0"  Margin="10">
+                <WrapPanel>
+                    <StackPanel>
+                        <WrapPanel>
+                            <TextBlock FontWeight="Bold" Margin="0 0 5 0">Material Name:</TextBlock>
+                        </WrapPanel>
+                    </StackPanel>
+                    <StackPanel>
+                        <WrapPanel>
+                            <TextBlock x:Name="materialNameText" />
+                        </WrapPanel>
+                    </StackPanel>
+                </WrapPanel>
+                <WrapPanel>
                     <StackPanel>
                         <WrapPanel>
                             <TextBlock FontWeight="Bold" Margin="0 0 5 0">Ubershader Type:</TextBlock>
@@ -42,11 +37,33 @@
                     </StackPanel>
                     <StackPanel>
                         <WrapPanel>
-                            <TextBlock x:Name="shaderType">text</TextBlock>
+                            <TextBlock x:Name="shaderType"></TextBlock>
                         </WrapPanel>
                     </StackPanel>
                 </WrapPanel>
             </StackPanel>
+
+            <GroupBox x:Name="materialPreviewGroup" Header="Samplers" Margin="0 0 0 10" Grid.Row="1">
+                <StackPanel>
+                    <TabControl x:Name="samplerTabControl"
+                                Margin="10,0,10,10"
+                                TabStripPlacement="Top"
+                                SelectionChanged="SamplerTabControl_SelectionChanged" />
+                </StackPanel>
+            </GroupBox>
+
+            <GroupBox x:Name="featureGroup" Header="Features" Margin="0 0 0 10" Grid.Row="2">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" MaxHeight="600">
+                    <StackPanel x:Name="featureDetailsPanel" Margin="10"></StackPanel>
+                </ScrollViewer>
+            </GroupBox>
+
+            <GroupBox x:Name="parameterGroup" Header="Parameters" Margin="0 0 0 10" Grid.Row="3">
+                <StackPanel>
+                    <ComboBox x:Name="parameterSelection" Margin="10 10 10 0" SelectionChanged="ParameterSelectionChanged"></ComboBox>
+                    <StackPanel x:Name="parameterDetailsPanel" Margin="10"></StackPanel>
+                </StackPanel>
+            </GroupBox>
         </Grid>
     </ScrollViewer>
 </UserControl>

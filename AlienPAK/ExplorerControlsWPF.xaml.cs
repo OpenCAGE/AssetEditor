@@ -280,7 +280,7 @@ namespace AlienPAK
                 levelSelectDropdown.Items.Clear();
                 List<string> levels = Level.GetLevels(SharedData.pathToAI);
                 for (int i = 0; i < levels.Count; i++) levelSelectDropdown.Items.Add(levels[i]);
-                //if (type == PAKType.TEXTURES || type == PAKType.MODELS) levelSelectDropdown.Items.Add("GLOBAL");
+                if (type == PAKType.TEXTURES) levelSelectDropdown.Items.Add("GLOBAL");
                 levelSelectDropdown.SelectedIndex = 0;
             }
 

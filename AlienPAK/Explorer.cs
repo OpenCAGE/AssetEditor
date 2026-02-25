@@ -25,6 +25,8 @@ namespace AlienPAK
     public partial class Explorer : Form
     {
         Level LevelContent = null;
+        Global GlobalContent = null;
+        bool _isGlobalTextureLevel = false;
         private PAK2 Archive = null;
 
         TreeUtility treeHelper;
@@ -80,6 +82,13 @@ namespace AlienPAK
         {
             Archive = null;
             LevelContent = null;
+            GlobalContent = null;
+            _isGlobalTextureLevel = false;
+
+            GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced, true);
+            GC.WaitForPendingFinalizers();
+            GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced, true);
+            GC.WaitForPendingFinalizers();
 
             string path = SharedData.pathToAI + "/DATA/";
             Cursor.Current = Cursors.WaitCursor;
@@ -92,11 +101,32 @@ namespace AlienPAK
                     Archive = new PAK2(path + "UI.PAK");
                     break;
                 default:
-                    LevelContent = Utilities.LoadLevel(SharedData.pathToAI, level);
+                    if (LaunchMode == PAKType.TEXTURES && string.Equals(level, "GLOBAL", StringComparison.OrdinalIgnoreCase))
+                    {
+                        LoadGlobalTexturesAsLevel();
+                    }
+                    else
+                    {
+                        LevelContent = Utilities.LoadLevel(SharedData.pathToAI, level);
+                    }
                     break;
             }
             UpdateUI();
             Cursor.Current = Cursors.Default;
+        }
+
+        private void LoadGlobalTexturesAsLevel()
+        {
+            string pathToAI = SharedData.pathToAI;
+
+            PAK2 animPAK = new PAK2(pathToAI + "\\DATA\\GLOBAL\\ANIMATION.PAK");
+            GlobalContent = new Global(pathToAI + "\\DATA\\ENV\\GLOBAL\\", animPAK);
+
+            // Create a lightweight Level wrapper that uses the global textures as its texture collection.
+            LevelContent = new Level(pathToAI + "\\DATA\\ENV\\GLOBAL", GlobalContent, loadImmediately: false);
+            LevelContent.Textures = GlobalContent.Textures;
+
+            _isGlobalTextureLevel = true;
         }
 
         private void UpdateUI()
@@ -215,39 +245,25 @@ namespace AlienPAK
                         break;
                     case PAKType.MODELS:
                         newFileName += ".cs2";
-                        Models.CS2 cs2 = new Models.CS2();
-                        cs2.Name = newFileName;
-                        cs2.Components.Add(new Models.CS2.Component());
-                        cs2.Components[0].LODs.Add(new Models.CS2.Component.LOD(newFileName));
+                        Scene importScene = null;
                         using (AssimpContext importer = new AssimpContext())
                         {
-                            //TODO: utilise aiProcess_SplitLargeMeshes to avoid passing our vert limit
-                            Scene model = importer.ImportFile(FilePicker.FileName,
-                                PostProcessSteps.Triangulate | PostProcessSteps.FindDegenerates | PostProcessSteps.LimitBoneWeights | 
+                            importScene = importer.ImportFile(FilePicker.FileName,
+                                PostProcessSteps.Triangulate | PostProcessSteps.FindDegenerates | PostProcessSteps.LimitBoneWeights |
                                 PostProcessSteps.GenerateBoundingBoxes | PostProcessSteps.FlipUVs | PostProcessSteps.FlipWindingOrder | PostProcessSteps.MakeLeftHanded);
-                            ushort biggestSF = 0;
-                            for (int i = 0; i < model.Meshes.Count; i++)
-                            {
-                                ushort newSF = model.Meshes[i].CalculateScaleFactor();
-                                if (newSF > biggestSF) biggestSF = newSF;
-                            }
-                            for (int i = 0; i < model.Meshes.Count; i++)
-                            {
-                                Models.CS2.Component.LOD.Submesh submesh = model.Meshes[i].ToSubmesh(biggestSF);
-                                if (submesh == null)
-                                {
-                                    MessageBox.Show("Failed to generate CS2 submesh from imported model submesh " + i + ".\nPlease check your submesh polycount - each may not exceed " + Int16.MaxValue + " verts.", "Import failed", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                                    return;
-                                }
-                                cs2.Components[0].LODs[0].Submeshes.Add(submesh);
-                            }
                         }
-                        if (cs2.Components[0].LODs[0].Submeshes.Count == 0)
+                        if (importScene == null || importScene.MeshCount == 0)
                         {
-                            MessageBox.Show("Failed to generate CS2 from selected model: could not find any mesh data! Please ensure all meshes are children of the scene's root node.", "Import failed", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                            MessageBox.Show("Failed to load model or no mesh data found. Ensure meshes are under the scene root.", "Import failed", MessageBoxButtons.OK, MessageBoxIcon.Error);
                             return;
                         }
-                        LevelContent.Models.Entries.Add(cs2);
+                        using (var previewForm = new ModelImportPreview(importScene, FilePicker.FileName,
+                            LevelContent.Textures, LevelContent.Global?.Textures, LevelContent.Materials, LevelContent.Shaders))
+                        {
+                            if (previewForm.ShowDialog(this) != DialogResult.OK || previewForm.ResultCs2 == null)
+                                break;
+                            LevelContent.Models.Entries.Add(previewForm.ResultCs2);
+                        }
                         break;
                     default:
                         return;
@@ -468,6 +484,7 @@ namespace AlienPAK
         private void Explorer_FormClosed(object sender, FormClosedEventArgs e)
         {
             LevelContent = null;
+            GlobalContent = null;
             treeHelper.UpdateFileTree(new List<string>());
             treeHelper = null;
             preview = null;
@@ -715,7 +732,15 @@ namespace AlienPAK
                 PatchManager.PerformRecommendedPatches(platform.Value, SharedData.pathToAI);
 
             Archive?.Save();
-            LevelContent?.Save();
+            if (_isGlobalTextureLevel && LaunchMode == PAKType.TEXTURES)
+            {
+                // When viewing the synthetic GLOBAL level in texture mode, only save the global textures.
+                GlobalContent?.Textures?.Save();
+            }
+            else
+            {
+                LevelContent?.Save();
+            }
 
             Cursor.Current = Cursors.Default;
 

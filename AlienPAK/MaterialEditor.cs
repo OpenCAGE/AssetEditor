@@ -1,4 +1,5 @@
 using CATHODE;
+using CATHODE.Enums;
 using CATHODE.ShaderTypes;
 using CathodeLib;
 using System;
@@ -13,6 +14,7 @@ using System.Numerics;
 using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
+using System.Globalization;
 using System.Threading.Tasks;
 using System.Windows.Controls;
 using System.Windows.Forms;
@@ -67,7 +69,7 @@ namespace AlienPAK
 
         private void OnSamplerSelected(int samplerTabIndex)
         {
-            //todo
+            // Sampler tab changed - no additional behaviour needed for now.
         }
 
         private void OnPickTexture()
@@ -80,11 +82,84 @@ namespace AlienPAK
             if (samplerTabIndex >= _samplerInfo.Count) return;
             
             var samplerInfo = _samplerInfo[samplerTabIndex];
-            string samplerName = samplerInfo.Item1;
             int samplerIndex = samplerInfo.Item2;
             int textureRefIndex = samplerInfo.Item3;
 
-            //todo!!
+            if (_textures == null && _texturesGlobal == null)
+            {
+                MessageBox.Show("No texture data is loaded for this material.", "Cannot pick texture", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+
+            Textures.TEX4 currentTexture = null;
+            if (textureRefIndex != 255 && textureRefIndex < material.TextureReferences.Count)
+            {
+                var textureRef = material.TextureReferences[textureRefIndex];
+                currentTexture = textureRef?.Texture;
+            }
+
+            using (var picker = new TexturePicker(_textures, _texturesGlobal, currentTexture))
+            {
+                if (picker.ShowDialog(this) != DialogResult.OK)
+                    return;
+
+                var chosenTexture = picker.SelectedTexture;
+                if (chosenTexture == null)
+                    return;
+
+                if (textureRefIndex != 255 && textureRefIndex < material.TextureReferences.Count)
+                {
+                    var textureRef = material.TextureReferences[textureRefIndex];
+                    textureRef.Texture = chosenTexture;
+                }
+                else
+                {
+                    if (material.Shader.SamplerRemaps.Count <= samplerIndex)
+                    {
+                        while (material.Shader.SamplerRemaps.Count <= samplerIndex)
+                            material.Shader.SamplerRemaps.Add(255);
+                    }
+
+                    textureRefIndex = material.TextureReferences.Count;
+                    TexturePtr texturePtr = new TexturePtr
+                    {
+                        Texture = chosenTexture
+                    };
+                    material.TextureReferences.Add(texturePtr);
+                    material.Shader.SamplerRemaps[samplerIndex] = textureRefIndex;
+
+                    _samplerInfo[samplerTabIndex] = new Tuple<string, int, int>(samplerInfo.Item1, samplerIndex, textureRefIndex);
+                }
+            }
+
+            materialList_SelectedIndexChanged(null, EventArgs.Empty);
+        }
+
+        private void ClearSamplerTexture()
+        {
+            if (materialList.SelectedItems.Count == 0 || _controls.SamplerTabControl.SelectedIndex < 0) return;
+
+            Materials.Material material = materialList.SelectedItems[0].Tag as Materials.Material;
+            if (material == null) return;
+            int samplerTabIndex = _controls.SamplerTabControl.SelectedIndex;
+            if (samplerTabIndex >= _samplerInfo.Count) return;
+
+            var samplerInfo = _samplerInfo[samplerTabIndex];
+            int samplerIndex = samplerInfo.Item2;
+            int textureRefIndex = samplerInfo.Item3;
+
+            if (textureRefIndex != 255 && textureRefIndex < material.TextureReferences.Count)
+            {
+                var textureRef = material.TextureReferences[textureRefIndex];
+                textureRef.Texture = null;
+            }
+
+            if (samplerIndex < material.Shader.SamplerRemaps.Count)
+                material.Shader.SamplerRemaps[samplerIndex] = 255;
+
+            _samplerInfo[samplerTabIndex] = new Tuple<string, int, int>(samplerInfo.Item1, samplerIndex, 255);
+
+            materialList_SelectedIndexChanged(null, EventArgs.Empty);
         }
 
         private void OnFeatureCheckboxChanged(Materials.Material material, int featureIndex, bool isChecked)
@@ -109,34 +184,164 @@ namespace AlienPAK
             int remappedIndex = material.Shader.PixelShaderParameterRemaps[parameterIndex];
             int floatCount = GetFloatCountForParameterType(parameterType);
 
-            TextBlock textBlock = new TextBlock { Margin = new System.Windows.Thickness(0, 0, 0, 5) };
+            bool isInt = parameterType == UberShaderParameterType.Int;
+            bool isColorLike =
+                (parameterType == UberShaderParameterType.Float3 || parameterType == UberShaderParameterType.Float4 ||
+                 parameterType == UberShaderParameterType.Half3 || parameterType == UberShaderParameterType.Half4) &&
+                (parameterName.IndexOf("color", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                 parameterName.IndexOf("colour", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                 parameterName.IndexOf("tint", StringComparison.OrdinalIgnoreCase) >= 0);
+
+            TextBlock header = new TextBlock
+            {
+                Margin = new System.Windows.Thickness(0, 0, 0, 5),
+                Text = $"{parameterName} ({parameterType})"
+            };
+            _controls.ParameterDetailsPanel.Children.Add(header);
+
+            System.Windows.Controls.StackPanel row = new System.Windows.Controls.StackPanel
+            {
+                Orientation = System.Windows.Controls.Orientation.Horizontal,
+                Margin = new System.Windows.Thickness(0, 0, 0, 5)
+            };
+
+            Func<float, string> toString = v => v.ToString("F6", CultureInfo.InvariantCulture);
+
+            Action<System.Windows.Controls.TextBox, int> attachFloatHandler = (box, componentOffset) =>
+            {
+                box.LostKeyboardFocus += (s, eArgs) =>
+                {
+                    if (remappedIndex + componentOffset >= material.PixelShaderConstants.Count)
+                        return;
+
+                    float current = material.PixelShaderConstants[remappedIndex + componentOffset];
+
+                    if (isInt)
+                    {
+                        if (int.TryParse(box.Text, NumberStyles.Integer, CultureInfo.InvariantCulture, out int intVal))
+                        {
+                            material.PixelShaderConstants[remappedIndex + componentOffset] = intVal;
+                            box.Text = intVal.ToString(CultureInfo.InvariantCulture);
+                        }
+                        else
+                        {
+                            box.Text = ((int)current).ToString(CultureInfo.InvariantCulture);
+                        }
+                    }
+                    else
+                    {
+                        if (float.TryParse(box.Text, NumberStyles.Float, CultureInfo.InvariantCulture, out float val))
+                        {
+                            material.PixelShaderConstants[remappedIndex + componentOffset] = val;
+                            box.Text = toString(val);
+                        }
+                        else
+                        {
+                            box.Text = toString(current);
+                        }
+                    }
+                };
+            };
+
             if (floatCount == 1)
             {
-                float value = material.PixelShaderConstants[remappedIndex];
-                textBlock.Text = parameterType == UberShaderParameterType.Int ? ((int)value).ToString() : value.ToString("F6");
+                float v = remappedIndex < material.PixelShaderConstants.Count ? material.PixelShaderConstants[remappedIndex] : 0f;
+
+                TextBlock label = new TextBlock
+                {
+                    Text = isInt ? "Value (int):" : "Value:",
+                    Margin = new System.Windows.Thickness(0, 0, 5, 0),
+                    VerticalAlignment = System.Windows.VerticalAlignment.Center
+                };
+                row.Children.Add(label);
+
+                System.Windows.Controls.TextBox box = new System.Windows.Controls.TextBox
+                {
+                    Width = 100,
+                    Text = isInt ? ((int)v).ToString(CultureInfo.InvariantCulture) : toString(v)
+                };
+                attachFloatHandler(box, 0);
+                row.Children.Add(box);
             }
-            else if (floatCount == 2)
+            else
             {
-                float x = material.PixelShaderConstants[remappedIndex];
-                float y = remappedIndex + 1 < material.PixelShaderConstants.Count ? material.PixelShaderConstants[remappedIndex + 1] : 0;
-                textBlock.Text = $"X: {x:F6}, Y: {y:F6}";
+                string[] labels = floatCount == 2
+                    ? new[] { "X:", "Y:" }
+                    : floatCount == 3 ? new[] { "X:", "Y:", "Z:" } : new[] { "X:", "Y:", "Z:", "W:" };
+
+                for (int i = 0; i < floatCount; i++)
+                {
+                    float v = (remappedIndex + i) < material.PixelShaderConstants.Count
+                        ? material.PixelShaderConstants[remappedIndex + i]
+                        : 0f;
+
+                    TextBlock label = new TextBlock
+                    {
+                        Text = labels[i],
+                        Margin = new System.Windows.Thickness(i == 0 ? 0 : 10, 0, 5, 0),
+                        VerticalAlignment = System.Windows.VerticalAlignment.Center
+                    };
+                    row.Children.Add(label);
+
+                    System.Windows.Controls.TextBox box = new System.Windows.Controls.TextBox
+                    {
+                        Width = 80,
+                        Text = isInt ? ((int)v).ToString(CultureInfo.InvariantCulture) : toString(v)
+                    };
+                    attachFloatHandler(box, i);
+                    row.Children.Add(box);
+                }
             }
-            else if (floatCount == 3)
+
+            _controls.ParameterDetailsPanel.Children.Add(row);
+
+            if (isColorLike)
             {
-                float x = material.PixelShaderConstants[remappedIndex];
-                float y = remappedIndex + 1 < material.PixelShaderConstants.Count ? material.PixelShaderConstants[remappedIndex + 1] : 0;
-                float z = remappedIndex + 2 < material.PixelShaderConstants.Count ? material.PixelShaderConstants[remappedIndex + 2] : 0;
-                textBlock.Text = $"X: {x:F6}, Y: {y:F6}, Z: {z:F6}";
+                System.Windows.Controls.Button colorButton = new System.Windows.Controls.Button
+                {
+                    Content = "Pick Color...",
+                    Margin = new System.Windows.Thickness(0, 5, 0, 0),
+                    Width = 100
+                };
+
+                colorButton.Click += (s, eArgs) =>
+                {
+                    float r = remappedIndex + 0 < material.PixelShaderConstants.Count ? material.PixelShaderConstants[remappedIndex + 0] : 0f;
+                    float g = remappedIndex + 1 < material.PixelShaderConstants.Count ? material.PixelShaderConstants[remappedIndex + 1] : 0f;
+                    float b = remappedIndex + 2 < material.PixelShaderConstants.Count ? material.PixelShaderConstants[remappedIndex + 2] : 0f;
+                    float a = remappedIndex + 3 < material.PixelShaderConstants.Count ? material.PixelShaderConstants[remappedIndex + 3] : 1f;
+
+                    using (var dialog = new ColorDialog())
+                    {
+                        int clampByte(float f) => Math.Max(0, Math.Min(255, (int)Math.Round(f * 255f)));
+
+                        dialog.Color = System.Drawing.Color.FromArgb(
+                            clampByte(a),
+                            clampByte(r),
+                            clampByte(g),
+                            clampByte(b));
+
+                        if (dialog.ShowDialog() != DialogResult.OK)
+                            return;
+
+                        float fromByte(byte c) => c / 255f;
+
+                        if (remappedIndex + 0 < material.PixelShaderConstants.Count)
+                            material.PixelShaderConstants[remappedIndex + 0] = fromByte(dialog.Color.R);
+                        if (remappedIndex + 1 < material.PixelShaderConstants.Count)
+                            material.PixelShaderConstants[remappedIndex + 1] = fromByte(dialog.Color.G);
+                        if (remappedIndex + 2 < material.PixelShaderConstants.Count)
+                            material.PixelShaderConstants[remappedIndex + 2] = fromByte(dialog.Color.B);
+                        if (floatCount == 4 && remappedIndex + 3 < material.PixelShaderConstants.Count)
+                            material.PixelShaderConstants[remappedIndex + 3] = fromByte(dialog.Color.A);
+
+                        // Refresh UI by re-invoking this handler
+                        OnParameterSelected(parameterName);
+                    }
+                };
+
+                _controls.ParameterDetailsPanel.Children.Add(colorButton);
             }
-            else if (floatCount == 4)
-            {
-                float x = material.PixelShaderConstants[remappedIndex];
-                float y = remappedIndex + 1 < material.PixelShaderConstants.Count ? material.PixelShaderConstants[remappedIndex + 1] : 0;
-                float z = remappedIndex + 2 < material.PixelShaderConstants.Count ? material.PixelShaderConstants[remappedIndex + 2] : 0;
-                float w = remappedIndex + 3 < material.PixelShaderConstants.Count ? material.PixelShaderConstants[remappedIndex + 3] : 0;
-                textBlock.Text = $"X: {x:F6}, Y: {y:F6}, Z: {z:F6}, W: {w:F6}";
-            }
-            _controls.ParameterDetailsPanel.Children.Add(textBlock);
         }
 
         private int GetFloatCountForParameterType(UberShaderParameterType parameterType)
@@ -161,10 +366,19 @@ namespace AlienPAK
             }
         }
 
-        private void PopulateUI(Materials.Material material = null)
+        private void PopulateUI(Materials.Material material = null, string filter = null)
         {
             _sortedMaterials.Clear();
-            _sortedMaterials.AddRange(_materials.Entries);
+            IEnumerable<Materials.Material> source = _materials.Entries;
+
+            if (!string.IsNullOrWhiteSpace(filter))
+            {
+                string trimmedFilter = filter.Trim();
+                source = source.Where(m => !string.IsNullOrEmpty(m.Name) &&
+                                           m.Name.IndexOf(trimmedFilter, StringComparison.OrdinalIgnoreCase) >= 0);
+            }
+
+            _sortedMaterials.AddRange(source);
             _sortedMaterials = _sortedMaterials.OrderBy(o => o.Name).ToList();
 
             materialList.BeginUpdate();
@@ -176,6 +390,7 @@ namespace AlienPAK
             
             var groupedMaterials = _sortedMaterials.Where(m => m.Shader != null).GroupBy(m => m.Shader.Ubershader).OrderBy(g => g.Key.ToString());
 
+            _controls.Visibility = System.Windows.Visibility.Hidden;
             foreach (var group in groupedMaterials)
             {
                 string groupName = group.Key.ToString();
@@ -190,12 +405,50 @@ namespace AlienPAK
                     materialList.Items.Add(item);
 
                     if (mat == material)
+                    {
                         item.Selected = true;
+                        _controls.Visibility = System.Windows.Visibility.Visible;
+                    }
                 }
             }
             materialList.EndUpdate();
         }
 
+        private void ApplyMaterialSearch()
+        {
+            string filter = materialSearchTextBox.Text;
+
+            Materials.Material selectedMaterial = null;
+            if (materialList.SelectedItems.Count > 0)
+                selectedMaterial = materialList.SelectedItems[0].Tag as Materials.Material;
+
+            PopulateUI(selectedMaterial, filter);
+        }
+
+        private void materialSearchButton_Click(object sender, EventArgs e)
+        {
+            ApplyMaterialSearch();
+        }
+
+        private void materialSearchClearButton_Click(object sender, EventArgs e)
+        {
+            Materials.Material selectedMaterial = null;
+            if (materialList.SelectedItems.Count > 0)
+                selectedMaterial = materialList.SelectedItems[0].Tag as Materials.Material;
+
+            materialSearchTextBox.Text = string.Empty;
+            PopulateUI(selectedMaterial);
+        }
+
+        private void materialSearchTextBox_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.KeyCode == Keys.Enter)
+            {
+                materialSearchButton.PerformClick();
+                e.Handled = true;
+                e.SuppressKeyPress = true;
+            }
+        }
 
         private void materialList_SelectedIndexChanged(object sender, EventArgs e)
         {
@@ -205,12 +458,16 @@ namespace AlienPAK
             _controls.FeatureDetailsPanel.Children.Clear();
             _controls.ParameterDetailsPanel.Children.Clear();
             _controls.ShaderType.Text = "";
+            _controls.MaterialName.Text = "";
 
+            _controls.Visibility = System.Windows.Visibility.Hidden;
             if (materialList.SelectedItems.Count == 0) return;
+            _controls.Visibility = System.Windows.Visibility.Visible;
 
             Materials.Material material = materialList.SelectedItems[0].Tag as Materials.Material;
             if (material == null) return;
 
+            _controls.MaterialName.Text = material.Name;
             _controls.ShaderType.Text = material.Shader.Ubershader.ToString();
 
             List<string> samplers = ShaderUtility.GetSamplers(material.Shader.Ubershader);
@@ -269,17 +526,30 @@ namespace AlienPAK
                     MaxHeight = 400
                 };
                 imageScrollViewer.Content = texturePreview;
-                
-                /*
-                 * TODO!!
+
+                System.Windows.Controls.StackPanel samplerButtonsPanel = new System.Windows.Controls.StackPanel
+                {
+                    Orientation = System.Windows.Controls.Orientation.Horizontal,
+                    Margin = new System.Windows.Thickness(0, 10, 0, 0)
+                };
+
                 System.Windows.Controls.Button pickTextureButton = new System.Windows.Controls.Button
                 {
-                    Content = "Pick Texture...",
-                    Margin = new System.Windows.Thickness(0, 10, 0, 0),
-                    Tag = i
+                    Content = hasTexture ? "Edit Texture..." : "Pick Texture...",
+                    Margin = new System.Windows.Thickness(0, 0, 10, 0)
                 };
                 pickTextureButton.Click += (s, args) => OnPickTexture();
-                */
+
+                System.Windows.Controls.Button clearTextureButton = new System.Windows.Controls.Button
+                {
+                    Content = "Clear Texture",
+                    IsEnabled = textureRefIndex != 255,
+                    Margin = new System.Windows.Thickness(0, 0, 0, 0)
+                };
+                clearTextureButton.Click += (s, args) => ClearSamplerTexture();
+
+                samplerButtonsPanel.Children.Add(pickTextureButton);
+                samplerButtonsPanel.Children.Add(clearTextureButton);
 
                 TextBlock detailsText = new TextBlock
                 {
@@ -313,7 +583,7 @@ namespace AlienPAK
                 
                 tabContent.Children.Add(textureFileText);
                 tabContent.Children.Add(imageScrollViewer);
-                //tabContent.Children.Add(pickTextureButton);  TODO
+                tabContent.Children.Add(samplerButtonsPanel);
                 tabContent.Children.Add(detailsText);
                 
                 TabItem tabItem = new TabItem
@@ -383,42 +653,33 @@ namespace AlienPAK
 
         private void duplicateMaterial_Click(object sender, EventArgs e)
         {
-            /*
-            Materials.Material newMaterial = _sortedMaterials[materialList.SelectedIndex].Copy();
-            newMaterial.Name += " Clone";
-            for (int i = 0; i < newMaterial.ConstantBuffers.Length; i++)
-            {
-                if (newMaterial.ConstantBuffers == null) continue;
-                byte[] cstData = null;
-                using (MemoryStream stream = new MemoryStream(_materials.CSTData[i]))
-                {
-                    using (BinaryReader cstReader = new BinaryReader(stream))
-                    {
-                        cstReader.BaseStream.Position = newMaterial.ConstantBuffers[i].Offset * 4;
-                        cstData = cstReader.ReadBytes(newMaterial.ConstantBuffers[i].Length * 4);
-                    }
-                }
-                newMaterial.ConstantBuffers[i] = new Materials.Material.ConstantBuffer();
-                if (cstData != null)
-                {
-                    using (MemoryStream stream = new MemoryStream())
-                    {
-                        using (BinaryWriter cstWriter = new BinaryWriter(stream))
-                        {
-                            cstWriter.Write(_materials.CSTData[i]);
-                            newMaterial.ConstantBuffers[i].Offset = (int)cstWriter.BaseStream.Position / 4;
-                            newMaterial.ConstantBuffers[i].Length = cstData.Length / 4;
-                            cstWriter.Write(cstData);
+            if (materialList.SelectedItems.Count == 0) return;
 
-                            _materials.CSTData[i] = stream.ToArray();
-                        }
-                    }
-                }
+            Materials.Material material = materialList.SelectedItems[0].Tag as Materials.Material;
+            Materials.Material newMaterial = new Materials.Material();
+
+            newMaterial.Name = material.Name + " Clone";
+            for (int i = 0; i < material.TextureReferences.Count; i++)
+            {
+                TexturePtr texturePtr = new TexturePtr();
+                texturePtr.Texture = material.TextureReferences[i].Texture;
+                texturePtr.Location = material.TextureReferences[i].Location;
+                newMaterial.TextureReferences.Add(texturePtr);
             }
+            newMaterial.EngineConstants = new List<float>(material.EngineConstants);
+            newMaterial.VertexShaderConstants = new List<float>(material.VertexShaderConstants);
+            newMaterial.PixelShaderConstants = new List<float>(material.PixelShaderConstants);
+            newMaterial.HullShaderConstants = new List<float>(material.HullShaderConstants);
+            newMaterial.DomainShaderConstants = new List<float>(material.DomainShaderConstants);
+            newMaterial.OfflineLightFeatures = material.OfflineLightFeatures.Copy();
+            newMaterial.Shader = material.Shader;
+            newMaterial.PhysicalMaterialIndex = material.PhysicalMaterialIndex;
+            newMaterial.EnvironmentMapIndex = material.EnvironmentMapIndex;
+            newMaterial.Priority = material.Priority;
+
             _materials.Entries.Add(newMaterial);
-            Explorer.SaveTexturesAndUpdateMaterials(_textures, _materials);
             PopulateUI(newMaterial);
-            */
+            //ensure we select the new one
         }
     }
 }

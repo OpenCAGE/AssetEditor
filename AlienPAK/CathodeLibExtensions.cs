@@ -466,6 +466,45 @@ namespace AlienPAK
             return geometry;
         }
 
+        public static GeometryModel3D ToGeometryModel3D(this Assimp.Mesh mesh)
+        {
+            if (mesh == null || mesh.VertexCount == 0) return new GeometryModel3D();
+            int[] indices = mesh.GetIndices();
+            if (indices == null || indices.Length == 0) return new GeometryModel3D();
+            for (int i = 0; i + 2 < indices.Length; i += 3)
+            {
+                int a = indices[i], b = indices[i + 1], c = indices[i + 2];
+                indices[i] = a; indices[i + 1] = c; indices[i + 2] = b;
+            }
+            var vertices = new Point3DCollection();
+            for (int i = 0; i < mesh.Vertices.Count; i++)
+            {
+                var v = mesh.Vertices[i];
+                vertices.Add(new Point3D((double)v.X, (double)v.Y, -(double)v.Z));
+            }
+            var uvs = new PointCollection();
+            if (mesh.TextureCoordinateChannelCount > 0 && mesh.TextureCoordinateChannels[0].Count == mesh.VertexCount)
+            {
+                for (int i = 0; i < mesh.TextureCoordinateChannels[0].Count; i++)
+                {
+                    var uv = mesh.TextureCoordinateChannels[0][i];
+                    uvs.Add(new System.Windows.Point((double)uv.X, (double)uv.Y));
+                }
+            }
+            var geometry = new GeometryModel3D
+            {
+                Geometry = new MeshGeometry3D
+                {
+                    Positions = vertices,
+                    TriangleIndices = new Int32Collection(indices),
+                    TextureCoordinates = uvs.Count == vertices.Count ? uvs : null,
+                },
+                Material = new DiffuseMaterial(new SolidColorBrush(Color.FromRgb(200, 200, 200))),
+                BackMaterial = new DiffuseMaterial(new SolidColorBrush(Color.FromRgb(200, 200, 200))),
+            };
+            return geometry;
+        }
+
         public static Assimp.Material ToAssimpMaterial(this Materials.Material cathodeMaterial, int materialIndex, string diffuseTextureFileName = null, string normalMapTextureFileName = null)
         {
             Assimp.Material mat = new Assimp.Material();
@@ -684,6 +723,9 @@ namespace AlienPAK
             submesh.VertexCount = mesh.VertexCount;
             int[] indices = mesh.GetIndices();
             submesh.IndexCount = indices.Length;
+
+            //todo - allow selection of these flags!
+            submesh.RenderFlags = RenderingFlag.IS_FIRST_PERSON_LOD | RenderingFlag.HAS_FIRST_PERSON_LOD | RenderingFlag.IS_THIRD_PERSON_LOD | RenderingFlag.HAS_THIRD_PERSON_LOD | RenderingFlag.IS_SHADOW_CASTING | RenderingFlag.HAS_SHADOW_CASTING | RenderingFlag.IS_LEVEL_PACK;
 
             //meshes must not exceed 1 unit in any direction -> TODO: we should validate customScaleFactor here...
             submesh.VertexScale = customScaleFactor == null ? mesh.CalculateScaleFactor() : (ushort)customScaleFactor;

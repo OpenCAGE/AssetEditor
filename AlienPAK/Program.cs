@@ -97,9 +97,11 @@ namespace AlienPAK
                 SharedData.pathToAI = Environment.CurrentDirectory;
             }
 
+#if !DEBUG
             //Verify location
             if (!File.Exists(SharedData.pathToAI + "/AI.exe")) 
                 throw new Exception("This tool was launched incorrectly, or was not placed within the Alien: Isolation directory.");
+#endif
 
             //Launch application
             Application.EnableVisualStyles();
