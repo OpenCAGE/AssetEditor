@@ -85,6 +85,11 @@ namespace AlienPAK
             GlobalContent = null;
             _isGlobalTextureLevel = false;
 
+            GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced, true);
+            GC.WaitForPendingFinalizers();
+            GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced, true);
+            GC.WaitForPendingFinalizers();
+
             string path = SharedData.pathToAI + "/DATA/";
             Cursor.Current = Cursors.WaitCursor;
             switch (LaunchMode)
